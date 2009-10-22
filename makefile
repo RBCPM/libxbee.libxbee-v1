@@ -8,8 +8,8 @@ CLINKS:=-lm ./lib/libxbee.so -lpthread ${DEBUG}
 DEFINES:=
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
-ifneq ($(strip $(wildcard /usr/share/enscript/mine.hdr)),)
-  ENSCRIPT+= --fancy-header=mine
+ifneq ($(strip $(wildcard /usr/share/enscript/mine-web.hdr)),)
+  ENSCRIPT+= --fancy-header=mine-web
 else
   ENSCRIPT+= --fancy-header=a2ps
 endif
