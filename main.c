@@ -1,28 +1,11 @@
 #include "globals.h"
 
 int main(int argc, char *argv[]) {
-  xbee_con *con, *con2, *con3;
+  xbee_con *con, *con2;
   xbee_pkt *pkt;
-  unsigned char addr[8];
-  unsigned char addr16[2];
-  unsigned char data[64];
   int i;
 
-  if (argc < 1) exit (0);
-  xbee_setup("/dev/ttyUSB1");
-
-  addr[0] = 0x00;
-  addr[1] = 0x13;
-  addr[2] = 0xA2;
-  addr[3] = 0x00;
-
-  addr[4] = 0x40;
-  addr[5] = 0x3A;
-  addr[6] = 0xF2;
-  addr[7] = 0x47;
-
-  addr16[0] = 0x00;
-  addr16[1] = 0x02;
+  xbee_setup("/dev/ttyUSB1",57600);
 
   /*if ((con = xbee_newcon(NULL,'X',xbee_localAT)) == (void *)-1) {
     printf("error creating connection...\n");
@@ -159,16 +142,6 @@ int main(int argc, char *argv[]) {
 
   sleep(10);
   */
-
-  addr[0] = 0x00;
-  addr[1] = 0x13;
-  addr[2] = 0xA2;
-  addr[3] = 0x00;
-
-  addr[4] = 0x40;
-  addr[5] = 0x08;
-  addr[6] = 0x18;
-  addr[7] = 0x26;
 
   if ((con = xbee_newcon('I',xbee_64bitIO, 0x0013A200, 0x40081826)) == (void *)-1) {
     printf("error creating connection...\n");

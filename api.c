@@ -62,20 +62,35 @@ void Xfree2(void **ptr) {
    opens xbee serial port & creates xbee read thread
    the xbee must be configured for API mode 2, and 57600 baud
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
-void xbee_setup(char *path) {
+void xbee_setup(char *path, int baudrate) {
   t_info info;
   struct termios tc;
+  speed_t chosenbaud = 57600;
+
+  switch (baudrate) {
+    case 1200:  chosenbaud = B1200;   break;
+    case 2400:  chosenbaud = B2400;   break;
+    case 4800:  chosenbaud = B4800;   break;
+    case 9600:  chosenbaud = B9600;   break;
+    case 19200: chosenbaud = B19200;  break;
+    case 38400: chosenbaud = B38400;  break;
+    case 57600: chosenbaud = B57600;  break;
+    case 115200:chosenbaud = B115200; break;
+    default:
+      printf("XBee: Unknown or incompatiable baud rate specified... (%d)\n",baudrate);
+      return;
+  };
 
   xbee.conlist = NULL;
   if (pthread_mutex_init(&xbee.conmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(conmutex)");
-    exit(1);
+    return;
   }
 
   xbee.pktlist = NULL;
   if (pthread_mutex_init(&xbee.pktmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(pktmutex)");
-    exit(1);
+    return;
   }
 
   xbee.path = path;
@@ -86,12 +101,12 @@ void xbee_setup(char *path) {
     xbee.path = NULL;
     xbee.ttyfd = -1;
     xbee.tty = NULL;
-    exit(1);
+    return;
   }
   /* setup the baud rate - 57600 8N1*/
   tcgetattr(xbee.ttyfd, &tc);
-  cfsetispeed(&tc, B57600);       /* set input baud rate to 57600 */
-  cfsetospeed(&tc, B57600);       /* set output baud rate to 57600 */
+  cfsetispeed(&tc, chosenbaud);       /* set input baud rate to 57600 */
+  cfsetospeed(&tc, chosenbaud);       /* set output baud rate to 57600 */
   /* input flags */
   tc.c_iflag |= IGNBRK;           /* enable ignoring break */
   tc.c_iflag &= ~(IGNPAR | PARMRK);/* disable parity checks */
@@ -126,19 +141,22 @@ void xbee_setup(char *path) {
     close(xbee.ttyfd);
     xbee.ttyfd = -1;
     xbee.tty = NULL;
-    exit(1);
+    return;
   }
 
   fflush(xbee.tty);
 
-  /* now im ready */
-  xbee_ready = 1;
+  /* allow the listen thread to start */
+  xbee_ready = -1;
 
   /* can start xbee_listen thread now */
   if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen,(void *)&info) != 0) {
     perror("xbee_setup():pthread_create()");
-    exit(1);
+    return;
   }
+
+  /* allow other functions to be used! */
+  xbee_ready = 1;
 }
 
 /* #################################################################
@@ -153,6 +171,8 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 #ifdef DEBUG
   int i;
 #endif
+
+  ISREADY;
 
   va_start(ap,type);
   if ((type == xbee_64bitRemoteAT) ||
@@ -184,8 +204,6 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
     tAddr[7] = 0;
   }
   va_end(ap);
-
-  ISREADY;
 
   if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
   else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
@@ -324,7 +342,7 @@ int xbee_senddata(xbee_con *con, char *format, ...) {
   /* ########################################## */
   /* local AT mode */
   if (con->type == xbee_localAT) {
-    if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter */
+    if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
     if (!con->atQueue) {
       buf[0] = 0x08;
     } else {
@@ -476,7 +494,8 @@ void xbee_listen(t_info *info) {
 #endif
   xbee_pkt *p, *q, *po;
 
-  ISREADY;
+  /* just falls out if the proper 'go-ahead' isn't given */
+  if (xbee_ready != -1) return;
 
   while(1) {
 

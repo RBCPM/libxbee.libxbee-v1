@@ -73,7 +73,7 @@ struct xbee_pkt {
 };
 typedef struct xbee_pkt xbee_pkt;
 
-void xbee_setup(char *path);
+void xbee_setup(char *path, int baudrate);
 xbee_con *xbee_newcon(unsigned char frameID, unsigned int options, ...);
 int xbee_senddata(xbee_con *con, char *format, ...);
 xbee_pkt *xbee_getpacket(xbee_con *con);
