@@ -170,38 +170,36 @@ int main(int argc, char *argv[]) {
   addr[6] = 0x18;
   addr[7] = 0x26;
 
-  if ((con = xbee_newcon(addr,'I',xbee_64bitIO)) == (void *)-1) {
+  if ((con = xbee_newcon('I',xbee_64bitIO, 0x0013A200, 0x40081826)) == (void *)-1) {
     printf("error creating connection...\n");
     exit(1);
   }
-  if((con2 = xbee_newcon(addr,'I',xbee_64bitData)) == (void *)-1) {
+  if((con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826)) == (void *)-1) {
     printf("error creating connection...\n");
     exit(1);
   }
   while (1) {
     while ((pkt = xbee_getpacket(con)) != NULL) {
-      if (pkt->type == xbee_64bitIO) {
-	printf("--------- got one!... CON2 ------------\n");
-	if (pkt->IOmask & 0x0001) printf("Digital 0: %c\n",((pkt->IOdata & 0x0001)?'1':'0'));
-	if (pkt->IOmask & 0x0002) printf("Digital 1: %c\n",((pkt->IOdata & 0x0002)?'1':'0'));
-	if (pkt->IOmask & 0x0004) printf("Digital 2: %c\n",((pkt->IOdata & 0x0004)?'1':'0'));
-	if (pkt->IOmask & 0x0008) printf("Digital 3: %c\n",((pkt->IOdata & 0x0008)?'1':'0'));
-	if (pkt->IOmask & 0x0010) printf("Digital 4: %c\n",((pkt->IOdata & 0x0010)?'1':'0'));
-	if (pkt->IOmask & 0x0020) printf("Digital 5: %c\n",((pkt->IOdata & 0x0020)?'1':'0'));
-	if (pkt->IOmask & 0x0040) printf("Digital 6: %c\n",((pkt->IOdata & 0x0040)?'1':'0'));
-	if (pkt->IOmask & 0x0080) printf("Digital 7: %c\n",((pkt->IOdata & 0x0080)?'1':'0'));
-	if (pkt->IOmask & 0x0100) printf("Digital 8: %c\n",((pkt->IOdata & 0x0100)?'1':'0'));
-	if (pkt->IOmask & 0x0200) printf("Analog  0: %.2fv\n",(3.3/1023)*pkt->IOanalog[0]);
-	if (pkt->IOmask & 0x0400) printf("Analog  1: %.2fv\n",(3.3/1023)*pkt->IOanalog[1]);
-	if (pkt->IOmask & 0x0800) printf("Analog  2: %.2fv\n",(3.3/1023)*pkt->IOanalog[2]);
-	if (pkt->IOmask & 0x1000) printf("Analog  3: %.2fv\n",(3.3/1023)*pkt->IOanalog[3]);
-	if (pkt->IOmask & 0x2000) printf("Analog  4: %.2fv\n",(3.3/1023)*pkt->IOanalog[4]);
-	if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
-	xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));
-      }
+      printf("--------- got one!... CON2 ------------\n");
+      if (pkt->IOmask & 0x0001) printf("Digital 0: %c\n",((pkt->IOdata & 0x0001)?'1':'0'));
+      if (pkt->IOmask & 0x0002) printf("Digital 1: %c\n",((pkt->IOdata & 0x0002)?'1':'0'));
+      if (pkt->IOmask & 0x0004) printf("Digital 2: %c\n",((pkt->IOdata & 0x0004)?'1':'0'));
+      if (pkt->IOmask & 0x0008) printf("Digital 3: %c\n",((pkt->IOdata & 0x0008)?'1':'0'));
+      if (pkt->IOmask & 0x0010) printf("Digital 4: %c\n",((pkt->IOdata & 0x0010)?'1':'0'));
+      if (pkt->IOmask & 0x0020) printf("Digital 5: %c\n",((pkt->IOdata & 0x0020)?'1':'0'));
+      if (pkt->IOmask & 0x0040) printf("Digital 6: %c\n",((pkt->IOdata & 0x0040)?'1':'0'));
+      if (pkt->IOmask & 0x0080) printf("Digital 7: %c\n",((pkt->IOdata & 0x0080)?'1':'0'));
+      if (pkt->IOmask & 0x0100) printf("Digital 8: %c\n",((pkt->IOdata & 0x0100)?'1':'0'));
+      if (pkt->IOmask & 0x0200) printf("Analog  0: %.2fv\n",(3.3/1023)*pkt->IOanalog[0]);
+      if (pkt->IOmask & 0x0400) printf("Analog  1: %.2fv\n",(3.3/1023)*pkt->IOanalog[1]);
+      if (pkt->IOmask & 0x0800) printf("Analog  2: %.2fv\n",(3.3/1023)*pkt->IOanalog[2]);
+      if (pkt->IOmask & 0x1000) printf("Analog  3: %.2fv\n",(3.3/1023)*pkt->IOanalog[3]);
+      if (pkt->IOmask & 0x2000) printf("Analog  4: %.2fv\n",(3.3/1023)*pkt->IOanalog[4]);
+      if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
+      xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));
       free(pkt);
     }
-    usleep(1000);
+    usleep(100000);
   }
 
   return 0;

@@ -4,7 +4,7 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so -lpthread ${DEBUG}
-#DEBUG:=-g -DDEBUG
+DEBUG:=-g -DDEBUG
 DEFINES:=
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
@@ -101,8 +101,8 @@ main: ./bin/main
 
 ./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -s
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -s
+	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
+	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -sf
 
 ./lib/:
 	mkdir ./lib/

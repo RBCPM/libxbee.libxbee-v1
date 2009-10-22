@@ -145,16 +145,50 @@ void xbee_setup(char *path) {
    xbee_con
    produces a connection to the specified device and frameID
    if a connection had already been made, then this connection will be returned */
-xbee_con *xbee_newcon(unsigned char *tAddr, unsigned char frameID, xbee_types type) {
+xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   xbee_con *con, *ocon;
+  unsigned char tAddr[8];
+  va_list ap;
+  int t;
 #ifdef DEBUG
   int i;
 #endif
 
+  va_start(ap,type);
+  if ((type == xbee_64bitRemoteAT) ||
+      (type == xbee_64bitData) ||
+      (type == xbee_64bitIO)) {
+    /* 64 bit address expected (2 ints) */
+    t = va_arg(ap, int);
+    tAddr[0] = (t >> 24) & 0xFF;
+    tAddr[1] = (t >> 16) & 0xFF;
+    tAddr[2] = (t >>  8) & 0xFF;
+    tAddr[3] = (t      ) & 0xFF;
+    t = va_arg(ap, int);
+    tAddr[4] = (t >> 24) & 0xFF;
+    tAddr[5] = (t >> 16) & 0xFF;
+    tAddr[6] = (t >>  8) & 0xFF;
+    tAddr[7] = (t      ) & 0xFF;
+  } else if ((type == xbee_16bitRemoteAT) ||
+	     (type == xbee_16bitData) ||
+	     (type == xbee_16bitIO)) {
+    /* 16 bit address expected (1 int) */
+    t = va_arg(ap, int);
+    tAddr[0] = (t >>  8) & 0xFF;
+    tAddr[1] = (t      ) & 0xFF;
+    tAddr[2] = 0;
+    tAddr[3] = 0;
+    tAddr[4] = 0;
+    tAddr[5] = 0;
+    tAddr[6] = 0;
+    tAddr[7] = 0;
+  }
+  va_end(ap);
+
   ISREADY;
 
-  if (!type || type == xbee_unknown) type = xbee_localAT;
-  else if (type == xbee_remoteAT) type = xbee_16bitRemoteAT;
+  if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
+  else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
 
   pthread_mutex_lock(&xbee.conmutex);
 
@@ -382,19 +416,21 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   l = NULL;
   q = NULL;
   do {
-    if ((p->type == con->type) ||
+    if ((p->type == con->type) || /* -- */
 	((p->type == xbee_remoteAT) &&
-	 (con->type == xbee_16bitRemoteAT)) ||
+	 (con->type == xbee_16bitRemoteAT)) || /* -- */
 	((p->type == xbee_remoteAT) &&
-	 (con->type == xbee_64bitRemoteAT))) {
-      if (((p->type == xbee_localAT) &&
+	 (con->type == xbee_64bitRemoteAT))) { /* -- */
+      /* if: the connection type matches the packet type OR
+	     the connection is 16bit remote AT, and the packet is a remote AT response OR
+	     the connection is 64bit remote AT, and the packet is a remote AT response */
+      if ((((p->type == xbee_localAT) ||
+	    (p->type == xbee_remoteAT)) &&
 	   (con->frameID == p->frameID)) ||
-
-	  ((p->type == xbee_remoteAT) &&
-	   (con->frameID == p->frameID)) ||
-
 	  ((con->tAddr64 && !memcmp(con->tAddr,p->Addr64,8)) ||
 	   (!con->tAddr64 && !memcmp(con->tAddr,p->Addr16,2)))) {
+	/* if: the packet is AT data, and the frame IDs match OR
+	       the corresponding addresses match */
 	q = p;
 	break;
       }
@@ -779,7 +815,7 @@ void xbee_listen(t_info *info) {
     /* 16bit I/O recieve */
 #ifdef DEBUG
       printf("XBee: Packet type: 16-bit RX I/O Data (0x83)\n");
-      printf("XBee: 64-bit Address: ");
+      printf("XBee: 16-bit Address: ");
       for (j=0;j<2;j++) {
 	printf((j?":%02X":"%02X"),d[j]);
       }
