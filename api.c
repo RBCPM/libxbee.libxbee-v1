@@ -62,7 +62,7 @@ void Xfree2(void **ptr) {
    opens xbee serial port & creates xbee read thread
    the xbee must be configured for API mode 2, and 57600 baud
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
-void xbee_setup(char *path, int baudrate) {
+int xbee_setup(char *path, int baudrate) {
   t_info info;
   struct termios tc;
   speed_t chosenbaud = 57600;
@@ -78,19 +78,19 @@ void xbee_setup(char *path, int baudrate) {
     case 115200:chosenbaud = B115200; break;
     default:
       printf("XBee: Unknown or incompatiable baud rate specified... (%d)\n",baudrate);
-      return;
+      return -1;
   };
 
   xbee.conlist = NULL;
   if (pthread_mutex_init(&xbee.conmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(conmutex)");
-    return;
+    return -1;
   }
 
   xbee.pktlist = NULL;
   if (pthread_mutex_init(&xbee.pktmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(pktmutex)");
-    return;
+    return -1;
   }
 
   xbee.path = path;
@@ -101,7 +101,7 @@ void xbee_setup(char *path, int baudrate) {
     xbee.path = NULL;
     xbee.ttyfd = -1;
     xbee.tty = NULL;
-    return;
+    return -1;
   }
   /* setup the baud rate - 57600 8N1*/
   tcgetattr(xbee.ttyfd, &tc);
@@ -141,7 +141,7 @@ void xbee_setup(char *path, int baudrate) {
     close(xbee.ttyfd);
     xbee.ttyfd = -1;
     xbee.tty = NULL;
-    return;
+    return -1;
   }
 
   fflush(xbee.tty);
@@ -152,7 +152,7 @@ void xbee_setup(char *path, int baudrate) {
   /* can start xbee_listen thread now */
   if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen,(void *)&info) != 0) {
     perror("xbee_setup():pthread_create()");
-    return;
+    return -1;
   }
 
   /* allow other functions to be used! */
@@ -263,41 +263,41 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 
 #ifdef DEBUG
   switch(type) {
-  case xbee_localAT:
-    printf("XBee: New local AT connection!\n");
-    break;
-  case xbee_16bitRemoteAT:
-  case xbee_64bitRemoteAT:
-    printf("XBee: New %d-bit remote AT connection! (to: ",(con->tAddr64?64:16));
-    for (i=0;i<(con->tAddr64?8:2);i++) {
-      printf((i?":%02X":"%02X"),tAddr[i]);
-    }
-    printf(")\n");
-    break;
-  case xbee_16bitData:
-  case xbee_64bitData:
-    printf("XBee: New %d-bit data connection! (to: ",(con->tAddr64?64:16));
-    for (i=0;i<(con->tAddr64?8:2);i++) {
-      printf((i?":%02X":"%02X"),tAddr[i]);
-    }
-    printf(")\n");
-    break;
-  case xbee_16bitIO:
-  case xbee_64bitIO:
-    printf("XBee: New %d-bit IO connection! (to: ",(con->tAddr64?64:16));
-    for (i=0;i<(con->tAddr64?8:2);i++) {
-      printf((i?":%02X":"%02X"),tAddr[i]);
-    }
-    printf(")\n");
-    break;
-  case xbee_txStatus:
-    printf("XBee: New status connection!\n");
-    break;
-  case xbee_modemStatus:
-    break;
-  case xbee_unknown:
-  default:
-    printf("XBee: New unknown connection!\n");
+    case xbee_localAT:
+      printf("XBee: New local AT connection!\n");
+      break;
+    case xbee_16bitRemoteAT:
+    case xbee_64bitRemoteAT:
+      printf("XBee: New %d-bit remote AT connection! (to: ",(con->tAddr64?64:16));
+      for (i=0;i<(con->tAddr64?8:2);i++) {
+        printf((i?":%02X":"%02X"),tAddr[i]);
+      }
+      printf(")\n");
+      break;
+    case xbee_16bitData:
+    case xbee_64bitData:
+      printf("XBee: New %d-bit data connection! (to: ",(con->tAddr64?64:16));
+      for (i=0;i<(con->tAddr64?8:2);i++) {
+        printf((i?":%02X":"%02X"),tAddr[i]);
+      }
+      printf(")\n");
+      break;
+    case xbee_16bitIO:
+    case xbee_64bitIO:
+      printf("XBee: New %d-bit IO connection! (to: ",(con->tAddr64?64:16));
+      for (i=0;i<(con->tAddr64?8:2);i++) {
+        printf((i?":%02X":"%02X"),tAddr[i]);
+      }
+      printf(")\n");
+      break;
+    case xbee_txStatus:
+      printf("XBee: New status connection!\n");
+      break;
+    case xbee_modemStatus:
+      break;
+    case xbee_unknown:
+    default:
+      printf("XBee: New unknown connection!\n");
   }
 #endif
 

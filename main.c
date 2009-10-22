@@ -143,14 +143,9 @@ int main(int argc, char *argv[]) {
   sleep(10);
   */
 
-  if ((con = xbee_newcon('I',xbee_64bitIO, 0x0013A200, 0x40081826)) == (void *)-1) {
-    printf("error creating connection...\n");
-    exit(1);
-  }
-  if((con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826)) == (void *)-1) {
-    printf("error creating connection...\n");
-    exit(1);
-  }
+  con =  xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x40081826);
+  con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
+
   while (1) {
     while ((pkt = xbee_getpacket(con)) != NULL) {
       printf("--------- got one!... CON2 ------------\n");
