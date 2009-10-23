@@ -157,6 +157,7 @@ int xbee_setup(char *path, int baudrate) {
 
   /* allow other functions to be used! */
   xbee_ready = 1;
+  return 0;
 }
 
 /* #################################################################

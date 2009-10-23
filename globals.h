@@ -24,10 +24,10 @@
 #define FDO(x,y,z)				\
   if (((x) = fdopen((y),(z))) == NULL) {	\
     perror("fopen()");				\
-    exit(1);					\
+    return(-1);					\
   }
 #define FO(x,y,z)				\
   if (((x) = open((y),(z))) == -1) {		\
     perror("open()");				\
-    exit(1);					\
+    return(-1);					\
   }
