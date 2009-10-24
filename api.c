@@ -374,11 +374,11 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     pkt = xbee_make_pkt(buf,i+2);
     xbee_send_pkt(pkt);
     return 1;
-  }
-  if ((con->type == xbee_16bitRemoteAT) ||
-      (con->type == xbee_64bitRemoteAT)) {
     /* ########################################## */
     /* remote AT mode */
+  } else if ((con->type == xbee_16bitRemoteAT) ||
+	     (con->type == xbee_64bitRemoteAT)) {
+    if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
     buf[0] = 0x17;
     buf[1] = con->frameID;
     if (con->tAddr64) {
@@ -396,9 +396,9 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     pkt = xbee_make_pkt(buf,i+13);
     xbee_send_pkt(pkt);
     return 1;
-  } else if (con->type == xbee_64bitData) {
     /* ########################################## */
     /* 64bit Data */
+  } else if (con->type == xbee_64bitData) {
     buf[0] = 0x00;
     buf[1] = con->frameID;
     memcpy(&buf[2],con->tAddr,8);
@@ -409,9 +409,9 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     pkt = xbee_make_pkt(buf,i+11);
     xbee_send_pkt(pkt);
     return 1;
-  } else if (con->type == xbee_16bitData) {
     /* ########################################## */
     /* 16bit Data */
+  } else if (con->type == xbee_16bitData) {
     buf[0] = 0x01;
     buf[1] = con->frameID;
     memcpy(&buf[2],con->tAddr,2);
@@ -422,6 +422,8 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     pkt = xbee_make_pkt(buf,i+5);
     xbee_send_pkt(pkt);
     return 1;
+    /* ########################################## */
+    /* I/O */
   } else if ((con->type == xbee_64bitIO) ||
 	     (con->type == xbee_16bitIO)) {
     printf("******* TODO ********\n");
@@ -517,14 +519,14 @@ void xbee_listen(t_info *info) {
   if (xbee_ready != -1) return;
 
   while(1) {
+    /* wait for a valid start byte */
+    if (xbee_getRawByte() != 0x7E) continue;
 
-    c = xbee_getRawByte();
-
-    if (c != 0x7E) continue;
 #ifdef DEBUG
     printf("XBee: --== RX Packet ===========--\nXBee: Got a packet!...\n");
 #endif
 
+    /* get the length */
     l = xbee_getByte() << 8;
     l += xbee_getByte();
 
@@ -540,30 +542,33 @@ void xbee_listen(t_info *info) {
     printf("XBee: Length: %d\n",l - 1);
 #endif
 
+    /* get the API ID / packet type */
     t = xbee_getByte();
+    chksum = t;
 
-    chksum = 0;
     for (i = 0; l > 1 && i < 128; l--, i++) {
       c = xbee_getByte();
       d[i] = c;
       chksum += c;
-      printf("XBee: Character: 0x%02X ('%c') Checksum: 0x%02X\n",c,(((c < '~') && (c > ' '))?c:'_'),chksum);
 #ifdef DEBUG
-      printf("XBee: %3d | 0x%02X ",i,c);
+      printf("XBee: %3d | '%c' | 0x%02X ",(((c < '~') && (c > ' '))?c:'.'),i,c);
       if ((c > 32) && (c < 127)) printf("'%c'\n",c); else printf(" _\n");
 #endif
     }
     i--; /* it went up too many times! */
-    c = xbee_getByte();
-    chksum += c;
-    chksum &= 0xFF;
-#ifdef DEBUG
-    printf("XBee: Checksum: 0x%02X   Result: 0x%02X\n",c,chksum);
-#endif
-    printf("XBee: Checksum: 0x%02X   Result: 0x%02X\n",c,chksum);
+
+    /* add the checksum */
+    chksum += xbee_getByte();
+
     if (l>1) {
 #ifdef DEBUG
       printf("XBee: Didn't get whole packet... :(\n");
+#endif
+      continue;
+    }
+    if ((chksum & 0xFF) != 0xFF) {
+#ifdef DEBUG
+      printf("XBee: Invalid Checksum: 0x%02X\n",c,chksum);
 #endif
       continue;
     }
