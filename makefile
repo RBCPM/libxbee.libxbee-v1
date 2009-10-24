@@ -3,7 +3,7 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
-CLINKS:=-lm ./lib/libxbee.so -lpthread ${DEBUG}
+CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
 #DEBUG:=-g -DDEBUG
 DEFINES:=
 
@@ -27,7 +27,7 @@ all: main
 
 
 # run - remake main and then run #
-run: ./lib/libxbee.so.1.0.1 main
+run: main
 	LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH ./bin/main
 
 
@@ -93,7 +93,7 @@ uninstall_su:
 # main - compile & link objects #
 main: ./bin/main
 
-./bin/main: ./lib/libxbee.so.1.0.1 ./bin/ ./obj/main.o
+./bin/main: ./lib/libxbee.so.1.0.1 ./bin/
 	${CC} ${CLINKS} ./main.c -o ./bin/main ${DEBUG}
 
 ./bin/:
@@ -101,8 +101,12 @@ main: ./bin/main
 
 ./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
+ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
+endif
+ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
 	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -sf
+endif
 
 ./lib/:
 	mkdir ./lib/

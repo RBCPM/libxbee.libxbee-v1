@@ -3,7 +3,6 @@
 int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
   xbee_pkt *pkt;
-  int i;
 
   xbee_setup("/dev/ttyUSB1",57600);
 

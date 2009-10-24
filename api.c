@@ -93,12 +93,16 @@ int xbee_setup(char *path, int baudrate) {
     return -1;
   }
 
-  xbee.path = path;
+  if ((xbee.path = malloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
+    perror("xbee_setup():malloc(path)");
+    return -1;
+  }
+  strcpy(xbee.path,path);
 
   /* open the serial port */
   if ((xbee.ttyfd = open(path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
     perror("xbee_setup():open()");
-    xbee.path = NULL;
+    Xfree(xbee.path);
     xbee.ttyfd = -1;
     xbee.tty = NULL;
     return -1;
@@ -137,7 +141,7 @@ int xbee_setup(char *path, int baudrate) {
 
   if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
     perror("xbee_setup():fdopen()");
-    xbee.path = NULL;
+    Xfree(xbee.path);
     close(xbee.ttyfd);
     xbee.ttyfd = -1;
     xbee.tty = NULL;
@@ -152,6 +156,11 @@ int xbee_setup(char *path, int baudrate) {
   /* can start xbee_listen thread now */
   if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen,(void *)&info) != 0) {
     perror("xbee_setup():pthread_create()");
+    Xfree(xbee.path);
+    fclose(xbee.tty);
+    close(xbee.ttyfd);
+    xbee.ttyfd = -1;
+    xbee.tty = NULL;
     return -1;
   }
 
@@ -498,7 +507,7 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
 void xbee_listen(t_info *info) {
   unsigned char c, t, d[128];
-  unsigned int l, i, s, o;
+  unsigned int l, i, chksum, o;
 #ifdef DEBUG
   int j;
 #endif
@@ -520,6 +529,12 @@ void xbee_listen(t_info *info) {
     l += xbee_getByte();
 
     if (!l) continue;
+    if (l > 100) {
+#ifdef DEBUG
+      printf("XBee: Recived oversized packet! Length: %d\n",l - 1);
+#endif
+      continue;
+    }
 
 #ifdef DEBUG
     printf("XBee: Length: %d\n",l - 1);
@@ -527,10 +542,12 @@ void xbee_listen(t_info *info) {
 
     t = xbee_getByte();
 
-    for (i=0,s=0;l>1 && i<128;l--,i++) {
+    chksum = 0;
+    for (i = 0; l > 1 && i < 128; l--, i++) {
       c = xbee_getByte();
       d[i] = c;
-      s += c;
+      chksum += c;
+      printf("XBee: Character: 0x%02X ('%c') Checksum: 0x%02X\n",c,(((c < '~') && (c > ' '))?c:'_'),chksum);
 #ifdef DEBUG
       printf("XBee: %3d | 0x%02X ",i,c);
       if ((c > 32) && (c < 127)) printf("'%c'\n",c); else printf(" _\n");
@@ -538,11 +555,12 @@ void xbee_listen(t_info *info) {
     }
     i--; /* it went up too many times! */
     c = xbee_getByte();
-    s += c;
-    s &= 0xFF;
+    chksum += c;
+    chksum &= 0xFF;
 #ifdef DEBUG
-    printf("XBee: Checksum: 0x%02X   Result: 0x%02X\n",c,s);
+    printf("XBee: Checksum: 0x%02X   Result: 0x%02X\n",c,chksum);
 #endif
+    printf("XBee: Checksum: 0x%02X   Result: 0x%02X\n",c,chksum);
     if (l>1) {
 #ifdef DEBUG
       printf("XBee: Didn't get whole packet... :(\n");
@@ -1016,7 +1034,7 @@ void xbee_send_pkt(t_data *pkt) {
   }
 #endif
 
-  xbee_destroy_pkt(pkt);
+  Xfree(pkt);
 }
 
 /* #################################################################
@@ -1074,15 +1092,4 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
   pkt->length = l;
 
   return pkt;
-}
-
-/* #################################################################
-   xbee_destroy_pkt - INTERNAL
-   free's the packet memory */
-void xbee_destroy_pkt(t_data *pkt) {
-
-  ISREADY;
-
-  /* free the stuff! */
-  Xfree(pkt);
 }
