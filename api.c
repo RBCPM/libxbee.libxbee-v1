@@ -316,17 +316,26 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
    xbee_senddata
    send the specified data to the provided connection */
 int xbee_senddata(xbee_con *con, char *format, ...) {
-  t_data *pkt;
-  int i, length;
-  unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
-  unsigned char data[128]; /* ditto */
+  int retval;
   va_list ap;
 
   ISREADY;
 
   va_start(ap, format);
-  length = vsnprintf((char *)data,128,format,ap);
+  retval = xbee_vsenddata(con,format,ap);
   va_end(ap);
+  return retval;
+}
+
+int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
+  t_data *pkt;
+  int i, length;
+  unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
+  unsigned char data[128]; /* ditto */
+
+  ISREADY;
+
+  length = vsnprintf((char *)data,128,format,ap);
 
 #ifdef DEBUG
   printf("XBee: --== TX Packet ============--\n");
