@@ -1,6 +1,8 @@
 #ifndef XBEE_H
 #define XBEE_H
 
+#include <stdarg.h>
+
 #define XBEE_CON_ADDR16      (0x0001) /* **** **** **** ***1 */
 #define XBEE_CON_ADDR64      (0x0002) /* **** **** **** **1* */
 #define XBEE_CON_MODEAT      (0x0004) /* **** **** **** *1** */
