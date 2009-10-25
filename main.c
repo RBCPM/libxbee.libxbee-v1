@@ -4,7 +4,10 @@ int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
   xbee_pkt *pkt, *p;
 
-  xbee_setup("/dev/ttyUSB1",57600);
+  if (xbee_setup("/dev/ttyUSB1",57600) == -1) {
+    perror("xbee_setup()");
+    exit(1);
+  }
 
   /*if ((con = xbee_newcon(NULL,'X',xbee_localAT)) == (void *)-1) {
     printf("error creating connection...\n");

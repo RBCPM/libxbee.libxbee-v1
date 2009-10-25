@@ -69,6 +69,7 @@ void Xfree2(void **ptr) {
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
 int xbee_setup(char *path, int baudrate) {
   t_info info;
+  struct flock fl;
   struct termios tc;
   speed_t chosenbaud;
 
@@ -122,6 +123,23 @@ int xbee_setup(char *path, int baudrate) {
     xbee.tty = NULL;
     return -1;
   }
+
+  /* lock the file */
+  fl.l_type = F_WRLCK | F_RDLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0;
+  fl.l_pid = getpid();
+  if (fcntl(xbee.ttyfd, F_SETLK, &fl) == -1) {
+    perror("xbee_setup():fcntl()");
+    Xfree(xbee.path);
+    close(xbee.ttyfd);
+    xbee.ttyfd = -1;
+    xbee.tty = NULL;
+    return -1;
+  }
+
+
   /* setup the baud rate and other io attributes */
   tcgetattr(xbee.ttyfd, &tc);
   cfsetispeed(&tc, chosenbaud);       /* set input baud rate to 57600 */
@@ -711,7 +729,7 @@ void xbee_listen(t_info *info) {
       d[i] = c;
       chksum += c;
 #ifdef DEBUG
-      printf("XBee: %3d | '%c' | 0x%02X ",i,(((c < '~') && (c > ' '))?c:'.'),c);
+      printf("XBee: %3d | 0x%02X | ",i,c);
       if ((c > 32) && (c < 127)) printf("'%c'\n",c); else printf(" _\n");
 #endif
     }
