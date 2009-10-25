@@ -520,6 +520,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 int xbee_gettxStatus(void) {
   xbee_pkt *p = NULL;
   int to = 10;
+  int status;
   for (; p == NULL && to > 0; to--) {
     usleep(25400); /* tuned so that hopefully the first time round will catch the response */
     p = xbee_getpacket(xbee.con_txStatus);
@@ -543,7 +544,9 @@ int xbee_gettxStatus(void) {
       printf("XBee: txStatus: Purged\n");       break;
   }
 #endif
-  return p->status;
+  status = p->status;
+  Xfree(p);
+  return status;
 }
 
 
