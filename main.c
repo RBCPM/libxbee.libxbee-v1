@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
   /* test local AT */
   con =  xbee_newcon('I',xbee_localAT);
   p = xbee_senddata(con,"NI");
-  if (p->status != 0) {
+  if (p && p->status != 0) {
     printf("local AT error (0x%02X)\n", p->status);
   }
   printf("local node identifier: %s\n",p->data);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
   /* test remote AT */
   con =  xbee_newcon('I',xbee_remoteAT,  0x0013A200, 0x40081826);
   p = xbee_senddata(con,"NI");
-  if (p->status != 0) {
+  if (p && p->status != 0) {
     printf("remote AT error (0x%02X)\n", p->status);
   }
   printf("remote node identifier: %s\n",p->data);
