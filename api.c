@@ -7,47 +7,52 @@
     exit(1);					  \
   }
 
+/* ready flag.
+   needs to be set to -1 so that the listen thread can begin.
+   then 1 so that functions can be used (after setup of course...) */
 int xbee_ready = 0;
-void *xbee_shm = NULL;
 
 /* ################################################################# */
 /* ### Memory Handling ############################################# */
 /* ################################################################# */
 
-/* malloc */
+/* malloc wrapper function */
 void *Xmalloc(size_t size) {
   void *t;
   t = malloc(size);
   if (!t) {
+    /* uhoh... thats pretty bad... */
     perror("xbee:malloc()");
     exit(1);
   }
   return t;
 }
 
-/* calloc */
+/* calloc wrapper function */
 void *Xcalloc(size_t size) {
   void *t;
   t = calloc(1, size);
   if (!t) {
+    /* uhoh... thats pretty bad... */
     perror("xbee:calloc()");
     exit(1);
   }
   return t;
 }
 
-/* realloc */
+/* realloc wrapper function */
 void *Xrealloc(void *ptr, size_t size) {
   void *t;
   t = realloc(ptr,size);
   if (!t) {
+    /* uhoh... thats pretty bad... */
     perror("xbee:realloc()");
     exit(1);
   }
   return t;
 }
 
-/* free */
+/* free wrapper function (uses the Xfree macro and sets the pointer to NULL after freeing it) */
 void Xfree2(void **ptr) {
   free(*ptr);
   *ptr = NULL;
@@ -60,13 +65,14 @@ void Xfree2(void **ptr) {
 /* #################################################################
    xbee_setup
    opens xbee serial port & creates xbee read thread
-   the xbee must be configured for API mode 2, and 57600 baud
+   the xbee must be configured for API mode 2
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
 int xbee_setup(char *path, int baudrate) {
   t_info info;
   struct termios tc;
-  speed_t chosenbaud = 57600;
+  speed_t chosenbaud;
 
+  /* select the baud rate */
   switch (baudrate) {
     case 1200:  chosenbaud = B1200;   break;
     case 2400:  chosenbaud = B2400;   break;
@@ -81,25 +87,34 @@ int xbee_setup(char *path, int baudrate) {
       return -1;
   };
 
+  /* setup the connection mutex */
   xbee.conlist = NULL;
   if (pthread_mutex_init(&xbee.conmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(conmutex)");
     return -1;
   }
 
+  /* setup the packet mutex */
   xbee.pktlist = NULL;
   if (pthread_mutex_init(&xbee.pktmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(pktmutex)");
     return -1;
   }
 
+  /* setup the send mutex */
+  if (pthread_mutex_init(&xbee.sendmutex,NULL)) {
+    perror("xbee_setup():pthread_mutex_init(sendmutex)");
+    return -1;
+  }
+
+  /* take a copy of the XBee device path */
   if ((xbee.path = malloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
     perror("xbee_setup():malloc(path)");
     return -1;
   }
   strcpy(xbee.path,path);
 
-  /* open the serial port */
+  /* open the serial port as a file descriptor */
   if ((xbee.ttyfd = open(path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
     perror("xbee_setup():open()");
     Xfree(xbee.path);
@@ -107,38 +122,38 @@ int xbee_setup(char *path, int baudrate) {
     xbee.tty = NULL;
     return -1;
   }
-  /* setup the baud rate - 57600 8N1*/
+  /* setup the baud rate and other io attributes */
   tcgetattr(xbee.ttyfd, &tc);
   cfsetispeed(&tc, chosenbaud);       /* set input baud rate to 57600 */
   cfsetospeed(&tc, chosenbaud);       /* set output baud rate to 57600 */
   /* input flags */
-  tc.c_iflag |= IGNBRK;           /* enable ignoring break */
+  tc.c_iflag |= IGNBRK;            /* enable ignoring break */
   tc.c_iflag &= ~(IGNPAR | PARMRK);/* disable parity checks */
-  tc.c_iflag &= ~INPCK;           /* disable parity checking */
-  tc.c_iflag &= ~ISTRIP;          /* disable stripping 8th bit */
-  tc.c_iflag &= ~(INLCR | ICRNL); /* disable translating NL <-> CR */
-  tc.c_iflag &= ~IGNCR;           /* disable ignoring CR */
-  tc.c_iflag &= ~(IXON | IXOFF);  /* disable XON/XOFF flow control */
+  tc.c_iflag &= ~INPCK;            /* disable parity checking */
+  tc.c_iflag &= ~ISTRIP;           /* disable stripping 8th bit */
+  tc.c_iflag &= ~(INLCR | ICRNL);  /* disable translating NL <-> CR */
+  tc.c_iflag &= ~IGNCR;            /* disable ignoring CR */
+  tc.c_iflag &= ~(IXON | IXOFF);   /* disable XON/XOFF flow control */
   /* output flags */
-  tc.c_oflag &= ~OPOST;           /* disable output processing */
-  tc.c_oflag &= ~(ONLCR | OCRNL); /* disable translating NL <-> CR */
-  tc.c_oflag &= ~OFILL;           /* disable fill characters */
+  tc.c_oflag &= ~OPOST;            /* disable output processing */
+  tc.c_oflag &= ~(ONLCR | OCRNL);  /* disable translating NL <-> CR */
+  tc.c_oflag &= ~OFILL;            /* disable fill characters */
   /* control flags */
-  tc.c_cflag |= CREAD;            /* enable reciever */
-  tc.c_cflag &= ~PARENB;          /* disable parity */
-  tc.c_cflag &= ~CSTOPB;          /* disable 2 stop bits */
-  tc.c_cflag &= ~CSIZE;           /* remove size flag... */
-  tc.c_cflag |= CS8;              /* ...enable 8 bit characters */
-  tc.c_cflag |= HUPCL;            /* enable lower control lines on close - hang up */
+  tc.c_cflag |= CREAD;             /* enable reciever */
+  tc.c_cflag &= ~PARENB;           /* disable parity */
+  tc.c_cflag &= ~CSTOPB;           /* disable 2 stop bits */
+  tc.c_cflag &= ~CSIZE;            /* remove size flag... */
+  tc.c_cflag |= CS8;               /* ...enable 8 bit characters */
+  tc.c_cflag |= HUPCL;             /* enable lower control lines on close - hang up */
   /* local flags */
-  tc.c_lflag &= ~ISIG;            /* disable generating signals */
-  tc.c_lflag &= ~ICANON;          /* disable canonical mode - line by line */
-  tc.c_lflag &= ~ECHO;            /* disable echoing characters */
-  tc.c_lflag &= ~NOFLSH;          /* disable flushing on SIGINT */
-  tc.c_lflag &= ~IEXTEN;          /* disable input processing */
+  tc.c_lflag &= ~ISIG;             /* disable generating signals */
+  tc.c_lflag &= ~ICANON;           /* disable canonical mode - line by line */
+  tc.c_lflag &= ~ECHO;             /* disable echoing characters */
+  tc.c_lflag &= ~NOFLSH;           /* disable flushing on SIGINT */
+  tc.c_lflag &= ~IEXTEN;           /* disable input processing */
   tcsetattr(xbee.ttyfd, TCSANOW, &tc);
 
-
+  /* open the serial port as a FILE* */
   if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
     perror("xbee_setup():fdopen()");
     Xfree(xbee.path);
@@ -148,6 +163,7 @@ int xbee_setup(char *path, int baudrate) {
     return -1;
   }
 
+  /* flush the serial port */
   fflush(xbee.tty);
 
   /* allow the listen thread to start */
@@ -184,11 +200,14 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 
   ISREADY;
 
+  if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
+  else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
+
   va_start(ap,type);
+  /* if: 64 bit address expected (2 ints) */
   if ((type == xbee_64bitRemoteAT) ||
       (type == xbee_64bitData) ||
       (type == xbee_64bitIO)) {
-    /* 64 bit address expected (2 ints) */
     t = va_arg(ap, int);
     tAddr[0] = (t >> 24) & 0xFF;
     tAddr[1] = (t >> 16) & 0xFF;
@@ -199,10 +218,11 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
     tAddr[5] = (t >> 16) & 0xFF;
     tAddr[6] = (t >>  8) & 0xFF;
     tAddr[7] = (t      ) & 0xFF;
+
+  /* if: 16 bit address expected (1 int) */
   } else if ((type == xbee_16bitRemoteAT) ||
 	     (type == xbee_16bitData) ||
 	     (type == xbee_16bitIO)) {
-    /* 16 bit address expected (1 int) */
     t = va_arg(ap, int);
     tAddr[0] = (t >>  8) & 0xFF;
     tAddr[1] = (t      ) & 0xFF;
@@ -212,64 +232,71 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
     tAddr[5] = 0;
     tAddr[6] = 0;
     tAddr[7] = 0;
+
+  /* otherwise clear the address */
+  } else {
+    memset(tAddr,0,8);
   }
   va_end(ap);
 
-  if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
-  else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
-
+  /* lock the connection mutex */
   pthread_mutex_lock(&xbee.conmutex);
 
+  /* are there any connections? */
   if (xbee.conlist) {
     con = xbee.conlist;
     while (con) {
-      if ((type == con->type) &&
-	  (frameID == con->frameID)) {
+      /* if: after a modemStatus, and the types match! */
+      if ((type == xbee_modemStatus) &&
+	  (con->type == type)) {
+	pthread_mutex_unlock(&xbee.conmutex);
+	return con;
 
-	if (type == xbee_localAT) {
-	  /* already has connection to local modem with that frameID */
-	  pthread_mutex_unlock(&xbee.conmutex);
-	  return con;
-	} else if ((type == con->type) &&
+      /* if: after a txStatus and frameIDs match! */
+      } else if ((type == xbee_txStatus) &&
+		 (con->type == type) &&
+		 (frameID == con->frameID)) {
+	pthread_mutex_unlock(&xbee.conmutex);
+	return con;
 
-		   ((((type == xbee_16bitRemoteAT) ||
-		      (type == xbee_16bitData) ||
-		      (type == xbee_16bitIO)) &&
-		     (!memcmp(tAddr,con->tAddr,2))) ||
+      /* if: after a localAT, and the frameIDs match! */
+      } else if ((type == xbee_localAT) &&
+		 (con->type == type) &&
+		 (frameID == con->frameID)) {
+	pthread_mutex_unlock(&xbee.conmutex);
+	return con;
 
-		    (((type == xbee_64bitRemoteAT) ||
-		      (type == xbee_64bitData) ||
-		      (type == xbee_64bitIO)) &&
-		     (!memcmp(tAddr,con->tAddr,8))))) {
-	  /* addressing modes & addresses match */
-	  pthread_mutex_unlock(&xbee.conmutex);
-	  return con;
-	}
+      /* if: connection types match, the frameIDs match, and the addresses match! */
+      } else if ((type == con->type) &&
+		 (frameID == con->frameID) &&
+		 (!memcmp(tAddr,con->tAddr,8))) {
+	pthread_mutex_unlock(&xbee.conmutex);
+	return con;
       }
+
+      /* if there are more, move along, dont want to loose that last item! */
       if (con->next == NULL) break;
       con = con->next;
     }
+
+    /* keep hold of the last connection... we will need to link it up later */
     ocon = con;
   }
+
+  /* create a new connection and set its attributes */
   con = Xcalloc(sizeof(xbee_con));
   con->type = type;
+  /* is it a 64bit connection? */
   if ((type == xbee_64bitRemoteAT) ||
       (type == xbee_64bitData) ||
       (type == xbee_64bitIO)) {
     con->tAddr64 = TRUE;
   }
-  con->atQueue = 0;
-  con->txDisableACK = 0;
-  con->txBroadcast = 0;
+  con->atQueue = 0; /* queue AT commands? */
+  con->txDisableACK = 0; /* disable ACKs? */
+  con->txBroadcast = 0; /* broadcast? */
   con->frameID = frameID;
-  if (type != xbee_localAT) {
-    if (con->tAddr64) {
-      memcpy(con->tAddr,tAddr,8);
-    } else {
-      memcpy(con->tAddr,tAddr,2);
-      memset(&con->tAddr[2],0,6);
-    }
-  }
+  memcpy(con->tAddr,tAddr,8); /* copy in the remote address */
 
 #ifdef DEBUG
   switch(type) {
@@ -301,9 +328,10 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
       printf(")\n");
       break;
     case xbee_txStatus:
-      printf("XBee: New status connection!\n");
+      printf("XBee: New Tx status connection!\n");
       break;
     case xbee_modemStatus:
+      printf("XBee: New modem status connection!\n");
       break;
     case xbee_unknown:
     default:
@@ -311,12 +339,16 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   }
 #endif
 
+  /* make it the last in the list */
   con->next = NULL;
+  /* add it to the list */
   if (xbee.conlist) {
     ocon->next = con;
   } else {
     xbee.conlist = con;
   }
+
+  /* unlock the mutex */
   pthread_mutex_unlock(&xbee.conmutex);
   return con;
 }
@@ -330,7 +362,9 @@ int xbee_senddata(xbee_con *con, char *format, ...) {
 
   ISREADY;
 
+  /* xbee_vsenddata() wants a va_list... */
   va_start(ap, format);
+  /* hand it over :) */
   retval = xbee_vsenddata(con,format,ap);
   va_end(ap);
   return retval;
@@ -344,6 +378,13 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
   ISREADY;
 
+  if (!con) return -1;
+  if (con->type == xbee_unknown) return -1;
+
+  /* lock the send mutex */
+  pthread_mutex_lock(&xbee.sendmutex);
+
+  /* make up the data and keep the length, its possible there are nulls in there */
   length = vsnprintf((char *)data,128,format,ap);
 
 #ifdef DEBUG
@@ -355,32 +396,38 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   }
 #endif
 
-  if (!con) return -1;
-  if (con->type == xbee_unknown) return -1;
-
   /* ########################################## */
-  /* local AT mode */
+  /* if: local AT mode */
   if (con->type == xbee_localAT) {
-    if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
-    if (!con->atQueue) {
-      buf[0] = 0x08;
-    } else {
-      buf[1] = 0x09;
-    }
+    /* AT commands are 2 chars long (plus optional parameter) */
+    if (length < 2) return -1;
+
+    /* use the command? */
+    buf[0] = ((!con->atQueue)?0x08:0x09);
     buf[1] = con->frameID;
+
+    /* copy in the data */
     for (i=0;i<length;i++) {
       buf[i+2] = data[i];
     }
+
+    /* setup the packet */
     pkt = xbee_make_pkt(buf,i+2);
+    /* send it on */
     xbee_send_pkt(pkt);
+
+    /* unlock the mutex */
+    pthread_mutex_unlock(&xbee.sendmutex);
     return 1;
-    /* ########################################## */
-    /* remote AT mode */
+  /* ########################################## */
+  /* if: remote AT mode */
   } else if ((con->type == xbee_16bitRemoteAT) ||
 	     (con->type == xbee_64bitRemoteAT)) {
     if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
     buf[0] = 0x17;
     buf[1] = con->frameID;
+
+    /* copy in the relevant address */
     if (con->tAddr64) {
       memcpy(&buf[2],con->tAddr,8);
       buf[10] = 0xFF;
@@ -389,45 +436,82 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
       memset(&buf[2],0,8);
       memcpy(&buf[10],con->tAddr,2);
     }
+    /* queue the command? */
     buf[12] = ((!con->atQueue)?0x02:0x00);
+
+    /* copy in the data */
     for (i=0;i<length;i++) {
       buf[i+13] = data[i];
     }
+
+    /* setup the packet */
     pkt = xbee_make_pkt(buf,i+13);
+    /* send it on */
     xbee_send_pkt(pkt);
+
+    /* unlock the mutex */
+    pthread_mutex_unlock(&xbee.sendmutex);
     return 1;
-    /* ########################################## */
-    /* 64bit Data */
+  /* ########################################## */
+  /* if: 64bit Data */
   } else if (con->type == xbee_64bitData) {
     buf[0] = 0x00;
     buf[1] = con->frameID;
+
+    /* copy in the address */
     memcpy(&buf[2],con->tAddr,8);
+
+    /* broadcast? */
     buf[10] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
+
+    /* copy in the data */
     for (i=0;i<length;i++) {
       buf[i+11] = data[i];
     }
+
+    /* setup the packet */
     pkt = xbee_make_pkt(buf,i+11);
+    /* send it on */
     xbee_send_pkt(pkt);
+
+    /* unlock the mutex */
+    pthread_mutex_unlock(&xbee.sendmutex);
     return 1;
-    /* ########################################## */
-    /* 16bit Data */
+  /* ########################################## */
+  /* if: 16bit Data */
   } else if (con->type == xbee_16bitData) {
     buf[0] = 0x01;
     buf[1] = con->frameID;
+
+    /* copy in the address */
     memcpy(&buf[2],con->tAddr,2);
+
+    /* broadcast? */
     buf[4] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
+
+    /* copy in the data */
     for (i=0;i<length;i++) {
       buf[i+5] = data[i];
     }
+
+    /* setup the packet */
     pkt = xbee_make_pkt(buf,i+5);
+    /* send it on */
     xbee_send_pkt(pkt);
+
+    /* unlock the mutex */
+    pthread_mutex_unlock(&xbee.sendmutex);
     return 1;
-    /* ########################################## */
-    /* I/O */
+  /* ########################################## */
+  /* if: I/O */
   } else if ((con->type == xbee_64bitIO) ||
 	     (con->type == xbee_16bitIO)) {
+    /* not currently implemented... */
     printf("******* TODO ********\n");
   }
+
+  /* unlock the mutex */
+  pthread_mutex_unlock(&xbee.sendmutex);
   return 0;
 }
 
@@ -442,8 +526,10 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   printf("XBee: --== Get Packet ==========--\n");
 #endif
 
+  /* lock the packet mutex */
   pthread_mutex_lock(&xbee.pktmutex);
 
+  /* if: there are no packets */
   if ((p = xbee.pktlist) == NULL) {
     pthread_mutex_unlock(&xbee.pktmutex);
 #ifdef DEBUG
@@ -454,30 +540,35 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 
   l = NULL;
   q = NULL;
+  /* get the first avaliable packet for this socket */
   do {
+    /* if: the connection type matches the packet type OR
+       the connection is 16/64bit remote AT, and the packet is a remote AT response */
     if ((p->type == con->type) || /* -- */
-	((p->type == xbee_remoteAT) &&
-	 (con->type == xbee_16bitRemoteAT)) || /* -- */
-	((p->type == xbee_remoteAT) &&
-	 (con->type == xbee_64bitRemoteAT))) { /* -- */
-      /* if: the connection type matches the packet type OR
-	     the connection is 16bit remote AT, and the packet is a remote AT response OR
-	     the connection is 64bit remote AT, and the packet is a remote AT response */
-      if ((((p->type == xbee_localAT) ||
+	((p->type == xbee_remoteAT) && /* -- */
+	 ((con->type == xbee_16bitRemoteAT) ||
+	  (con->type == xbee_64bitRemoteAT)))) {
+
+      /* if: the packet is modem status OR
+	 the packet is tx status or AT data and the frame IDs match OR
+	 the addresses match */
+      if ((p->type == xbee_modemStatus) ||
+	  (((p->type == xbee_txStatus) ||
+	    (p->type == xbee_localAT) ||
 	    (p->type == xbee_remoteAT)) &&
 	   (con->frameID == p->frameID)) ||
-	  ((con->tAddr64 && !memcmp(con->tAddr,p->Addr64,8)) ||
-	   (!con->tAddr64 && !memcmp(con->tAddr,p->Addr16,2)))) {
-	/* if: the packet is AT data, and the frame IDs match OR
-	       the corresponding addresses match */
+	  (!memcmp(con->tAddr,p->Addr64,8))) {
 	q = p;
 	break;
       }
     }
+
+    /* move on */
     l = p;
     p = p->next;
   } while (p);
 
+  /* if: no packet was found */
   if (!q) {
     pthread_mutex_unlock(&xbee.pktmutex);
 #ifdef DEBUG
@@ -486,9 +577,12 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
     return NULL;
   }
 
+  /* if it was the first packet */
   if (!l) {
+    /* move the chain along */
     xbee.pktlist = p->next;
   } else {
+    /* otherwise relink the list */
     l->next = p->next;
   }
 
@@ -498,8 +592,10 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   printf("XBee: Packets left: %d\n",c);
 #endif
 
+  /* unlock the packet mutex */
   pthread_mutex_unlock(&xbee.pktmutex);
 
+  /* and return the packet (must be freed by caller!) */
   return q;
 }
 
@@ -518,6 +614,7 @@ void xbee_listen(t_info *info) {
   /* just falls out if the proper 'go-ahead' isn't given */
   if (xbee_ready != -1) return;
 
+  /* do this forever :) */
   while(1) {
     /* wait for a valid start byte */
     if (xbee_getRawByte() != 0x7E) continue;
@@ -530,7 +627,13 @@ void xbee_listen(t_info *info) {
     l = xbee_getByte() << 8;
     l += xbee_getByte();
 
-    if (!l) continue;
+    /* check it is a valid length... */
+    if (!l) {
+#ifdef DEBUG
+      printf("XBee: Recived zero length packet!\n");
+#endif
+      continue;
+    }
     if (l > 100) {
 #ifdef DEBUG
       printf("XBee: Recived oversized packet! Length: %d\n",l - 1);
@@ -542,11 +645,15 @@ void xbee_listen(t_info *info) {
     printf("XBee: Length: %d\n",l - 1);
 #endif
 
-    /* get the API ID / packet type */
+    /* get the packet type */
     t = xbee_getByte();
+
+    /* start the checksum */
     chksum = t;
 
+    /* suck in all the data */
     for (i = 0; l > 1 && i < 128; l--, i++) {
+      /* get an unescaped byte */
       c = xbee_getByte();
       d[i] = c;
       chksum += c;
@@ -555,17 +662,20 @@ void xbee_listen(t_info *info) {
       if ((c > 32) && (c < 127)) printf("'%c'\n",c); else printf(" _\n");
 #endif
     }
-    i--; /* it went up too many times! */
+    i--; /* it went up too many times!... */
 
     /* add the checksum */
     chksum += xbee_getByte();
 
+    /* check if the whole packet was recieved, or something else occured... unlikely... */
     if (l>1) {
 #ifdef DEBUG
       printf("XBee: Didn't get whole packet... :(\n");
 #endif
       continue;
     }
+
+    /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
 #ifdef DEBUG
       printf("XBee: Invalid Checksum: 0x%02X\n",c,chksum);
@@ -573,12 +683,13 @@ void xbee_listen(t_info *info) {
       continue;
     }
 
+    /* make a new packet */
     po = p = Xcalloc(sizeof(xbee_pkt));
     q = NULL;
-    p->datalen = l;
+    p->datalen = 0;
 
     /* ########################################## */
-    /* modem status */
+    /* if: modem status */
     if (t == 0x8A) {
 #ifdef DEBUG
       printf("XBee: Packet type: Modem Status (0x8A)\n");
@@ -603,10 +714,12 @@ void xbee_listen(t_info *info) {
       p->remoteATPkt = FALSE;
       p->IOPkt = FALSE;
 
+      /* modem status can only ever give 1 'data' byte */
       p->datalen = 1;
       p->data[0] = d[0];
+
     /* ########################################## */
-    /* local AT response */
+    /* if: local AT response */
     } else if (t == 0x88) {
 #ifdef DEBUG
       printf("XBee: Packet type: Local AT Response (0x88)\n");
@@ -632,10 +745,12 @@ void xbee_listen(t_info *info) {
 
       p->status = d[3];
 
+      /* copy in the data */
       p->datalen = i-3;
       for (;i>3;i--) p->data[i-4] = d[i];
+
     /* ########################################## */
-    /* remote AT response */
+    /* if: remote AT response */
     } else if (t == 0x97) {
 #ifdef DEBUG
       printf("XBee: Packet type: Remote AT Response (0x97)\n");
@@ -685,10 +800,12 @@ void xbee_listen(t_info *info) {
 
       p->status = d[13];
 
+      /* copy in the data */
       p->datalen = i-13;
       for (;i>13;i--) p->data[i-14] = d[i];
+
     /* ########################################## */
-    /* TX status */
+    /* if: TX status */
     } else if (t == 0x89) {
 #ifdef DEBUG
       printf("XBee: Packet type: TX Status Report (0x89)\n");
@@ -710,8 +827,12 @@ void xbee_listen(t_info *info) {
       p->frameID = d[0];
 
       p->status = d[1];
+
+      /* never returns data */
+	p->datalen = 0;
+
     /* ########################################## */
-    /* 64bit address recieve */
+    /* if: 64bit address recieve */
     } else if (t == 0x80) {
 #ifdef DEBUG
       printf("XBee: Packet type: 64-bit RX Data (0x80)\n");
@@ -742,14 +863,19 @@ void xbee_listen(t_info *info) {
       p->Addr64[6] = d[6];
       p->Addr64[7] = d[7];
 
+      /* save the RSSI / signal strength
+	 this can be used with printf as:
+	 printf("-%ddB\n",p->RSSI); */
       p->RSSI = d[8];
 
       p->status = d[9];
 
+      /* copy in the data */
       p->datalen = i-9;
       for (;i>9;i--) p->data[i-10] = d[i];
+
     /* ########################################## */
-    /* 16bit address recieve */
+    /* if: 16bit address recieve */
     } else if (t == 0x81) {
 #ifdef DEBUG
       printf("XBee: Packet type: 16-bit RX Data (0x81)\n");
@@ -774,14 +900,19 @@ void xbee_listen(t_info *info) {
       p->Addr16[0] = d[0];
       p->Addr16[1] = d[1];
 
+      /* save the RSSI / signal strength
+	 this can be used with printf as:
+	 printf("-%ddB\n",p->RSSI); */
       p->RSSI = d[2];
 
       p->status = d[3];
 
+      /* copy in the data */
       p->datalen = i-3;
       for (;i>3;i--) p->data[i-4] = d[i];
+
     /* ########################################## */
-    /* 64bit I/O recieve */
+    /* if: 64bit I/O recieve */
     } else if (t == 0x82) {
 #ifdef DEBUG
       printf("XBee: Packet type: 64-bit RX I/O Data (0x82)\n");
@@ -797,16 +928,21 @@ void xbee_listen(t_info *info) {
 #endif
       i = 13;
 
+      /* each sample is split into its own packet here, for simplicity */
       for (o=d[10];o>0;o--) {
 #ifdef DEBUG
 	printf("XBee: --- Sample %3d -------------\n",o-d[10]+1);
 #endif
+	/* if we arent still using the origional packet */
 	if (o<d[10]) {
+	  /* make a new one and link it up! */
 	  q = Xcalloc(sizeof(xbee_pkt));
 	  p->next = q;
 	  p = q;
-	  p->datalen = l;
 	}
+
+	/* never returns data */
+	p->datalen = 0;
 
 	p->type = xbee_64bitIO;
 
@@ -826,15 +962,23 @@ void xbee_listen(t_info *info) {
 	p->Addr64[6] = d[6];
 	p->Addr64[7] = d[7];
 
+	/* save the RSSI / signal strength
+	   this can be used with printf as:
+	   printf("-%ddB\n",p->RSSI); */
 	p->RSSI = d[8];
 
 	p->status = d[9];
 
+	/* copy in the I/O data mask */
 	p->IOmask = (((d[11]<<8) | d[12]) & 0x7FFF);
+
+	/* copy in the digital I/O data */
 	p->IOdata = (((d[i]<<8) | d[i+1]) & 0x01FF);
 
+	/* advance over the digital data, if its there */
 	i += (((d[11]&0x01)||(d[12]))?2:0);
 
+	/* copy in the analog I/O data */
 	if (d[11]&0x02) {p->IOanalog[0] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[11]&0x04) {p->IOanalog[1] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[11]&0x08) {p->IOanalog[2] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
@@ -862,9 +1006,10 @@ void xbee_listen(t_info *info) {
 #ifdef DEBUG
       printf("XBee: ----------------------------\n");
 #endif
-    } else if (t == 0x83) {
+
     /* ########################################## */
-    /* 16bit I/O recieve */
+    /* if: 16bit I/O recieve */
+    } else if (t == 0x83) {
 #ifdef DEBUG
       printf("XBee: Packet type: 16-bit RX I/O Data (0x83)\n");
       printf("XBee: 16-bit Address: ");
@@ -880,6 +1025,7 @@ void xbee_listen(t_info *info) {
 
       i = 7;
 
+      /* each sample is split into its own packet here, for simplicity */
       for (o=d[4];o>0;o--) {
 #ifdef DEBUG
 	printf("XBee: --- Sample %3d -------------\n",o-d[4]+1);
@@ -888,8 +1034,10 @@ void xbee_listen(t_info *info) {
 	  q = Xcalloc(sizeof(xbee_pkt));
 	  p->next = q;
 	  p = q;
-	  p->datalen = l;
 	}
+
+	/* never returns data */
+	p->datalen = 0;
 
 	p->type = xbee_16bitIO;
 
@@ -903,15 +1051,23 @@ void xbee_listen(t_info *info) {
 	p->Addr16[0] = d[0];
 	p->Addr16[1] = d[1];
 
+	/* save the RSSI / signal strength
+	   this can be used with printf as:
+	   printf("-%ddB\n",p->RSSI); */
 	p->RSSI = d[2];
 
 	p->status = d[3];
 
+	/* copy in the I/O data mask */
 	p->IOmask = (((d[5]<<8) | d[6]) & 0x7FFF);
+
+	/* copy in the digital I/O data */
 	p->IOdata = (((d[i]<<8) | d[i+1]) & 0x01FF);
 
+	/* advance over the digital data, if its there */
 	i += (((d[5]&0x01)||(d[6]))?2:0);
 
+	/* copy in the analog I/O data */
 	if (d[5]&0x02) {p->IOanalog[0] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[5]&0x04) {p->IOanalog[1] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[5]&0x08) {p->IOanalog[2] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
@@ -939,8 +1095,9 @@ void xbee_listen(t_info *info) {
 #ifdef DEBUG
       printf("XBee: ----------------------------\n");
 #endif
+
     /* ########################################## */
-    /* Unknown */
+    /* if: Unknown */
     } else {
 #ifdef DEBUG
       printf("XBee: Packet type: Unknown (0x%02X)\n",t);
@@ -949,11 +1106,15 @@ void xbee_listen(t_info *info) {
     }
     p->next = NULL;
 
+    /* lock the packet mutex, so we can savely add the packet to the list */
     pthread_mutex_lock(&xbee.pktmutex);
     i = 1;
+    /* if: the list is empty */
     if (!xbee.pktlist) {
+      /* start the list! */
       xbee.pktlist = po;
     } else {
+      /* add the packet to the end */
       q = xbee.pktlist;
       while (q->next) {
 	q = q->next;
@@ -972,6 +1133,8 @@ void xbee_listen(t_info *info) {
 #endif
 
     po = p = q = NULL;
+
+    /* unlock the packet mutex */
     pthread_mutex_unlock(&xbee.pktmutex);
   }
 }
@@ -984,7 +1147,9 @@ unsigned char xbee_getByte(void) {
 
   ISREADY;
 
+  /* take a byte */
   c = xbee_getRawByte();
+  /* if its escaped, take another and un-escape */
   if (c == 0x7D) c = xbee_getRawByte() ^ 0x20;
 
   return (c & 0xFF);
@@ -999,14 +1164,16 @@ unsigned char xbee_getRawByte(void) {
 
   ISREADY;
 
+  /* wait for a read to be possible */
   FD_ZERO(&fds);
   FD_SET(xbee.ttyfd,&fds);
-
   if (select(xbee.ttyfd+1,&fds,NULL,NULL,NULL) == -1) {
     perror("xbee:xbee_listen():xbee_getByte()");
     exit(1);
   }
 
+  /* read 1 character
+     the loop is just incase there actually isnt a byte there to be read... */
   do {
     if (read(xbee.ttyfd,&c,1) == 0) {
       usleep(10);
@@ -1039,6 +1206,7 @@ void xbee_send_pkt(t_data *pkt) {
   }
 #endif
 
+  /* free the packet */
   Xfree(pkt);
 }
 
@@ -1049,15 +1217,17 @@ void xbee_send_pkt(t_data *pkt) {
    escapes bytes */
 t_data *xbee_make_pkt(unsigned char *data, int length) {
   t_data *pkt;
-  unsigned int l, i, o, t, x, m;
+  unsigned int l, i, o, t, m;
   char d = 0;
 
   ISREADY;
 
-  /* check the data given isnt too long */
-  if (length > 0xFFFF) return NULL;
+  /* check the data given isnt too long
+     100 bytes maximum payload + 12 bytes header information */
+  if (length > 100 + 12) return NULL;
 
-  /* calculate the length of the whole packet */
+  /* calculate the length of the whole packet
+     start, length (MSB), length (LSB), DATA, checksum */
   l = 3 + length + 1;
 
   /* prepare memory */
@@ -1067,14 +1237,16 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
   pkt->data[0] = 0x7E;
 
   /* copy data into packet */
-  for (t=0,i=0,o=1,m=1;i<=length;o++,m++) {
-    if (i == length) {
-      d = M8((0xFF - M8(t)));
-    }
+  for (t = 0, i = 0, o = 1, m = 1; i <= length; o++, m++) {
+    /* if: its time for the checksum */
+    if (i == length) d = M8((0xFF - M8(t)));
+    /* if: its time for the high length byte */
     else if (m == 1) d = M8(length >> 8);
+    /* if: its time for the low length byte */
     else if (m == 2) d = M8(length);
+    /* if: its time for the normal data */
     else if (m > 2) d = data[i];
-    x = 0;
+
     /* check for any escapes needed */
     if ((d == 0x11) || /* XON */
     	(d == 0x13) || /* XOFF */
@@ -1082,11 +1254,11 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
     	(d == 0x7E)) { /* Frame Delimiter */
       l++;
       pkt->data[o++] = 0x7D;
-      x = 1;
+      d ^= 0x20;
     }
 
     /* move data in */
-    pkt->data[o] = (!x)?(d):(d^0x20);
+    pkt->data[o] = d;
     if (m > 2) {
       i++;
       t += d;

@@ -16,6 +16,8 @@ struct {
   xbee_pkt *pktlist;
   pthread_mutex_t pktmutex;
 
+  pthread_mutex_t sendmutex;
+
   pthread_t listent;
 
   int shmid;
