@@ -1273,7 +1273,7 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
   l = 3 + length + 1;
 
   /* prepare memory */
-  pkt = Xmalloc(sizeof(t_data));
+  pkt = Xcalloc(sizeof(t_data));
 
   /* put start byte on */
   pkt->data[0] = 0x7E;
