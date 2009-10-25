@@ -3,14 +3,6 @@
 
 #include <stdarg.h>
 
-#define XBEE_CON_ADDR16      (0x0001) /* **** **** **** ***1 */
-#define XBEE_CON_ADDR64      (0x0002) /* **** **** **** **1* */
-#define XBEE_CON_MODEAT      (0x0004) /* **** **** **** *1** */
-#define XBEE_CON_MODEDATA    (0x0008) /* **** **** **** 1*** */
-#define XBEE_CON_ATMLOCAL    (0x0010) /* **** **** ***1 **** */
-#define XBEE_CON_ATMREMOTE   (0x0020) /* **** **** **1* **** */
-#define XBEE_CON_MODEIO      (0x0040) /* **** **** *1** **** */
-
 enum xbee_types {
   xbee_unknown,
 

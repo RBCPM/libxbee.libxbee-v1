@@ -10,11 +10,6 @@
 
 #include <pthread.h>
 
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-
 #include "xbee.h"
 
 #define TRUE 1

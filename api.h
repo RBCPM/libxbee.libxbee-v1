@@ -20,10 +20,6 @@ struct {
 
   pthread_t listent;
 
-  int shmid;
-  key_t shmkey;
-  char *shm;
-
   int ttyfd;
   FILE *tty;
 
