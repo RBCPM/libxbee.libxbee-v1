@@ -163,12 +163,12 @@ int main(int argc, char *argv[]) {
       if (pkt->IOmask & 0x1000) printf("Analog  3: %.2fv\n",(3.3/1023)*pkt->IOanalog[3]);
       if (pkt->IOmask & 0x2000) printf("Analog  4: %.2fv\n",(3.3/1023)*pkt->IOanalog[4]);
       if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
-      xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));
+      xbee_senddata(con2, "the time is %d\r", time(NULL));
       free(pkt);
     }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
       printf("--------- got one!... CON2 ------------\n");
-      xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));
+      xbee_senddata(con2, "you said '%s'\r", pkt->data);
       free(pkt);
     }
     usleep(100000);
