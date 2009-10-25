@@ -182,6 +182,10 @@ int xbee_setup(char *path, int baudrate) {
 
   /* allow other functions to be used! */
   xbee_ready = 1;
+
+  /* make a txStatus connection */
+  xbee.con_txStatus = xbee_newcon('*',xbee_txStatus);
+
   return 0;
 }
 
@@ -378,8 +382,8 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
   ISREADY;
 
-  if (!con) return -1;
-  if (con->type == xbee_unknown) return -1;
+  if (!con) return -2;
+  if (con->type == xbee_unknown) return -2;
 
   /* make up the data and keep the length, its possible there are nulls in there */
   length = vsnprintf((char *)data,128,format,ap);
@@ -394,7 +398,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 #endif
 
   /* ########################################## */
-  /* if: local AT mode */
+  /* if: local AT */
   if (con->type == xbee_localAT) {
     /* AT commands are 2 chars long (plus optional parameter) */
     if (length < 2) return -1;
@@ -415,9 +419,9 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
     /* unlock the mutex */
     pthread_mutex_unlock(&xbee.sendmutex);
-    return 1;
+    return 0;
   /* ########################################## */
-  /* if: remote AT mode */
+  /* if: remote AT */
   } else if ((con->type == xbee_16bitRemoteAT) ||
 	     (con->type == xbee_64bitRemoteAT)) {
     if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
@@ -448,7 +452,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
     /* unlock the mutex */
     pthread_mutex_unlock(&xbee.sendmutex);
-    return 1;
+    return 0;
   /* ########################################## */
   /* if: 64bit Data */
   } else if (con->type == xbee_64bitData) {
@@ -473,7 +477,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
     /* unlock the mutex */
     pthread_mutex_unlock(&xbee.sendmutex);
-    return 1;
+    return xbee_gettxStatus();
   /* ########################################## */
   /* if: 16bit Data */
   } else if (con->type == xbee_16bitData) {
@@ -498,7 +502,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
     /* unlock the mutex */
     pthread_mutex_unlock(&xbee.sendmutex);
-    return 1;
+    return xbee_gettxStatus();
   /* ########################################## */
   /* if: I/O */
   } else if ((con->type == xbee_64bitIO) ||
@@ -507,8 +511,41 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     printf("******* TODO ********\n");
   }
 
-  return 0;
+  return -2;
 }
+
+/* #################################################################
+   xbee_gettxStatus - INTERNAL
+   waits for the txStatus packet after a data transmit */
+int xbee_gettxStatus(void) {
+  xbee_pkt *p = NULL;
+  int to = 10;
+  for (; p == NULL && to > 0; to--) {
+    usleep(25400); /* tuned so that hopefully the first time round will catch the response */
+    p = xbee_getpacket(xbee.con_txStatus);
+  }
+  if (to == 0) {
+    /* if no txStatus packet was recieved */
+#ifdef DEBUG
+    printf("XBee: No txStatus recieved before timeout\n");
+#endif
+    return -1;
+  }
+#ifdef DEBUG
+  switch (p->status) {
+    case 0x00:
+      printf("XBee: txStatus: Success!\n");     break;
+    case 0x01:
+      printf("XBee: txStatus: No ACK\n");       break;
+    case 0x02:
+      printf("XBee: txStatus: CCA Failure\n");  break;
+    case 0x03:
+      printf("XBee: txStatus: Purged\n");       break;
+  }
+#endif
+  return p->status;
+}
+
 
 /* #################################################################
    xbee_getpacket

@@ -20,6 +20,8 @@ struct {
 
   pthread_t listent;
 
+  xbee_con *con_txStatus;
+
   int ttyfd;
   FILE *tty;
 
@@ -39,3 +41,4 @@ unsigned char xbee_getRawByte(void);
 
 t_data *xbee_make_pkt(unsigned char *data, int len);
 void xbee_send_pkt(t_data *pkt);
+int xbee_gettxStatus(void);
