@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
   con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
 
   while (1) {
-    /*while ((pkt = xbee_getpacket(con)) != NULL) {
+    while ((pkt = xbee_getpacket(con)) != NULL) {
       printf("--------- got one!... CON ------------\n");
       if (pkt->IOmask & 0x0001) printf("Digital 0: %c\n",((pkt->IOdata & 0x0001)?'1':'0'));
       if (pkt->IOmask & 0x0002) printf("Digital 1: %c\n",((pkt->IOdata & 0x0002)?'1':'0'));
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
       if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
       xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));
       free(pkt);
-      }*/
+    }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
       printf("--------- got one!... CON2 ------------\n");
       xbee_senddata(con2, "thank you %s %d\r", "so much", time(NULL));

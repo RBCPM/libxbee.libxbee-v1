@@ -93,7 +93,7 @@ uninstall_su:
 # main - compile & link objects #
 main: ./bin/main
 
-./bin/main: ./lib/libxbee.so.1.0.1 ./bin/
+./bin/main: ./lib/libxbee.so.1.0.1 ./bin/ ./main.c
 	${CC} ${CLINKS} ./main.c -o ./bin/main ${DEBUG}
 
 ./bin/:
