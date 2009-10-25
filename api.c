@@ -1219,7 +1219,7 @@ void xbee_send_pkt(t_data *pkt) {
    escapes bytes */
 t_data *xbee_make_pkt(unsigned char *data, int length) {
   t_data *pkt;
-  unsigned int l, i, o, t, m;
+  unsigned int l, i, o, t, x, m;
   char d = 0;
 
   ISREADY;
@@ -1249,6 +1249,7 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
     /* if: its time for the normal data */
     else if (m > 2) d = data[i];
 
+    x = 0;
     /* check for any escapes needed */
     if ((d == 0x11) || /* XON */
     	(d == 0x13) || /* XOFF */
@@ -1256,11 +1257,11 @@ t_data *xbee_make_pkt(unsigned char *data, int length) {
     	(d == 0x7E)) { /* Frame Delimiter */
       l++;
       pkt->data[o++] = 0x7D;
-      d ^= 0x20;
+      x = 1;
     }
 
     /* move data in */
-    pkt->data[o] = d;
+    pkt->data[o] = ((!x)?d:d^0x20);
     if (m > 2) {
       i++;
       t += d;
