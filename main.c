@@ -184,25 +184,30 @@ int main(int argc, char *argv[]) {
       if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
       p = xbee_senddata(con2, "the time is %d\r", time(NULL));
       free(pkt);
-      switch (p->status) {
-      case 0x00: printf("XBee: txStatus: Success!\n");    break;
-      case 0x01: printf("XBee: txStatus: No ACK\n");      break;
-      case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
-      case 0x03: printf("XBee: txStatus: Purged\n");      break;
+      if (p) {
+	switch (p->status) {
+	case 0x00: printf("XBee: txStatus: Success!\n");    break;
+	case 0x01: printf("XBee: txStatus: No ACK\n");      break;
+	case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
+	case 0x03: printf("XBee: txStatus: Purged\n");      break;
+	}
+	free(p);
       }
-      free(p);
     }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
       printf("--------- got one!... CON2 ------------\n");
+      printf("he said '%s'\n", pkt->data);
       p = xbee_senddata(con2, "you said '%s'\r", pkt->data);
       free(pkt);
-      switch (p->status) {
-      case 0x00: printf("XBee: txStatus: Success!\n");    break;
-      case 0x01: printf("XBee: txStatus: No ACK\n");      break;
-      case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
-      case 0x03: printf("XBee: txStatus: Purged\n");      break;
+      if (p) {
+	switch (p->status) {
+	case 0x00: printf("XBee: txStatus: Success!\n");    break;
+	case 0x01: printf("XBee: txStatus: No ACK\n");      break;
+	case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
+	case 0x03: printf("XBee: txStatus: Purged\n");      break;
+	}
+	free(p);
       }
-      free(p);
     }
     usleep(100000);
   }
