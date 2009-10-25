@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
-  xbee_pkt *pkt;
+  xbee_pkt *pkt, *p;
 
   xbee_setup("/dev/ttyUSB1",57600);
 
@@ -142,6 +142,25 @@ int main(int argc, char *argv[]) {
   sleep(10);
   */
 
+  /* test local AT */
+  con =  xbee_newcon('I',xbee_localAT);
+  p = xbee_senddata(con,"NI");
+  if (p->status != 0) {
+    printf("local AT error (0x%02X)\n", p->status);
+  }
+  printf("local node identifier: %s\n",p->data);
+  free(p);
+
+  /* test remote AT */
+  con =  xbee_newcon('I',xbee_remoteAT,  0x0013A200, 0x40081826);
+  p = xbee_senddata(con,"NI");
+  if (p->status != 0) {
+    printf("remote AT error (0x%02X)\n", p->status);
+  }
+  printf("remote node identifier: %s\n",p->data);
+  free(p);
+
+  /* test 64bit IO and Data */
   con =  xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x40081826);
   con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
 
@@ -163,13 +182,27 @@ int main(int argc, char *argv[]) {
       if (pkt->IOmask & 0x1000) printf("Analog  3: %.2fv\n",(3.3/1023)*pkt->IOanalog[3]);
       if (pkt->IOmask & 0x2000) printf("Analog  4: %.2fv\n",(3.3/1023)*pkt->IOanalog[4]);
       if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
-      xbee_senddata(con2, "the time is %d\r", time(NULL));
+      p = xbee_senddata(con2, "the time is %d\r", time(NULL));
       free(pkt);
+      switch (p->status) {
+      case 0x00: printf("XBee: txStatus: Success!\n");    break;
+      case 0x01: printf("XBee: txStatus: No ACK\n");      break;
+      case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
+      case 0x03: printf("XBee: txStatus: Purged\n");      break;
+      }
+      free(p);
     }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
       printf("--------- got one!... CON2 ------------\n");
-      xbee_senddata(con2, "you said '%s'\r", pkt->data);
+      p = xbee_senddata(con2, "you said '%s'\r", pkt->data);
       free(pkt);
+      switch (p->status) {
+      case 0x00: printf("XBee: txStatus: Success!\n");    break;
+      case 0x01: printf("XBee: txStatus: No ACK\n");      break;
+      case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
+      case 0x03: printf("XBee: txStatus: Purged\n");      break;
+      }
+      free(p);
     }
     usleep(100000);
   }

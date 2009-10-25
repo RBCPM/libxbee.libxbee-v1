@@ -360,8 +360,8 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 /* #################################################################
    xbee_senddata
    send the specified data to the provided connection */
-int xbee_senddata(xbee_con *con, char *format, ...) {
-  int retval;
+xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...) {
+  xbee_pkt *p;
   va_list ap;
 
   ISREADY;
@@ -369,21 +369,23 @@ int xbee_senddata(xbee_con *con, char *format, ...) {
   /* xbee_vsenddata() wants a va_list... */
   va_start(ap, format);
   /* hand it over :) */
-  retval = xbee_vsenddata(con,format,ap);
+  p = xbee_vsenddata(con,format,ap);
   va_end(ap);
-  return retval;
+  return p;
 }
 
-int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
+xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   t_data *pkt;
   int i, length;
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
   unsigned char data[128]; /* ditto */
+  xbee_pkt *p = NULL; /* response packet */
+  int to = 10; /* resonse timeout */
 
   ISREADY;
 
-  if (!con) return -2;
-  if (con->type == xbee_unknown) return -2;
+  if (!con) return (void *)-1;
+  if (con->type == xbee_unknown) return (void *)-1;
 
   /* make up the data and keep the length, its possible there are nulls in there */
   length = vsnprintf((char *)data,128,format,ap);
@@ -401,7 +403,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   /* if: local AT */
   if (con->type == xbee_localAT) {
     /* AT commands are 2 chars long (plus optional parameter) */
-    if (length < 2) return -1;
+    if (length < 2) return (void *)-1;
 
     /* use the command? */
     buf[0] = ((!con->atQueue)?0x08:0x09);
@@ -417,14 +419,34 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     /* send it on */
     xbee_send_pkt(pkt);
 
-    /* unlock the mutex */
-    pthread_mutex_unlock(&xbee.sendmutex);
-    return 0;
+    /* wait for a response packet */
+    for (; p == NULL && to > 0; to--) {
+      usleep(25400); /* tuned so that hopefully the first time round will catch the response */
+      p = xbee_getpacket(con);
+    }
+
+    /* if: no txStatus packet was recieved */
+    if (to == 0) {
+#ifdef DEBUG
+      printf("XBee: No AT status recieved before timeout\n");
+#endif
+      return NULL;
+    }
+
+#ifdef DEBUG
+    switch (p->status) {
+    case 0x00: printf("XBee: AT Status: OK!\n");               break;
+    case 0x01: printf("XBee: AT Status: Error\n");             break;
+    case 0x02: printf("XBee: AT Status: Invalid Command\n");   break;
+    case 0x03: printf("XBee: AT Status: Invalid Parameter\n"); break;
+    }
+#endif
+    return p;
   /* ########################################## */
   /* if: remote AT */
   } else if ((con->type == xbee_16bitRemoteAT) ||
 	     (con->type == xbee_64bitRemoteAT)) {
-    if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
+    if (length < 2) return (void *)-1; /* at commands are 2 chars long (plus optional parameter) */
     buf[0] = 0x17;
     buf[1] = con->frameID;
 
@@ -450,105 +472,101 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     /* send it on */
     xbee_send_pkt(pkt);
 
-    /* unlock the mutex */
-    pthread_mutex_unlock(&xbee.sendmutex);
-    return 0;
+    /* wait for a response packet */
+    for (; p == NULL && to > 0; to--) {
+      usleep(25400); /* tuned so that hopefully the first time round will catch the response */
+      p = xbee_getpacket(con);
+    }
+
+    /* if: no txStatus packet was recieved */
+    if (to == 0) {
+#ifdef DEBUG
+      printf("XBee: No AT status recieved before timeout\n");
+#endif
+      return NULL;
+    }
+
+#ifdef DEBUG
+    switch (p->status) {
+    case 0x00: printf("XBee: AT Status: OK!\n");               break;
+    case 0x01: printf("XBee: AT Status: Error\n");             break;
+    case 0x02: printf("XBee: AT Status: Invalid Command\n");   break;
+    case 0x03: printf("XBee: AT Status: Invalid Parameter\n"); break;
+    case 0x04: printf("XBee: AT Status: No Response\n");       break;
+    }
+#endif
+    return p;
   /* ########################################## */
-  /* if: 64bit Data */
-  } else if (con->type == xbee_64bitData) {
-    buf[0] = 0x00;
+  /* if: 16 or 64bit Data */
+  } else if ((con->type == xbee_16bitData) ||
+	     (con->type == xbee_64bitData)) {
+    int offset;
+
+    /* if: 16bit Data */
+    if (con->type == xbee_16bitData) {
+      buf[0] = 0x01;
+      offset = 5;
+      /* copy in the address */
+      memcpy(&buf[2],con->tAddr,2);
+
+    /* if: 64bit Data */
+    } else { /* 64bit Data */
+      buf[0] = 0x00;
+      offset = 11;
+      /* copy in the address */
+      memcpy(&buf[2],con->tAddr,8);
+    }
+
+    /* copy frameID */
     buf[1] = con->frameID;
 
-    /* copy in the address */
-    memcpy(&buf[2],con->tAddr,8);
-
-    /* broadcast? */
-    buf[10] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
+    /* disable ack? broadcast? */
+    buf[offset-1] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
 
     /* copy in the data */
     for (i=0;i<length;i++) {
-      buf[i+11] = data[i];
+      buf[i+offset] = data[i];
     }
 
     /* setup the packet */
-    pkt = xbee_make_pkt(buf,i+11);
+    pkt = xbee_make_pkt(buf,i+offset);
     /* send it on */
     xbee_send_pkt(pkt);
 
-    /* unlock the mutex */
-    pthread_mutex_unlock(&xbee.sendmutex);
-    return xbee_gettxStatus();
-  /* ########################################## */
-  /* if: 16bit Data */
-  } else if (con->type == xbee_16bitData) {
-    buf[0] = 0x01;
-    buf[1] = con->frameID;
-
-    /* copy in the address */
-    memcpy(&buf[2],con->tAddr,2);
-
-    /* broadcast? */
-    buf[4] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
-
-    /* copy in the data */
-    for (i=0;i<length;i++) {
-      buf[i+5] = data[i];
+    /* wait for a response packet */
+    for (; p == NULL && to > 0; to--) {
+      usleep(25400); /* tuned so that hopefully the first time round will catch the response */
+      p = xbee_getpacket(xbee.con_txStatus);
     }
 
-    /* setup the packet */
-    pkt = xbee_make_pkt(buf,i+5);
-    /* send it on */
-    xbee_send_pkt(pkt);
+    /* if: no txStatus packet was recieved */
+    if (to == 0) {
+#ifdef DEBUG
+      printf("XBee: No txStatus recieved before timeout\n");
+#endif
+      return NULL;
+    }
 
-    /* unlock the mutex */
-    pthread_mutex_unlock(&xbee.sendmutex);
-    return xbee_gettxStatus();
+#ifdef DEBUG
+    switch (p->status) {
+    case 0x00: printf("XBee: txStatus: Success!\n");    break;
+    case 0x01: printf("XBee: txStatus: No ACK\n");      break;
+    case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
+    case 0x03: printf("XBee: txStatus: Purged\n");      break;
+    }
+#endif
+    /* return the packet */
+    return p;
   /* ########################################## */
   /* if: I/O */
   } else if ((con->type == xbee_64bitIO) ||
 	     (con->type == xbee_16bitIO)) {
-    /* not currently implemented... */
+    /* not currently implemented... is it even allowed? */
     printf("******* TODO ********\n");
   }
 
-  return -2;
+  return (void *)-1;
 }
-
-/* #################################################################
-   xbee_gettxStatus - INTERNAL
-   waits for the txStatus packet after a data transmit */
-int xbee_gettxStatus(void) {
-  xbee_pkt *p = NULL;
-  int to = 10;
-  int status;
-  for (; p == NULL && to > 0; to--) {
-    usleep(25400); /* tuned so that hopefully the first time round will catch the response */
-    p = xbee_getpacket(xbee.con_txStatus);
-  }
-  if (to == 0) {
-    /* if no txStatus packet was recieved */
-#ifdef DEBUG
-    printf("XBee: No txStatus recieved before timeout\n");
-#endif
-    return -1;
-  }
-#ifdef DEBUG
-  switch (p->status) {
-    case 0x00:
-      printf("XBee: txStatus: Success!\n");     break;
-    case 0x01:
-      printf("XBee: txStatus: No ACK\n");       break;
-    case 0x02:
-      printf("XBee: txStatus: CCA Failure\n");  break;
-    case 0x03:
-      printf("XBee: txStatus: Purged\n");       break;
-  }
-#endif
-  status = p->status;
-  Xfree(p);
-  return status;
-}
-
 
 /* #################################################################
    xbee_getpacket
