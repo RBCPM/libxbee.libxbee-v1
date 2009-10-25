@@ -381,9 +381,6 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   if (!con) return -1;
   if (con->type == xbee_unknown) return -1;
 
-  /* lock the send mutex */
-  pthread_mutex_lock(&xbee.sendmutex);
-
   /* make up the data and keep the length, its possible there are nulls in there */
   length = vsnprintf((char *)data,128,format,ap);
 
@@ -510,8 +507,6 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
     printf("******* TODO ********\n");
   }
 
-  /* unlock the mutex */
-  pthread_mutex_unlock(&xbee.sendmutex);
   return 0;
 }
 
@@ -658,7 +653,7 @@ void xbee_listen(t_info *info) {
       d[i] = c;
       chksum += c;
 #ifdef DEBUG
-      printf("XBee: %3d | '%c' | 0x%02X ",(((c < '~') && (c > ' '))?c:'.'),i,c);
+      printf("XBee: %3d | '%c' | 0x%02X ",i,(((c < '~') && (c > ' '))?c:'.'),c);
       if ((c > 32) && (c < 127)) printf("'%c'\n",c); else printf(" _\n");
 #endif
     }
@@ -678,7 +673,7 @@ void xbee_listen(t_info *info) {
     /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
 #ifdef DEBUG
-      printf("XBee: Invalid Checksum: 0x%02X\n",c,chksum);
+      printf("XBee: Invalid Checksum: 0x%02X\n",chksum);
 #endif
       continue;
     }
@@ -1190,9 +1185,16 @@ unsigned char xbee_getRawByte(void) {
 void xbee_send_pkt(t_data *pkt) {
   ISREADY;
 
+
+  /* lock the send mutex */
+  pthread_mutex_lock(&xbee.sendmutex);
+
   /* write and flush the data */
   fwrite(pkt->data,pkt->length,1,xbee.tty);
   fflush(xbee.tty);
+
+  /* unlock the mutex */
+  pthread_mutex_unlock(&xbee.sendmutex);
 
 #ifdef DEBUG
   {
