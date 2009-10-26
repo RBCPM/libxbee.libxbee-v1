@@ -4,7 +4,7 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
-DEBUG:=-g -DDEBUG
+#DEBUG:=-g -DDEBUG
 DEFINES:=
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
