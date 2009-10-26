@@ -18,6 +18,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define TRUE 1
+#define FALSE 0
+
+#define ISREADY					  \
+  if (!xbee_ready) {				  \
+    fprintf(stderr,"XBee: Run xbee_setup() first!...\n"); \
+    exit(1);					  \
+  }
+
+#define M8(x) (x & 0xFF)
+#define FDO(x,y,z)				\
+  if (((x) = fdopen((y),(z))) == NULL) {	\
+    perror("fopen()");				\
+    return(-1);					\
+  }
+#define FO(x,y,z)				\
+  if (((x) = open((y),(z))) == -1) {		\
+    perror("open()");				\
+    return(-1);					\
+  }
+
 struct t_data {
   unsigned char data[128];
   unsigned int length;

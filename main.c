@@ -4,7 +4,7 @@ int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
   xbee_pkt *pkt, *p;
 
-  if (xbee_setup("/dev/ttyUSB1",57600) == -1) {
+  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
     perror("xbee_setup()");
     exit(1);
   }

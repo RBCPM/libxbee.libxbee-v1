@@ -21,12 +21,6 @@
 #include "globals.h"
 #include "api.h"
 
-#define ISREADY					  \
-  if (!xbee_ready) {				  \
-    fprintf(stderr,"XBee: Run xbee_setup() first!...\n"); \
-    exit(1);					  \
-  }
-
 /* ready flag.
    needs to be set to -1 so that the listen thread can begin.
    then 1 so that functions can be used (after setup of course...) */

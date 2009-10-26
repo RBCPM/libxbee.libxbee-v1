@@ -12,17 +12,3 @@
 
 #include "xbee.h"
 
-#define TRUE 1
-#define FALSE 0
-
-#define M8(x) (x & 0xFF)
-#define FDO(x,y,z)				\
-  if (((x) = fdopen((y),(z))) == NULL) {	\
-    perror("fopen()");				\
-    return(-1);					\
-  }
-#define FO(x,y,z)				\
-  if (((x) = open((y),(z))) == -1) {		\
-    perror("open()");				\
-    return(-1);					\
-  }
