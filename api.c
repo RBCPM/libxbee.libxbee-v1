@@ -398,7 +398,7 @@ xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
   unsigned char data[128]; /* ditto */
   xbee_pkt *p = NULL; /* response packet */
-  int to = 10; /* resonse timeout */
+  int to = 50; /* resonse timeout */
 
   ISREADY;
 
