@@ -903,126 +903,36 @@ void xbee_listen(t_info *info) {
 	p->datalen = 0;
 
     /* ########################################## */
-    /* if: 64bit address recieve */
-    } else if (t == 0x80) {
+    /* if: 16 / 64bit data recieve */
+    } else if ((t == 0x80) ||
+	       (t == 0x81)) {
+      int offset;
+      if (t == 0x80) { /* 64bit */
+	offset = 8;
+      } else { /* 16bit */
+	offset = 2;
+      }
 #ifdef DEBUG
-      printf("XBee: Packet type: 64-bit RX Data (0x80)\n");
-      printf("XBee: 64-bit Address: ");
-      for (j=0;j<8;j++) {
+      printf("XBee: Packet type: %d-bit RX Data (0x%02X)\n",((t == 0x80)?64:16),t);
+      printf("XBee: %d-bit Address: ",((t == 0x80)?64:16));
+      for (j=0;j<offset;j++) {
 	printf((j?":%02X":"%02X"),d[j]);
       }
       printf("\n");
-      printf("XBee: RSSI: -%ddB\n",d[8]);
-      if (d[9] & 0x02) printf("XBee: Options: Address Broadcast\n");
-      if (d[9] & 0x03) printf("XBee: Options: PAN Broadcast\n");
+      printf("XBee: RSSI: -%ddB\n",d[offset]);
+      if (d[offset + 1] & 0x02) printf("XBee: Options: Address Broadcast\n");
+      if (d[offset + 1] & 0x03) printf("XBee: Options: PAN Broadcast\n");
 #endif
-      p->type = xbee_64bitData;
-
-      p->sAddr64 = TRUE;
       p->dataPkt = TRUE;
       p->txStatusPkt = FALSE;
       p->modemStatusPkt = FALSE;
       p->remoteATPkt = FALSE;
       p->IOPkt = FALSE;
 
-      p->Addr64[0] = d[0];
-      p->Addr64[1] = d[1];
-      p->Addr64[2] = d[2];
-      p->Addr64[3] = d[3];
-      p->Addr64[4] = d[4];
-      p->Addr64[5] = d[5];
-      p->Addr64[6] = d[6];
-      p->Addr64[7] = d[7];
-
-      /* save the RSSI / signal strength
-	 this can be used with printf as:
-	 printf("-%ddB\n",p->RSSI); */
-      p->RSSI = d[8];
-
-      p->status = d[9];
-
-      /* copy in the data */
-      p->datalen = i-9;
-      for (;i>9;i--) p->data[i-10] = d[i];
-
-    /* ########################################## */
-    /* if: 16bit address recieve */
-    } else if (t == 0x81) {
-#ifdef DEBUG
-      printf("XBee: Packet type: 16-bit RX Data (0x81)\n");
-      printf("XBee: 16-bit Address: ");
-      for (j=0;j<2;j++) {
-	printf((j?":%02X":"%02X"),d[j]);
-      }
-      printf("\n");
-      printf("XBee: RSSI: -%ddB\n",d[2]);
-      if (d[3] & 0x02) printf("XBee: Options: Address Broadcast\n");
-      if (d[3] & 0x03) printf("XBee: Options: PAN Broadcast\n");
-#endif
-      p->type = xbee_16bitData;
-
-      p->sAddr64 = FALSE;
-      p->dataPkt = TRUE;
-      p->txStatusPkt = FALSE;
-      p->modemStatusPkt = FALSE;
-      p->remoteATPkt = FALSE;
-      p->IOPkt = FALSE;
-
-      p->Addr16[0] = d[0];
-      p->Addr16[1] = d[1];
-
-      /* save the RSSI / signal strength
-	 this can be used with printf as:
-	 printf("-%ddB\n",p->RSSI); */
-      p->RSSI = d[2];
-
-      p->status = d[3];
-
-      /* copy in the data */
-      p->datalen = i-3;
-      for (;i>3;i--) p->data[i-4] = d[i];
-
-    /* ########################################## */
-    /* if: 64bit I/O recieve */
-    } else if (t == 0x82) {
-#ifdef DEBUG
-      printf("XBee: Packet type: 64-bit RX I/O Data (0x82)\n");
-      printf("XBee: 64-bit Address: ");
-      for (j=0;j<8;j++) {
-	printf((j?":%02X":"%02X"),d[j]);
-      }
-      printf("\n");
-      printf("XBee: RSSI: -%ddB\n",d[8]);
-      if (d[9] & 0x02) printf("XBee: Options: Address Broadcast\n");
-      if (d[9] & 0x02) printf("XBee: Options: PAN Broadcast\n");
-      printf("XBee: Samples: %d\n",d[10]);
-#endif
-      i = 13;
-
-      /* each sample is split into its own packet here, for simplicity */
-      for (o=d[10];o>0;o--) {
-#ifdef DEBUG
-	printf("XBee: --- Sample %3d -------------\n",o-d[10]+1);
-#endif
-	/* if we arent still using the origional packet */
-	if (o<d[10]) {
-	  /* make a new one and link it up! */
-	  q = Xcalloc(sizeof(xbee_pkt));
-	  p->next = q;
-	  p = q;
-	}
-
-	/* never returns data */
-	p->datalen = 0;
-
-	p->type = xbee_64bitIO;
+      if (t == 0x82) { /* 64bit */
+	p->type = xbee_64bitData;
 
 	p->sAddr64 = TRUE;
-	p->dataPkt = FALSE;
-	p->txStatusPkt = FALSE;
-	p->modemStatusPkt = FALSE;
-	p->remoteATPkt = FALSE;
-	p->IOPkt = TRUE;
 
 	p->Addr64[0] = d[0];
 	p->Addr64[1] = d[1];
@@ -1032,76 +942,60 @@ void xbee_listen(t_info *info) {
 	p->Addr64[5] = d[5];
 	p->Addr64[6] = d[6];
 	p->Addr64[7] = d[7];
+      } else { /* 16bit */
+	p->type = xbee_16bitData;
 
-	/* save the RSSI / signal strength
-	   this can be used with printf as:
-	   printf("-%ddB\n",p->RSSI); */
-	p->RSSI = d[8];
+	p->sAddr64 = FALSE;
 
-	p->status = d[9];
-
-	/* copy in the I/O data mask */
-	p->IOmask = (((d[11]<<8) | d[12]) & 0x7FFF);
-
-	/* copy in the digital I/O data */
-	p->IOdata = (((d[i]<<8) | d[i+1]) & 0x01FF);
-
-	/* advance over the digital data, if its there */
-	i += (((d[11]&0x01)||(d[12]))?2:0);
-
-	/* copy in the analog I/O data */
-	if (d[11]&0x02) {p->IOanalog[0] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[11]&0x04) {p->IOanalog[1] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[11]&0x08) {p->IOanalog[2] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[11]&0x10) {p->IOanalog[3] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[11]&0x20) {p->IOanalog[4] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[11]&0x40) {p->IOanalog[5] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-#ifdef DEBUG
-	if (p->IOmask & 0x0001) printf("XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
-	if (p->IOmask & 0x0002) printf("XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
-	if (p->IOmask & 0x0004) printf("XBee: Digital 2: %c\n",((p->IOdata & 0x0004)?'1':'0'));
-	if (p->IOmask & 0x0008) printf("XBee: Digital 3: %c\n",((p->IOdata & 0x0008)?'1':'0'));
-	if (p->IOmask & 0x0010) printf("XBee: Digital 4: %c\n",((p->IOdata & 0x0010)?'1':'0'));
-	if (p->IOmask & 0x0020) printf("XBee: Digital 5: %c\n",((p->IOdata & 0x0020)?'1':'0'));
-	if (p->IOmask & 0x0040) printf("XBee: Digital 6: %c\n",((p->IOdata & 0x0040)?'1':'0'));
-	if (p->IOmask & 0x0080) printf("XBee: Digital 7: %c\n",((p->IOdata & 0x0080)?'1':'0'));
-	if (p->IOmask & 0x0100) printf("XBee: Digital 8: %c\n",((p->IOdata & 0x0100)?'1':'0'));
-	if (p->IOmask & 0x0200) printf("XBee: Analog  0: %.2fv\n",(3.3/1023)*p->IOanalog[0]);
-	if (p->IOmask & 0x0400) printf("XBee: Analog  1: %.2fv\n",(3.3/1023)*p->IOanalog[1]);
-	if (p->IOmask & 0x0800) printf("XBee: Analog  2: %.2fv\n",(3.3/1023)*p->IOanalog[2]);
-	if (p->IOmask & 0x1000) printf("XBee: Analog  3: %.2fv\n",(3.3/1023)*p->IOanalog[3]);
-	if (p->IOmask & 0x2000) printf("XBee: Analog  4: %.2fv\n",(3.3/1023)*p->IOanalog[4]);
-	if (p->IOmask & 0x4000) printf("XBee: Analog  5: %.2fv\n",(3.3/1023)*p->IOanalog[5]);
-#endif
+	p->Addr16[0] = d[0];
+	p->Addr16[1] = d[1];
       }
-#ifdef DEBUG
-      printf("XBee: ----------------------------\n");
-#endif
+
+      /* save the RSSI / signal strength
+	 this can be used with printf as:
+	 printf("-%ddB\n",p->RSSI); */
+      p->RSSI = d[offset];
+
+      p->status = d[offset + 1];
+
+      /* copy in the data */
+      p->datalen = i-(offset + 1);
+      for (;i>offset + 1;i--) p->data[i-(offset + 2)] = d[i];
 
     /* ########################################## */
-    /* if: 16bit I/O recieve */
-    } else if (t == 0x83) {
+    /* if: 16 / 64bit I/O recieve */
+    } else if ((t == 0x82) ||
+	       (t == 0x83)) {
+      int offset, samples;
+      if (t == 0x82) { /* 64bit */
+	offset = 8;
+	samples = d[10];
+      } else { /* 16bit */
+	offset = 2;
+	samples = d[4];
+      }
 #ifdef DEBUG
-      printf("XBee: Packet type: 16-bit RX I/O Data (0x83)\n");
-      printf("XBee: 16-bit Address: ");
-      for (j=0;j<2;j++) {
+      printf("XBee: Packet type: %d-bit RX I/O Data (0x%02X)\n",((t == 0x82)?64:16),t);
+      printf("XBee: %d-bit Address: ",((t == 0x82)?64:16));
+      for (j = 0; j < offset; j++) {
 	printf((j?":%02X":"%02X"),d[j]);
       }
       printf("\n");
-      printf("XBee: RSSI: -%ddB\n",d[2]);
-      if (d[3] & 0x02) printf("XBee: Options: Address Broadcast\n");
-      if (d[3] & 0x02) printf("XBee: Options: PAN Broadcast\n");
-      printf("XBee: Samples: %d\n",d[4]);
+      printf("XBee: RSSI: -%ddB\n",d[offset]);
+      if (d[9] & 0x02) printf("XBee: Options: Address Broadcast\n");
+      if (d[9] & 0x02) printf("XBee: Options: PAN Broadcast\n");
+      printf("XBee: Samples: %d\n",d[offset + 2]);
 #endif
-
-      i = 7;
+      i = offset + 5;
 
       /* each sample is split into its own packet here, for simplicity */
-      for (o=d[4];o>0;o--) {
+      for (o = samples; o > 0; o--) {
 #ifdef DEBUG
-	printf("XBee: --- Sample %3d -------------\n",o-d[4]+1);
+	printf("XBee: --- Sample %3d -------------\n", o - samples + 1);
 #endif
-	if (o<d[4]) {
+	/* if we arent still using the origional packet */
+	if (o < samples) {
+	  /* make a new one and link it up! */
 	  q = Xcalloc(sizeof(xbee_pkt));
 	  p->next = q;
 	  p = q;
@@ -1110,41 +1004,57 @@ void xbee_listen(t_info *info) {
 	/* never returns data */
 	p->datalen = 0;
 
-	p->type = xbee_16bitIO;
-
-	p->sAddr64 = FALSE;
 	p->dataPkt = FALSE;
 	p->txStatusPkt = FALSE;
 	p->modemStatusPkt = FALSE;
 	p->remoteATPkt = FALSE;
 	p->IOPkt = TRUE;
 
-	p->Addr16[0] = d[0];
-	p->Addr16[1] = d[1];
+	if (t == 0x82) { /* 64bit */
+	  p->type = xbee_64bitIO;
+
+	  p->sAddr64 = TRUE;
+
+	  p->Addr64[0] = d[0];
+	  p->Addr64[1] = d[1];
+	  p->Addr64[2] = d[2];
+	  p->Addr64[3] = d[3];
+	  p->Addr64[4] = d[4];
+	  p->Addr64[5] = d[5];
+	  p->Addr64[6] = d[6];
+	  p->Addr64[7] = d[7];
+	} else { /* 16bit */
+	  p->type = xbee_16bitIO;
+
+	  p->sAddr64 = FALSE;
+
+	  p->Addr16[0] = d[0];
+	  p->Addr16[1] = d[1];
+	}
 
 	/* save the RSSI / signal strength
 	   this can be used with printf as:
 	   printf("-%ddB\n",p->RSSI); */
-	p->RSSI = d[2];
+	p->RSSI = d[offset];
 
-	p->status = d[3];
+	p->status = d[offset + 1];
 
 	/* copy in the I/O data mask */
-	p->IOmask = (((d[5]<<8) | d[6]) & 0x7FFF);
+	p->IOmask = (((d[offset + 3]<<8) | d[offset + 4]) & 0x7FFF);
 
 	/* copy in the digital I/O data */
 	p->IOdata = (((d[i]<<8) | d[i+1]) & 0x01FF);
 
 	/* advance over the digital data, if its there */
-	i += (((d[5]&0x01)||(d[6]))?2:0);
+	i += (((d[offset + 3]&0x01)||(d[offset + 4]))?2:0);
 
 	/* copy in the analog I/O data */
-	if (d[5]&0x02) {p->IOanalog[0] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[5]&0x04) {p->IOanalog[1] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[5]&0x08) {p->IOanalog[2] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[5]&0x10) {p->IOanalog[3] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[5]&0x20) {p->IOanalog[4] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-	if (d[5]&0x40) {p->IOanalog[5] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x02) {p->IOanalog[0] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x04) {p->IOanalog[1] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x08) {p->IOanalog[2] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x10) {p->IOanalog[3] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x20) {p->IOanalog[4] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
+	if (d[11]&0x40) {p->IOanalog[5] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 #ifdef DEBUG
 	if (p->IOmask & 0x0001) printf("XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
 	if (p->IOmask & 0x0002) printf("XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
@@ -1177,7 +1087,7 @@ void xbee_listen(t_info *info) {
     }
     p->next = NULL;
 
-    /* lock the packet mutex, so we can savely add the packet to the list */
+    /* lock the packet mutex, so we can safely add the packet to the list */
     pthread_mutex_lock(&xbee.pktmutex);
     i = 1;
     /* if: the list is empty */
