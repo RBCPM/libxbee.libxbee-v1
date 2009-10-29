@@ -18,11 +18,11 @@ endif
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
-.PHONY: all run new clean cleanpdfs main scan pdfs install install_su uninstall uninstall_su
+.PHONY: all run new clean cleanpdfs main pdfs install install_su uninstall uninstall_su
 
 
 # all - do everything (default) #
-all: main scan
+all: main
 	@echo "*** Done! ***"
 
 
@@ -95,12 +95,6 @@ main: ./bin/main
 
 ./bin/main: ./lib/libxbee.so.1.0.1 ./bin/ ./main.c
 	${CC} ${CLINKS} ./main.c -o ./bin/main ${DEBUG}
-
-# scan - compile & link objects #
-scan: ./bin/scan
-
-./bin/scan: ./lib/libxbee.so.1.0.1 ./bin/ ./sample/scan.c
-	${CC} ${CLINKS} ./sample/scan.c -o ./bin/scan ${DEBUG}
 
 ./bin/:
 	mkdir ./bin/
