@@ -156,8 +156,8 @@ int xbee_setup(char *path, int baudrate) {
 
   /* setup the baud rate and other io attributes */
   tcgetattr(xbee.ttyfd, &tc);
-  cfsetispeed(&tc, chosenbaud);       /* set input baud rate to 57600 */
-  cfsetospeed(&tc, chosenbaud);       /* set output baud rate to 57600 */
+  cfsetispeed(&tc, chosenbaud);    /* set input baud rate */
+  cfsetospeed(&tc, chosenbaud);    /* set output baud rate */
   /* input flags */
   tc.c_iflag |= IGNBRK;            /* enable ignoring break */
   tc.c_iflag &= ~(IGNPAR | PARMRK);/* disable parity checks */
