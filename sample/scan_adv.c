@@ -108,10 +108,8 @@ int main(int argc, char *argv[]) {
   }
   free(rpkt);
 
-  printf("%c[34m\n---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------%c[0m\n",27,27);
-
   /* find and print data for the local node */
-  printf("%c[31mCH:%c[32m 0x%02X    ",27,27,ATCH);
+  printf("\n%c[31mCH:%c[32m 0x%02X    ",27,27,ATCH);
   if ((rpkt = xbee_senddata(con,"ID")) == NULL) {
     printf("\nXBee didnt return a result for ID\n");
     return 1;
@@ -254,7 +252,7 @@ int main(int argc, char *argv[]) {
 	    /* is this a rewrite? */
 	    if (i != nodes) {
 	      /* find the line to edit */
-	      printf("%c[%dA",27,((nodes-i)*2)+1);
+	      printf("%c[%dA",27,nodes-i+1);
 	      /* clear the line */
 	      printf("%c[2K",27);
 	    } else {
@@ -326,14 +324,14 @@ int main(int argc, char *argv[]) {
 	    /* is this a rewrite? */
 	    if (i != nodes) {
 	      /* go back the the bottom */
-	      printf("%c[%dB\r",27,((nodes-i)*2)+1);
+	      printf("%c[%dB\r",27,nodes-i+1);
 	    } else {
 	      /* if its new... save the address */
 	      memcpy(&(addrs[nodes][0]),&(pkt->data[2]),8);
 	      /* turn off all the flags */
 	      addrs[nodes][18] = 0;
 	      /* new line is only wanted for new nodes */
-	      printf("%c[34m\n---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------%c[0m\n\n",27,27);
+	      printf("\n%c[2K\n%c[0m",27,27);
 	      /* if not, then add 1 to the number of nodes! */
 	      nodes++;
 	    }
@@ -368,7 +366,7 @@ int main(int argc, char *argv[]) {
 	/* setup a connection the the remote node */
 	if ((tcon = xbee_newcon('I',xbee_64bitRemoteAT,dh,dl)) != NULL) {
 	  /* find the line to edit */
-	  printf("\r%c[%dA",27,((nodes-i)*2)+1);
+	  printf("\r%c[%dA",27,nodes-i+1);
 
 	  /* in this case we dont care if we dont get a response packet... */
 	  if ((rpkt = xbee_senddata(tcon,"ID")) != NULL) {
@@ -457,7 +455,7 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* go back the the bottom */
-	  printf("%c[%dB\r",27,((nodes-i)*2)+1);
+	  printf("%c[%dB\r",27,nodes-i+1);
 	  fflush(stdout);
 	}
       }
