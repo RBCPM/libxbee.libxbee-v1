@@ -145,53 +145,33 @@ int main(int argc, char *argv[]) {
   sleep(10);
   */
 
-  /* test local AT */
-  con =  xbee_newcon('I',xbee_localAT);
-  p = xbee_senddata(con,"NI");
-  if (p && p->status != 0) {
-    printf("local AT error (0x%02X)\n", p->status);
-  } else if (p) {
-    printf("local node identifier: %s\n",p->data);
-    free(p);
-  }
-
-  /* test remote AT */
-  con =  xbee_newcon('I',xbee_remoteAT,  0x0013A200, 0x40081826);
-  p = xbee_senddata(con,"NI");
-  if (p && p->status != 0) {
-    printf("remote AT error (0x%02X)\n", p->status);
-  } else if (p) {
-    printf("remote node identifier: %s\n",p->data);
-    free(p);
-  }
-
   /* test 64bit IO and Data */
-  con =  xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x40081826);
-  con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
+  con =  xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x403af247);
+  con2 = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x403af247);
 
   while (1) {
     while ((pkt = xbee_getpacket(con)) != NULL) {
-      printf("--------- got one!... CON ------------\n");
-      if (pkt->IOmask & 0x0001) printf("Digital 0: %c\n",((pkt->IOdata & 0x0001)?'1':'0'));
-      if (pkt->IOmask & 0x0002) printf("Digital 1: %c\n",((pkt->IOdata & 0x0002)?'1':'0'));
-      if (pkt->IOmask & 0x0004) printf("Digital 2: %c\n",((pkt->IOdata & 0x0004)?'1':'0'));
-      if (pkt->IOmask & 0x0008) printf("Digital 3: %c\n",((pkt->IOdata & 0x0008)?'1':'0'));
-      if (pkt->IOmask & 0x0010) printf("Digital 4: %c\n",((pkt->IOdata & 0x0010)?'1':'0'));
-      if (pkt->IOmask & 0x0020) printf("Digital 5: %c\n",((pkt->IOdata & 0x0020)?'1':'0'));
-      if (pkt->IOmask & 0x0040) printf("Digital 6: %c\n",((pkt->IOdata & 0x0040)?'1':'0'));
-      if (pkt->IOmask & 0x0080) printf("Digital 7: %c\n",((pkt->IOdata & 0x0080)?'1':'0'));
-      if (pkt->IOmask & 0x0100) printf("Digital 8: %c\n",((pkt->IOdata & 0x0100)?'1':'0'));
-      if (pkt->IOmask & 0x0200) printf("Analog  0: %.2fv\n",(3.3/1023)*pkt->IOanalog[0]);
-      if (pkt->IOmask & 0x0400) printf("Analog  1: %.2fv\n",(3.3/1023)*pkt->IOanalog[1]);
-      if (pkt->IOmask & 0x0800) printf("Analog  2: %.2fv\n",(3.3/1023)*pkt->IOanalog[2]);
-      if (pkt->IOmask & 0x1000) printf("Analog  3: %.2fv\n",(3.3/1023)*pkt->IOanalog[3]);
-      if (pkt->IOmask & 0x2000) printf("Analog  4: %.2fv\n",(3.3/1023)*pkt->IOanalog[4]);
-      if (pkt->IOmask & 0x4000) printf("Analog  5: %.2fv\n",(3.3/1023)*pkt->IOanalog[5]);
+      if (pkt->IOmask & 0x0001) printf("D0: %c  ",((pkt->IOdata & 0x0001)?'1':'0'));
+      if (pkt->IOmask & 0x0002) printf("D1: %c  ",((pkt->IOdata & 0x0002)?'1':'0'));
+      if (pkt->IOmask & 0x0004) printf("D2: %c  ",((pkt->IOdata & 0x0004)?'1':'0'));
+      if (pkt->IOmask & 0x0008) printf("D3: %c  ",((pkt->IOdata & 0x0008)?'1':'0'));
+      if (pkt->IOmask & 0x0010) printf("D4: %c  ",((pkt->IOdata & 0x0010)?'1':'0'));
+      if (pkt->IOmask & 0x0020) printf("D5: %c  ",((pkt->IOdata & 0x0020)?'1':'0'));
+      if (pkt->IOmask & 0x0040) printf("D6: %c  ",((pkt->IOdata & 0x0040)?'1':'0'));
+      if (pkt->IOmask & 0x0080) printf("D7: %c  ",((pkt->IOdata & 0x0080)?'1':'0'));
+      if (pkt->IOmask & 0x0100) printf("D8: %c  ",((pkt->IOdata & 0x0100)?'1':'0'));
+#define Vref 3.23
+      if (pkt->IOmask & 0x0200) printf("A0: %.2fv  ",(Vref/1024)*pkt->IOanalog[0]);
+      if (pkt->IOmask & 0x0400) printf("A1: %.2fv  ",(Vref/1024)*pkt->IOanalog[1]);
+      if (pkt->IOmask & 0x0800) printf("A2: %.2fv  ",(Vref/1024)*pkt->IOanalog[2]);
+      if (pkt->IOmask & 0x1000) printf("A3: %.2fv  ",(Vref/1024)*pkt->IOanalog[3]);
+      if (pkt->IOmask & 0x2000) printf("A4: %.2fv  ",(Vref/1024)*pkt->IOanalog[4]);
+      if (pkt->IOmask & 0x4000) printf("A5: %.2fv  ",(Vref/1024)*pkt->IOanalog[5]);
+      printf("\n");
       p = xbee_senddata(con2, "the time is %d\r", time(NULL));
       free(pkt);
       if (p) {
 	switch (p->status) {
-	case 0x00: printf("XBee: txStatus: Success!\n");    break;
 	case 0x01: printf("XBee: txStatus: No ACK\n");      break;
 	case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
 	case 0x03: printf("XBee: txStatus: Purged\n");      break;
@@ -200,13 +180,11 @@ int main(int argc, char *argv[]) {
       }
     }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
-      printf("--------- got one!... CON2 ------------\n");
       printf("he said '%s'\n", pkt->data);
       p = xbee_senddata(con2, "you said '%s'\r", pkt->data);
       free(pkt);
       if (p) {
 	switch (p->status) {
-	case 0x00: printf("XBee: txStatus: Success!\n");    break;
 	case 0x01: printf("XBee: txStatus: No ACK\n");      break;
 	case 0x02: printf("XBee: txStatus: CCA Failure\n"); break;
 	case 0x03: printf("XBee: txStatus: Purged\n");      break;
@@ -214,7 +192,7 @@ int main(int argc, char *argv[]) {
 	free(p);
       }
     }
-    usleep(100000);
+    usleep(100);
   }
 
   return 0;
