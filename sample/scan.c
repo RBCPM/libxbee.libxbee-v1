@@ -1,6 +1,7 @@
 #ifdef shell
 gcc -o ${0//.c/} $0 -lxbee
-exit
+exit;
+}
 #endif
 
 #include <stdio.h>
