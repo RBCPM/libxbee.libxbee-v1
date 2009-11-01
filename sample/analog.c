@@ -28,11 +28,14 @@ int main(int argc, char *argv[]) {
   while (1) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
-      /* calculate the volcate */
-      voltage = (Vref / 1024) * pkt->IOanalog[0];
-      /* print out the reading */
-      if (pkt->IOmask & 0x0200) printf("\rA0: %.2fv ",voltage);
-      fflush(stdout);
+      /* did we get a value for A0? */
+      if (pkt->IOmask & 0x0200) {
+        /* calculate the volcate */
+        voltage = (Vref / 1024) * pkt->IOanalog[0];
+        /* print out the reading */
+        printf("\rA0: %.2fv ",voltage);
+        fflush(stdout);
+      }
       /* release the packet */
       free(pkt);
     }
