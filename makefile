@@ -1,4 +1,5 @@
 SRCS:=api.c
+MANS:=man3/libxbee.3 man3/xbee_setup.3 man3/xbee_newcon.3 man3/xbee_getpacket.3 man3/xbee_senddata.3 man3/xbee_vsenddata.3
 PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 
 CC:=gcc
@@ -6,6 +7,8 @@ CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
 #DEBUG:=-g -DDEBUG
 DEFINES:=
+
+MANPATH:=${shell manpath|cut -d : -f 1}
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
 ifneq ($(strip $(wildcard /usr/share/enscript/mine-web.hdr)),)
@@ -18,8 +21,9 @@ endif
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
-.PHONY: all run new clean cleanpdfs main pdfs install install_su uninstall uninstall_su
+.PHONY: all run new clean cleanpdfs main pdfs install install_su uninstall uninstall_su uninstall_man/
 
+FORCE:
 
 # all - do everything (default) #
 all: main
@@ -38,6 +42,7 @@ new: clean all
 # clean - remove any compiled files and PDFs #
 clean:
 	rm -f ./*~
+	rm -f ./sample/*~
 	rm -f ./obj/*.o
 	rm -f ./lib/libxbee.so*
 	rm -f ./bin/main
@@ -47,9 +52,7 @@ cleanpdfs:
 
 
 # install - installs library #
-install: /usr/lib/libxbee.so.1.0.1
-
-/usr/lib/libxbee.so.1.0.1: ./lib/libxbee.so.1.0.1
+install:
 	@echo
 	@echo
 	@echo "################################################################"
@@ -59,20 +62,26 @@ install: /usr/lib/libxbee.so.1.0.1
 	@echo
 	@echo
 
-install_su:
+install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h ${addsuffix .bz2,${addprefix ${MANPATH}/,${MANS}}}
+
+/usr/lib/libxbee.so.1.0.1: ./lib/libxbee.so.1.0.1
 	cp ./lib/libxbee.so.1.0.1 /usr/lib/libxbee.so.1.0.1 -f
-	chmod 755 /usr/lib/libxbee.so.1.0.1
-	chown root:root /usr/lib/libxbee.so.1.0.1
-
+	@chmod 755 /usr/lib/libxbee.so.1.0.1
+	@chown root:root /usr/lib/libxbee.so.1.0.1
 	cp /usr/lib/libxbee.so.1.0.1 /usr/lib/libxbee.so.1 -sf
-	chown root:root /usr/lib/libxbee.so.1
-
+	@chown root:root /usr/lib/libxbee.so.1
 	cp /usr/lib/libxbee.so.1.0.1 /usr/lib/libxbee.so -sf
-	chown root:root /usr/lib/libxbee.so
+	@chown root:root /usr/lib/libxbee.so
 
+/usr/include/xbee.h: ./xbee.h
 	cp ./xbee.h /usr/include/xbee.h -f
-	chmod 644 /usr/include/xbee.h
-	chown root:root /usr/include/xbee.h
+	@chmod 644 /usr/include/xbee.h
+	@chown root:root /usr/include/xbee.h
+
+${MANPATH}/%.bz2: ./man/%
+	cat $< | bzip2 -z > $@
+	@chmod 644 $@
+	@chown root:root $@
 
 uninstall:
 	@echo
@@ -84,11 +93,14 @@ uninstall:
 	@echo
 	@echo
 
-uninstall_su:
+uninstall_su: ${addprefix uninstall_man/,${MANS}}
 	rm /usr/lib/libxbee.so.1.0.1 -f
 	rm /usr/lib/libxbee.so.1 -f
-	rm /usr/lib/libxbee.so -f
+	rm /usr/lib/libxbee.so -f	
 	rm /usr/include/xbee.h -f
+
+uninstall_man/%:
+	rm ${MANPATH}/$*.bz2 -f
 
 # main - compile & link objects #
 main: ./bin/main
