@@ -1,0 +1,19 @@
+Welcome to libxbee!
+
+I have proveded sample code in the ./sample directory. Hopefully this will help
+get you up and running with libxbee. If you would like samples showing a different
+aspect of libxbee, then please do not hesitate to file an 'issue' on the project
+site, and I will get to it ASAP:
+  http://code.google.com/p/libxbee/issues/list
+
+For the moment, documentation is only avaliable online in the project Wiki, but I
+will be making man pages that will be installed as part of the library shortly.
+  http://code.google.com/p/libxbee/wiki/wiki_home?tm=6
+
+Please note that this project is still in development, so should not be used for
+any purpose other than learning/playing/testing etc... Basically don't use it to
+make money, and then hold me responsible if it breaks!
+
+Feel free to contact me directly with any queries:
+  attie@attie.co.uk
+
