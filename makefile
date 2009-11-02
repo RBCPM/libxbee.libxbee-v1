@@ -1,5 +1,10 @@
 SRCS:=api.c
-MANS:=man3/libxbee.3 man3/xbee_setup.3 man3/xbee_newcon.3 man3/xbee_getpacket.3 man3/xbee_senddata.3 man3/xbee_vsenddata.3
+MANS:=man3/libxbee.3 \
+      man3/xbee_setup.3 \
+      man3/xbee_newcon.3 \
+      man3/xbee_getpacket.3 \
+      man3/xbee_senddata.3 \
+      man3/xbee_vsenddata.3
 PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 
 CC:=gcc
