@@ -671,6 +671,9 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
     l->next = p->next;
   }
 
+  /* unlink this packet from the chain! */
+  q->next = NULL;
+
 #ifdef DEBUG
   fprintf(stderr,"XBee: Got a packet\n");
   for (p = xbee.pktlist,c = 0;p;c++,p = p->next);
