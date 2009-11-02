@@ -6,9 +6,11 @@ aspect of libxbee, then please do not hesitate to file an 'issue' on the project
 site, and I will get to it ASAP:
   http://code.google.com/p/libxbee/issues/list
 
-For the moment, documentation is only avaliable online in the project Wiki, but I
-will be making man pages that will be installed as part of the library shortly.
+Documentation is avaliable online in the project Wiki and also once you have
+installed the library via the man page system.
   http://code.google.com/p/libxbee/wiki/wiki_home?tm=6
+
+  man libxbee
 
 Please note that this project is still in development, so should not be used for
 any purpose other than learning/playing/testing etc... Basically don't use it to

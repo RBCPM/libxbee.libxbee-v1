@@ -16,6 +16,10 @@ DEFINES:=
 
 MANPATH:=${shell manpath|cut -d : -f 1}
 
+ifeq ($(strip $(wildcard ${MANPATH}/man3/libxbee.3.bz2)),)
+FIRSTTIME:=TRUE
+endif
+
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
 ifneq ($(strip $(wildcard /usr/share/enscript/mine-web.hdr)),)
   ENSCRIPT+= --fancy-header=mine-web
@@ -28,8 +32,6 @@ SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
 .PHONY: all run new clean cleanpdfs main pdfs install install_su uninstall uninstall_su uninstall_man/
-
-FORCE:
 
 # all - do everything (default) #
 all: main
@@ -66,7 +68,13 @@ install:
 	@echo "################################################################"
 	su -c "make install_su --no-print-directory"
 	@echo
+ifeq (${FIRSTTIME},TRUE)
 	@echo
+	@echo "It seems that you have just done a fresh install of libxbee!"
+	@echo "Please visit the libxbee manpage for help getting started:"
+	@echo " -> man libxbee"
+	@echo
+endif
 
 install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h ${addsuffix .bz2,${addprefix ${MANPATH}/,${MANS}}}
 
