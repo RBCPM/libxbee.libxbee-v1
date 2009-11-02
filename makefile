@@ -63,17 +63,17 @@ cleanpdfs:
 install:
 	@echo
 	@echo
-	@echo "################################################################"
-	@echo "### To Install this library I need the root password please! ###"
-	@echo "################################################################"
+	@echo "###########################################################################################"
+	@echo "###              To Install this library I need the root password please!               ###"
+	@echo "###########################################################################################"
 	su -c "make install_su --no-print-directory"
 	@echo
 ifeq (${FIRSTTIME},TRUE)
+	@echo "###########################################################################################"
 	@echo
-	@echo "It seems that you have just done a fresh install of libxbee!"
-	@echo "Please visit the libxbee manpage for help getting started:"
-	@echo " -> man libxbee"
+	@pr -h "" -o 3 -w 86 -tT ./README
 	@echo
+	@echo "###########################################################################################"
 endif
 
 install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h ${addsuffix .bz2,${addprefix ${MANPATH}/,${MANS}}}
@@ -100,9 +100,9 @@ ${MANPATH}/%.bz2: ./man/%
 uninstall:
 	@echo
 	@echo
-	@echo "##################################################################"
-	@echo "### To Uninstall this library I need the root password please! ###"
-	@echo "##################################################################"
+	@echo "###########################################################################################"
+	@echo "###            To Uninstall this library I need the root password please!               ###"
+	@echo "###########################################################################################"
 	su -c "make uninstall_su --no-print-directory"
 	@echo
 	@echo
