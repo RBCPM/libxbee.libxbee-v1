@@ -14,12 +14,13 @@ CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
 #DEBUG:=-g -DDEBUG
 DEFINES:=
 
+ifeq (${MANPATH},)
 MANPATH:=${shell manpath|cut -d : -f 1}
+endif
 
+FIRSTTIME:=FALSE
 ifeq ($(strip $(wildcard ${MANPATH}/man3/libxbee.3.bz2)),)
 FIRSTTIME:=TRUE
-else
-FIRSTTIME:=FALSE
 endif
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
@@ -37,6 +38,7 @@ PDFS:=${sort ${PDFS}}
 
 # all - do everything (default) #
 all: main
+	@echo ${HELLO}
 	@echo "*** Done! ***"
 
 
@@ -104,9 +106,11 @@ ${MANPATH}/%.bz2: ./man/%
 uninstall:
 	@echo
 	@echo
+ifneq ($(shell echo $$USER),root)
 	@echo "###########################################################################################"
 	@echo "###            To Uninstall this library I need the root password please!               ###"
 	@echo "###########################################################################################"
+endif
 	su -c "make uninstall_su --no-print-directory"
 	@echo
 	@echo
