@@ -389,7 +389,7 @@ int main(int argc, char *argv[]) {
 	  printf("\r%c[%dA",27,nodes-i+1);
 
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"ID")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"ID")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the ID column */
 	    printf("\r%c[18C",27);
 	    /* print the ID */
@@ -402,7 +402,7 @@ int main(int argc, char *argv[]) {
 	  }
 
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"BD")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"BD")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the BD column */
 	    printf("\r%c[80C",27);
 	    if ((rpkt->data[0] != 0x00) || (rpkt->data[1] != 0x00) || (rpkt->data[2] != 0x00) || ((rpkt->data[3] & 0xF8) != 0x00)) {
@@ -429,7 +429,7 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"AP")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"AP")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the AP column */
 	    printf("\r%c[96C",27);
 	    /* print the ID */
@@ -440,7 +440,7 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"HV")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"HV")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the HV column */
 	    printf("\r%c[108C",27);
 	    /* print the ID */
@@ -452,7 +452,7 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"VR")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"VR")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the VR column */
 	    printf("\r%c[122C",27);
 	    /* print the ID */
@@ -464,7 +464,7 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if ((rpkt = xbee_senddata(tcon,"CC")) != NULL) {
+	  if (((rpkt = xbee_senddata(tcon,"CC")) != NULL) && (rpkt->status == 0)) {
 	    /* move over the CC column */
 	    printf("\r%c[134C",27);
 	    /* print the ID */
