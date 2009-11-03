@@ -72,7 +72,7 @@ ifneq ($(shell echo $$USER),root)
 	@echo "###              To Install this library I need the root password please!               ###"
 	@echo "###########################################################################################"
 endif
-	su -c "make install_su --no-print-directory"
+	su -c "MANPATH=${MANPATH} make install_su --no-print-directory"
 	@echo
 ifeq (${FIRSTTIME},TRUE)
 	@echo "###########################################################################################"
@@ -111,7 +111,7 @@ ifneq ($(shell echo $$USER),root)
 	@echo "###            To Uninstall this library I need the root password please!               ###"
 	@echo "###########################################################################################"
 endif
-	su -c "make uninstall_su --no-print-directory"
+	su -c "MANPATH=${MANPATH} make uninstall_su --no-print-directory"
 	@echo
 	@echo
 
