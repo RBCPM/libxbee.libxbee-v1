@@ -1,13 +1,15 @@
 #-- uncomment this to enable debugging
 #DEBUG:=-g -DDEBUG
 
+#-- what compiler are you using?
+CC:=gcc
+
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
 
 SRCS:=api.c
 
-CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
 DEFINES:=

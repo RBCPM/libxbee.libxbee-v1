@@ -18,3 +18,8 @@ make money, and then hold me responsible if it breaks!
 
 Feel free to contact me directly with any queries:
   attie@attie.co.uk
+
+
+For those of you that are planning to use this on an embedded board, I have
+included a small makefile (umakefile) that has only the information needed to
+compile the library. I suggest you use this instead!
