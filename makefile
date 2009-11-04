@@ -1,3 +1,13 @@
+#-- set this to the man directory you would like to use
+MANPATH:=/usr/share/man
+
+#-- uncomment this to enable debugging
+#DEBUG:=-g -DDEBUG
+
+
+###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
+
+
 SRCS:=api.c
 MANS:=man3/libxbee.3 \
       man3/xbee_setup.3 \
@@ -11,16 +21,12 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
-#DEBUG:=-g -DDEBUG
 DEFINES:=
 
-ifeq (${MANPATH},)
-MANPATH:=${shell manpath|cut -d : -f 1}
-endif
-
-FIRSTTIME:=FALSE
 ifeq ($(strip $(wildcard ${MANPATH}/man3/libxbee.3.bz2)),)
 FIRSTTIME:=TRUE
+else
+FIRSTTIME:=FALSE
 endif
 
 ENSCRIPT:=-MA4 --color -f Courier8 -C --margins=15:15:0:20
@@ -30,11 +36,11 @@ else
   ENSCRIPT+= --fancy-header=a2ps
 endif
 
-
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
 .PHONY: all run new clean cleanpdfs main pdfs install install_su uninstall uninstall_su uninstall_man/
+
 
 # all - do everything (default) #
 all: main
@@ -64,7 +70,7 @@ cleanpdfs:
 
 
 # install - installs library #
-install:
+install: ./lib/libxbee.so.1.0.1
 	@echo
 	@echo
 ifneq ($(shell echo $$USER),root)
@@ -72,7 +78,7 @@ ifneq ($(shell echo $$USER),root)
 	@echo "###              To Install this library I need the root password please!               ###"
 	@echo "###########################################################################################"
 endif
-	su -c "MANPATH=${MANPATH} make install_su --no-print-directory"
+	su -c "make install_su --no-print-directory"
 	@echo
 ifeq (${FIRSTTIME},TRUE)
 	@echo "###########################################################################################"
@@ -99,7 +105,8 @@ install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h ${addsuffix .bz2,${add
 	@chown root:root /usr/include/xbee.h
 
 ${MANPATH}/%.bz2: ./man/%
-	cat $< | bzip2 -z > $@
+	@echo "cat $< | bzip2 -z > $@"
+	@cat $< | bzip2 -z > $@ || echo "### Installing man page '$*' to '$@' failed... ###"
 	@chmod 644 $@
 	@chown root:root $@
 
@@ -111,7 +118,7 @@ ifneq ($(shell echo $$USER),root)
 	@echo "###            To Uninstall this library I need the root password please!               ###"
 	@echo "###########################################################################################"
 endif
-	su -c "MANPATH=${MANPATH} make uninstall_su --no-print-directory"
+	su -c "make uninstall_su --no-print-directory"
 	@echo
 	@echo
 
