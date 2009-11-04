@@ -1,0 +1,71 @@
+#-- uncomment this to enable debugging
+#DEBUG:=-g -DDEBUG
+
+
+###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
+
+
+SRCS:=api.c
+
+CC:=gcc
+CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
+CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
+DEFINES:=
+
+SRCS:=${sort ${SRCS}}
+
+.PHONY: all run new clean main
+
+
+# all - do everything (default) #
+all: main
+	@echo "*** Done! ***"
+
+
+# run - remake main and then run #
+run: main
+	LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH ./bin/main
+
+
+# new - clean and do everything again #
+new: clean all
+
+
+# clean - remove any compiled files and PDFs #
+clean:
+	rm -f ./*~
+	rm -f ./sample/*~
+	rm -f ./obj/*.o
+	rm -f ./lib/libxbee.so*
+	rm -f ./bin/main
+
+
+# main - compile & link objects #
+main: ./bin/main
+
+./bin/main: ./lib/libxbee.so.1.0.1 ./bin/ ./main.c
+	${CC} ${CLINKS} ./main.c -o ./bin/main ${DEBUG}
+
+./bin/:
+	mkdir ./bin/
+
+./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
+	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
+ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
+	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
+endif
+ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
+	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -sf
+endif
+
+./lib/:
+	mkdir ./lib/
+
+./obj/:
+	mkdir ./obj/
+
+./obj/%.o: %.c %.h xbee.h globals.h
+	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
+
+./obj/%.o: %.c xbee.h globals.h
+	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@

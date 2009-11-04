@@ -46,7 +46,6 @@ PDFS:=${sort ${PDFS}}
 
 # all - do everything (default) #
 all: main
-	@echo ${HELLO}
 	@echo "*** Done! ***"
 
 
