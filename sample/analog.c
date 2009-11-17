@@ -41,16 +41,16 @@ int main(int argc, char *argv[]) {
   }
 
   /* get a connection to the remote XBee */
-  con = xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x403af247);
+  con = xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x40081826);
 
   /* do this forever! */
   while (1) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
       /* did we get a value for A0? */
-      if (pkt->IOmask & 0x0200) {
-        /* calculate the volcate */
-        voltage = (Vref / 1024) * pkt->IOanalog[0];
+      if (xbee_hasAnalog(pkt,0)) {
+        /* calculate the voltage */
+        voltage = xbee_getAnalog(pkt,0,Vref);
         /* print out the reading */
         printf("\rA0: %.2fv ",voltage);
         fflush(stdout);

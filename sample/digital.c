@@ -38,16 +38,16 @@ int main(int argc, char *argv[]) {
   }
 
   /* get a connection to the remote XBee */
-  con = xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x403af247);
+  con = xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x40081826);
 
   /* do this forever! */
   while (1) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
       /* did we get a value for D0? */
-      if (pkt->IOmask & 0x0001) {
+      if (xbee_hasDigital(pkt,0)) {
         /* print out the reading */
-        printf("\rD0: %d ",!!pkt->IOdata & 0x01);
+        printf("\rD0: %d ",xbee_getDigital(pkt,0));
         fflush(stdout);
       }
       /* release the packet */

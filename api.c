@@ -73,6 +73,54 @@ void Xfree2(void **ptr) {
 }
 
 /* ################################################################# */
+/* ### Helper Functions ############################################ */
+/* ################################################################# */
+
+/* #################################################################
+   returns 1 if the packet has data for the digital channel else 0 */
+int xbee_hasDigital(xbee_pkt *pkt, int channel) {
+  int mask = 0x0001;
+  if (channel < 0 || channel > 7) return 0;
+
+  mask <<= channel;
+
+  return !!(pkt->IOmask & mask);
+}
+
+/* #################################################################
+   returns 1 if the digital input is high else 0 (or 0 if digital data not present) */
+int xbee_getDigital(xbee_pkt *pkt, int channel) {
+  int mask = 0x0001;
+  if (channel < 0 || channel > 7) return 0;
+
+  if (!xbee_hasDigital(pkt,channel)) return 0;
+
+  mask <<= channel;
+  return !!(pkt->IOdata & mask);
+}
+
+/* #################################################################
+   returns 1 if the packet has data for the analog channel else 0 */
+int xbee_hasAnalog(xbee_pkt *pkt, int channel) {
+  int mask = 0x0200;
+  if (channel < 0 || channel > 5) return 0;
+
+  mask <<= channel;
+
+  return !!(pkt->IOmask & mask);
+}
+
+/* #################################################################
+   returns analog input as a voltage if vRef is non-zero, else raw value (or 0 if analog data not present) */
+double xbee_getAnalog(xbee_pkt *pkt, int channel, double Vref) {
+  if (channel < 0 || channel > 5) return 0;
+  if (!xbee_hasAnalog(pkt,channel)) return 0;
+
+  if (Vref) return (Vref / 1024) * pkt->IOanalog[0];
+  return pkt->IOanalog[channel];
+}
+
+/* ################################################################# */
 /* ### XBee Functions ############################################## */
 /* ################################################################# */
 
