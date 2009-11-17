@@ -15,6 +15,10 @@ MANS:=man3/libxbee.3 \
       man3/xbee_getpacket.3 \
       man3/xbee_senddata.3 \
       man3/xbee_vsenddata.3 \
+      man3/xbee_getdigital.3 \
+      man3/xbee_hasdigital.3 \
+      man3/xbee_getanalog.3 \
+      man3/xbee_hasanalog.3 \
       man3/xbee_pkt.3
 MANPATHS:=$(foreach dir,$(shell ls man -ln | grep ^d | tr -s ' ' | cut -d ' ' -f 9),${MANPATH}/$(dir))
 

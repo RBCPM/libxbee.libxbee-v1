@@ -48,9 +48,9 @@ int main(int argc, char *argv[]) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
       /* did we get a value for A0? */
-      if (xbee_hasAnalog(pkt,0)) {
+      if (xbee_hasanalog(pkt,0)) {
         /* calculate the voltage */
-        voltage = xbee_getAnalog(pkt,0,Vref);
+        voltage = xbee_getanalog(pkt,0,Vref);
         /* print out the reading */
         printf("\rA0: %.2fv ",voltage);
         fflush(stdout);

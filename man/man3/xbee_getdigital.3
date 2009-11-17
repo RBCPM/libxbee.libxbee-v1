@@ -17,46 +17,62 @@
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .TH XBEE_GETPACKET 3  2009-11-01 "GNU" "Linux Programmer's Manual"
 .SH NAME
-xbee_getpacket
+xbee_hasdigital, xbee_getdigital
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
-.BI "xbee_pkt *xbee_getpacket(xbee_con *" con ");"
+.BI "int xbee_hasdigital(xbee_pkt *" pkt ", int " input ");"
+.sp
+.BI "int xbee_getdigital(xbee_pkt *" pkt ", int " input ");"
 .ad b
 .SH DESCRIPTION
 The
-.BR xbee_getpacket ()
-function will return the next avaliable packet for the provided connection.
-It takes 1 argument.
+.BR xbee_hasdigital ()
+function will check the packet for the presence of a sample on the specified input.
+.sp
+The
+.BR xbee_getdigital ()
+function will read the packet and return the sample value for the specified input.
+.sp
+They both take 2 arguments, with the same purposes.
 .sp
 The argument
-.I con
-points to a connection made previously with
-.BR xbee_newcon ().
+.I pkt
+points to a packet that was previously retrieved with 
+.BR xbee_getpacket ()
+.sp
+The argument
+.I input
+specifies which input you are interested in testing.
 .SH "RETURN VALUE"
-Upon successful return, this function returns the packet, having unlinked it from the internal list of packets.
-You must keep hold of the packet until you are finished with it, and then you must
-.BR free ()
-it to prevent memory leaks.
+The
+.BR xbee_hasdigital ()
+function will return
+.B 1
+if the provided packet has sample data for the specified input, otherwise
+.BR 0 .
 .sp
-If a packet was not avaliable for the provided connection, a
-.B NULL
-is returned.
+The
+.BR xbee_getdigital ()
+function will return
+.B 1
+if the provided packet has sample data for the specified input and the sample was HIGH.
+A
+.B 0
+will be returned if the sample was LOW, or the packet does not contain sample data.
 .sp
-If an error occured a
-.B NULL
-is also returned (though unlikely).
-.sp
-For more info on the structure of the packet, please see
-.BR xbee_pkt (3)
 .SH EXAMPLE
-To recieve a packet from a previously made connection:
+To read sample data from previously made connection:
 .in +4n
 .nf
 #include <xbee.h>
 xbee_pkt *pkt;
 if ((pkt = xbee_getpacket(con)) != NULL) {
-  /* process packet... */
+  if (xbee_hasdigital(pkt,0)) {
+    printf("D0 read %d\n",xbee_getdigital(pkt,0));
+  } else {
+    printf("No D0 data\n");
+  }
   free(pkt);
 }
 .fi
@@ -65,11 +81,7 @@ if ((pkt = xbee_getpacket(con)) != NULL) {
 Attie Grande <attie@attie.co.uk> 
 .SH "SEE ALSO"
 .BR libxbee (3),
-.BR xbee_setup (3),
-.BR xbee_newcon (3),
-.BR xbee_senddata (3),
 .BR xbee_pkt (3),
-.BR xbee_hasDigital (3),
-.BR xbee_getDigital (3),
-.BR xbee_hasAnalog (3),
-.BR xbee_getAnalog (3)
+.BR xbee_getpacket (3),
+.BR xbee_hasanalog (3),
+.BR xbee_getanalog (3)

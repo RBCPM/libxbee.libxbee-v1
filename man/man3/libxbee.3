@@ -46,16 +46,27 @@ Documentation is avaliable via the following man pages, or online via the projec
 .nf
 http://code.google.com/p/libxbee/wiki/wiki_home?tm=6
 .sp
+.BR xbee_pkt "(3) - libxbee's packet structure
+.sp
 .BR xbee_setup "(3) - function to setup libxbee"
 .BR xbee_newcon "(3) - function to create a new connection"
 .BR xbee_getpacket "(3) - function to get a packet from a connection"
 .BR xbee_senddata "(3) - function to send data to a remote XBee"
-.BR xbee_pkt "(3) - libxbee's packet structure
+.sp
+.BR xbee_hasdigital "(3) - function to check if digital sample is in the packet"
+.BR xbee_getdigital "(3) - function to get digital sample from the packet"
+.sp
+.BR xbee_hasanalog "(3) - function to check if analog sample is in the packet"
+.BR xbee_getanalog "(3) - function to get the analog sample from the packet"
 .fi
 .in
 .SH "SEE ALSO"
+.BR xbee_pkt (3),
 .BR xbee_setup (3),
 .BR xbee_newcon (3),
 .BR xbee_getpacket (3),
 .BR xbee_senddata (3),
-.BR xbee_pkt (3)
+.BR xbee_hasdigital (3),
+.BR xbee_getdigital (3),
+.BR xbee_hasanalog (3),
+.BR xbee_getanalog (3)

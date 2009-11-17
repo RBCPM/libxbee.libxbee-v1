@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
       /* did we get a value for D0? */
-      if (xbee_hasDigital(pkt,0)) {
+      if (xbee_hasdigital(pkt,0)) {
         /* print out the reading */
-        printf("\rD0: %d ",xbee_getDigital(pkt,0));
+        printf("\rD0: %d ",xbee_getdigital(pkt,0));
         fflush(stdout);
       }
       /* release the packet */

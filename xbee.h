@@ -93,10 +93,10 @@ xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...);
 xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap);
 xbee_pkt *xbee_getpacket(xbee_con *con);
 
-int xbee_hasDigital(xbee_pkt *pkt, int channel);
-int xbee_getDigital(xbee_pkt *pkt, int channel);
+int xbee_hasdigital(xbee_pkt *pkt, int input);
+int xbee_getdigital(xbee_pkt *pkt, int input);
 
-int xbee_hasAnalog(xbee_pkt *pkt, int channel);
-double xbee_getAnalog(xbee_pkt *pkt, int channel, double Vref);
+int xbee_hasanalog(xbee_pkt *pkt, int input);
+double xbee_getanalog(xbee_pkt *pkt, int input, double Vref);
 
 #endif

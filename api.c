@@ -77,47 +77,47 @@ void Xfree2(void **ptr) {
 /* ################################################################# */
 
 /* #################################################################
-   returns 1 if the packet has data for the digital channel else 0 */
-int xbee_hasDigital(xbee_pkt *pkt, int channel) {
+   returns 1 if the packet has data for the digital input else 0 */
+int xbee_hasdigital(xbee_pkt *pkt, int input) {
   int mask = 0x0001;
-  if (channel < 0 || channel > 7) return 0;
+  if (input < 0 || input > 7) return 0;
 
-  mask <<= channel;
+  mask <<= input;
 
   return !!(pkt->IOmask & mask);
 }
 
 /* #################################################################
    returns 1 if the digital input is high else 0 (or 0 if digital data not present) */
-int xbee_getDigital(xbee_pkt *pkt, int channel) {
+int xbee_getdigital(xbee_pkt *pkt, int input) {
   int mask = 0x0001;
-  if (channel < 0 || channel > 7) return 0;
+  if (input < 0 || input > 7) return 0;
 
-  if (!xbee_hasDigital(pkt,channel)) return 0;
+  if (!xbee_hasdigital(pkt,input)) return 0;
 
-  mask <<= channel;
+  mask <<= input;
   return !!(pkt->IOdata & mask);
 }
 
 /* #################################################################
-   returns 1 if the packet has data for the analog channel else 0 */
-int xbee_hasAnalog(xbee_pkt *pkt, int channel) {
+   returns 1 if the packet has data for the analog input else 0 */
+int xbee_hasanalog(xbee_pkt *pkt, int input) {
   int mask = 0x0200;
-  if (channel < 0 || channel > 5) return 0;
+  if (input < 0 || input > 5) return 0;
 
-  mask <<= channel;
+  mask <<= input;
 
   return !!(pkt->IOmask & mask);
 }
 
 /* #################################################################
    returns analog input as a voltage if vRef is non-zero, else raw value (or 0 if analog data not present) */
-double xbee_getAnalog(xbee_pkt *pkt, int channel, double Vref) {
-  if (channel < 0 || channel > 5) return 0;
-  if (!xbee_hasAnalog(pkt,channel)) return 0;
+double xbee_getanalog(xbee_pkt *pkt, int input, double Vref) {
+  if (input < 0 || input > 5) return 0;
+  if (!xbee_hasanalog(pkt,input)) return 0;
 
   if (Vref) return (Vref / 1024) * pkt->IOanalog[0];
-  return pkt->IOanalog[channel];
+  return pkt->IOanalog[input];
 }
 
 /* ################################################################# */
