@@ -1,5 +1,5 @@
 To use these samples, you must first install libxbee.
-To instll, simply type `make install` and provide the root password.
+To install, simply type `make install` and provide the root password.
 
 If you cannot install the library for any reason, follow the instructions that can
 be found in the Wiki:
