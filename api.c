@@ -88,7 +88,7 @@ int xbee_hasdigital(xbee_pkt *pkt, int input) {
 }
 
 /* #################################################################
-   returns 1 if the digital input is high else 0 (or 0 if digital data not present) */
+   returns 1 if the digital input is high else 0 (or 0 if no digital data present) */
 int xbee_getdigital(xbee_pkt *pkt, int input) {
   int mask = 0x0001;
   if (input < 0 || input > 7) return 0;
@@ -111,7 +111,7 @@ int xbee_hasanalog(xbee_pkt *pkt, int input) {
 }
 
 /* #################################################################
-   returns analog input as a voltage if vRef is non-zero, else raw value (or 0 if analog data not present) */
+   returns analog input as a voltage if vRef is non-zero, else raw value (or 0 if no analog data present) */
 double xbee_getanalog(xbee_pkt *pkt, int input, double Vref) {
   if (input < 0 || input > 5) return 0;
   if (!xbee_hasanalog(pkt,input)) return 0;
@@ -438,6 +438,71 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 }
 
 /* #################################################################
+   xbee_endcon
+   close the unwanted connection */
+void xbee_endcon2(xbee_con **con) {
+  xbee_con *t, *u;
+  xbee_pkt *r, *p;
+
+  /* lock the connection mutex */
+  pthread_mutex_lock(&xbee.conmutex);
+
+  u = t = xbee.conlist;
+  while (t && t != *con) {
+    u = t;
+    t = t->next;
+  }
+  if (!u) {
+    /* invalid connection given... */
+#ifdef DEBUG
+    fprintf(stderr,"XBee: Attempted to close invalid connection...\n");
+#endif
+    /* unlock the connection mutex */
+    pthread_mutex_unlock(&xbee.conmutex);
+    return;
+  }
+  /* extract this connection from the list */
+  u->next = u->next->next;
+
+  /* unlock the connection mutex */
+  pthread_mutex_unlock(&xbee.conmutex);
+
+  /* lock the packet mutex */
+  pthread_mutex_lock(&xbee.pktmutex);
+
+  /* if: there are packets */
+  if ((p = xbee.pktlist) != NULL) {
+    r = NULL;
+    /* get all packets for this connection */
+    do {
+      /* does the packet match the connection? */
+      if (xbee_matchpktcon(p,*con)) {
+	/* if it was the first packet */
+	if (!r) {
+	  /* move the chain along */
+	  xbee.pktlist = p->next;
+	} else {
+	  /* otherwise relink the list */
+	  r->next = p->next;
+	}
+
+	/* free this packet! */
+	Xfree(p);
+      }
+      /* move on */
+      r = p;
+      p = p->next;
+    } while (p);
+  }
+
+  /* unlock the packet mutex */
+  pthread_mutex_unlock(&xbee.pktmutex);
+
+
+  Xfree(*con);
+}
+
+/* #################################################################
    xbee_senddata
    send the specified data to the provided connection */
 xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...) {
@@ -673,29 +738,13 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 
   l = NULL;
   q = NULL;
-  /* get the first avaliable packet for this socket */
+  /* get the first avaliable packet for this connection */
   do {
-    /* if: the connection type matches the packet type OR
-       the connection is 16/64bit remote AT, and the packet is a remote AT response */
-    if ((p->type == con->type) || /* -- */
-	((p->type == xbee_remoteAT) && /* -- */
-	 ((con->type == xbee_16bitRemoteAT) ||
-	  (con->type == xbee_64bitRemoteAT)))) {
-
-      /* if: the packet is modem status OR
-	 the packet is tx status or AT data and the frame IDs match OR
-	 the addresses match */
-      if ((p->type == xbee_modemStatus) ||
-	  (((p->type == xbee_txStatus) ||
-	    (p->type == xbee_localAT) ||
-	    (p->type == xbee_remoteAT)) &&
-	   (con->frameID == p->frameID)) ||
-	  (!memcmp(con->tAddr,p->Addr64,8))) {
-	q = p;
-	break;
-      }
+    /* does the packet match the connection? */
+    if (xbee_matchpktcon(p,con)) {
+      q = p;
+      break;
     }
-
     /* move on */
     l = p;
     p = p->next;
@@ -736,6 +785,31 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 }
 
 /* #################################################################
+   xbee_matchpktcon - INTERNAL
+   checks if the packet matches the connection */
+int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
+  /* if: the connection type matches the packet type OR
+     the connection is 16/64bit remote AT, and the packet is a remote AT response */
+  if ((pkt->type == con->type) || /* -- */
+      ((pkt->type == xbee_remoteAT) && /* -- */
+       ((con->type == xbee_16bitRemoteAT) ||
+	(con->type == xbee_64bitRemoteAT)))) {
+    /* if: the packet is modem status OR
+       the packet is tx status or AT data and the frame IDs match OR
+       the addresses match */
+    if ((pkt->type == xbee_modemStatus) ||
+	(((pkt->type == xbee_txStatus) ||
+	  (pkt->type == xbee_localAT) ||
+	  (pkt->type == xbee_remoteAT)) &&
+	 (pkt->frameID == con->frameID)) ||
+	(!memcmp(pkt->Addr64,con->tAddr,8))) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* #################################################################
    xbee_listen - INTERNAL
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
@@ -746,6 +820,8 @@ void xbee_listen(t_info *info) {
   int j;
 #endif
   xbee_pkt *p, *q, *po;
+  xbee_con *con;
+  int hasCon;
 
   /* just falls out if the proper 'go-ahead' isn't given */
   if (xbee_ready != -1) return;
@@ -1152,6 +1228,30 @@ void xbee_listen(t_info *info) {
     }
     p->next = NULL;
 
+    /* lock the connection mutex */
+    pthread_mutex_lock(&xbee.conmutex);
+
+    con = xbee.conlist;
+    hasCon = 0;
+    do {
+      if (xbee_matchpktcon(p,con)) {
+	hasCon = 1;
+	break;
+      }
+    } while ((con = con->next) != NULL);
+
+    /* unlock the connection mutex */
+    pthread_mutex_unlock(&xbee.conmutex);
+
+    /* if the packet doesn't have a connection, don't add it! */
+    if (!hasCon) {
+      Xfree(p);
+#ifdef DEBUG
+      fprintf(stderr,"XBee: Connectionless packet... discarding!\n");
+#endif
+      continue;
+    }
+
     /* lock the packet mutex, so we can safely add the packet to the list */
     pthread_mutex_lock(&xbee.pktmutex);
     i = 1;
@@ -1214,7 +1314,7 @@ unsigned char xbee_getRawByte(void) {
   FD_ZERO(&fds);
   FD_SET(xbee.ttyfd,&fds);
   if (select(xbee.ttyfd+1,&fds,NULL,NULL,NULL) == -1) {
-    perror("xbee:xbee_listen():xbee_getByte()");
+    perror("xbee:xbee_listen():xbee_getRawByte()");
     exit(1);
   }
 

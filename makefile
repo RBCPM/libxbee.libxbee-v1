@@ -2,7 +2,7 @@
 MANPATH:=/usr/share/man
 
 #-- uncomment this to enable debugging
-#DEBUG:=-g -DDEBUG
+DEBUG:=-g -DDEBUG
 
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
@@ -45,7 +45,9 @@ endif
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
-.PHONY: all run new clean cleanpdfs main pdfs install install_su install_man uninstall uninstall_su uninstall_man/
+.PHONY: all run new clean cleanpdfs main pdfs 
+.PHONY: install install_su install_man
+.PHONY: uninstall uninstall_su uninstall_man/
 
 
 # all - do everything (default) #
@@ -79,18 +81,18 @@ install: ./lib/libxbee.so.1.0.1
 	@echo
 	@echo
 ifneq ($(shell echo $$USER),root)
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 	@echo "### To Install this library I need the root password please!"
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 endif
 	su -c "make install_su --no-print-directory"
 	@echo
 ifeq (${FIRSTTIME},TRUE)
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 	@echo
 	@pr -h "" -o 3 -w 86 -tT ./README
 	@echo
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 endif
 
 install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h install_man
@@ -112,18 +114,18 @@ install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h install_man
 install_man: ${MANPATH} ${MANPATHS} ${addsuffix .bz2,${addprefix ${MANPATH}/,${MANS}}}
 
 ${MANPATH} ${MANPATHS}:
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 	@echo "### $@ does not exist... cannot install man files here!"
 	@echo "### Please check the directory and the MANPATH variable in the makefile"
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 	@false
 
 ${MANPATH}/%.bz2: ./man/%
 	@echo "cat $< | bzip2 -z > $@"
 	@cat $< | bzip2 -z > $@ || ( \
-	  echo "###########################################################################################"; \
+	  echo "#######################################################################################"; \
 	  echo "### Installing man page '$*' to '$@' failed..."; \
-	  echo "###########################################################################################"; )
+	  echo "#######################################################################################"; )
 	@chmod 644 $@
 	@chown root:root $@
 
@@ -131,9 +133,9 @@ uninstall:
 	@echo
 	@echo
 ifneq ($(shell echo $$USER),root)
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 	@echo "### To Uninstall this library I need the root password please!"
-	@echo "###########################################################################################"
+	@echo "#######################################################################################"
 endif
 	su -c "make uninstall_su --no-print-directory"
 	@echo

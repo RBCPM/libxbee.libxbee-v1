@@ -77,6 +77,7 @@ void Xfree2(void **ptr);
 void xbee_listen(t_info *info);
 unsigned char xbee_getByte(void);
 unsigned char xbee_getRawByte(void);
+int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
 t_data *xbee_make_pkt(unsigned char *data, int len);
 void xbee_send_pkt(t_data *pkt);
