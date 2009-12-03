@@ -126,7 +126,7 @@ double xbee_getanalog(xbee_pkt *pkt, int input, double Vref) {
 
 /* #################################################################
    xbee_setup
-   opens xbee serial port & creates xbee read thread
+   opens xbee serial port & creates xbee listen thread
    the xbee must be configured for API mode 2
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
 int xbee_setup(char *path, int baudrate) {
