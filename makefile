@@ -2,7 +2,7 @@
 MANPATH:=/usr/share/man
 
 #-- uncomment this to enable debugging
-DEBUG:=-g -DDEBUG
+#DEBUG:=-g -DDEBUG
 
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
