@@ -22,6 +22,8 @@ xbee_newcon
 .B #include <xbee.h>
 .sp
 .BI "xbee_con *xbee_newcon(unsigned char " frameID ", xbee_types " type ", ...);"
+.sp
+.BI "void xbee_endcon(xbee_con *" con ");"
 .ad b
 .SH DESCRIPTION
 The
@@ -29,6 +31,10 @@ The
 function will setup a new connection with the specified settings.
 It takes at least 2 arguments, and possibly up to 4 depending on the
 .I type.
+.sp
+.B NOTE:
+Packets will only be collected when they match an active connection.
+You must setup a connection in order to recieve packets.
 .sp
 The argument
 .I frameID
@@ -73,6 +79,10 @@ containing the 16-bit address (e.g. 0x1234).
 .sp
 If you are using any 64-bit connection, you must also specify 2 integers containing the
 64-bit address, first the high 32-bits, then the low 32-bits.
+.sp
+The
+.BR xbee_endcon ()
+function is used to end a connection. This will stop keeping packets for that connection, and remove any packets from the buffer.
 .SH "RETURN VALUE"
 A pointer to the connection is returned. A connection can only be made once, using the same
 .I frameID
