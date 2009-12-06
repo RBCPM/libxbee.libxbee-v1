@@ -93,6 +93,7 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 void xbee_endcon2(xbee_con **con);
 xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...);
 xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length);
 xbee_pkt *xbee_getpacket(xbee_con *con);
 
 int xbee_hasdigital(xbee_pkt *pkt, int input);

@@ -520,10 +520,24 @@ xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...) {
 }
 
 xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
+  xbee_pkt *p;
+  unsigned char data[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
+  int length;
+
+  ISREADY;
+
+  /* make up the data and keep the length, its possible there are nulls in there */
+  length = vsnprintf((char *)data,128,format,ap);
+
+  /* hand it over :) */
+  p = xbee_nsenddata(con,(char *)data,length);
+  return p;
+}
+
+xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
   t_data *pkt;
-  int i, length;
+  int i;
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
-  unsigned char data[128]; /* ditto */
   xbee_pkt *p = NULL; /* response packet */
   int to = 100; /* resonse timeout */
 
@@ -531,9 +545,7 @@ xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
 
   if (!con) return (void *)-1;
   if (con->type == xbee_unknown) return (void *)-1;
-
-  /* make up the data and keep the length, its possible there are nulls in there */
-  length = vsnprintf((char *)data,128,format,ap);
+  if (length > 127) return (void *)-1;
 
 #ifdef DEBUG
   fprintf(stderr,"XBee: --== TX Packet ============--\n");
