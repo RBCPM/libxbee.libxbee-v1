@@ -130,10 +130,27 @@ double xbee_getanalog(xbee_pkt *pkt, int input, double Vref) {
    the xbee must be configured for API mode 2
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
 int xbee_setup(char *path, int baudrate) {
+  return xbee_setuperr(path,baudrate,0);
+}
+int xbee_setuperr(char *path, int baudrate, int errfd) {
   t_info info;
   struct flock fl;
   struct termios tc;
   speed_t chosenbaud;
+
+#ifdef DEBUG
+  xbee.errfd = ((errfd)?errfd:stdout);
+#else
+  xbee.errfd = errfd;
+#endif
+  if (xbee.errfd) {
+    xbee.err = fdopen(xbee.errfd,"w");
+    if (!xbee.err) {
+      /* errno == 9 is bad file descriptor (probrably not provided) */
+      if (errno != 9) perror("Failed opening logfile");
+      xbee.errfd = 0;
+    }
+  }
 
   /* select the baud rate */
   switch (baudrate) {
@@ -278,9 +295,7 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   unsigned char tAddr[8];
   va_list ap;
   int t;
-#ifdef DEBUG
   int i;
-#endif
 
   ISREADY;
 
@@ -382,46 +397,46 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   con->frameID = frameID;
   memcpy(con->tAddr,tAddr,8); /* copy in the remote address */
 
-#ifdef DEBUG
-  switch(type) {
+  if (xbee.errfd) {
+    switch(type) {
     case xbee_localAT:
-      fprintf(stderr,"XBee: New local AT connection!\n");
+      fprintf(xbee.err,"XBee: New local AT connection!\n");
       break;
     case xbee_16bitRemoteAT:
     case xbee_64bitRemoteAT:
-      fprintf(stderr,"XBee: New %d-bit remote AT connection! (to: ",(con->tAddr64?64:16));
+      fprintf(xbee.err,"XBee: New %d-bit remote AT connection! (to: ",(con->tAddr64?64:16));
       for (i=0;i<(con->tAddr64?8:2);i++) {
-        fprintf(stderr,(i?":%02X":"%02X"),tAddr[i]);
+        fprintf(xbee.err,(i?":%02X":"%02X"),tAddr[i]);
       }
-      fprintf(stderr,")\n");
+      fprintf(xbee.err,")\n");
       break;
     case xbee_16bitData:
     case xbee_64bitData:
-      fprintf(stderr,"XBee: New %d-bit data connection! (to: ",(con->tAddr64?64:16));
+      fprintf(xbee.err,"XBee: New %d-bit data connection! (to: ",(con->tAddr64?64:16));
       for (i=0;i<(con->tAddr64?8:2);i++) {
-        fprintf(stderr,(i?":%02X":"%02X"),tAddr[i]);
+        fprintf(xbee.err,(i?":%02X":"%02X"),tAddr[i]);
       }
-      fprintf(stderr,")\n");
+      fprintf(xbee.err,")\n");
       break;
     case xbee_16bitIO:
     case xbee_64bitIO:
-      fprintf(stderr,"XBee: New %d-bit IO connection! (to: ",(con->tAddr64?64:16));
+      fprintf(xbee.err,"XBee: New %d-bit IO connection! (to: ",(con->tAddr64?64:16));
       for (i=0;i<(con->tAddr64?8:2);i++) {
-        fprintf(stderr,(i?":%02X":"%02X"),tAddr[i]);
+        fprintf(xbee.err,(i?":%02X":"%02X"),tAddr[i]);
       }
-      fprintf(stderr,")\n");
+      fprintf(xbee.err,")\n");
       break;
     case xbee_txStatus:
-      fprintf(stderr,"XBee: New Tx status connection!\n");
+      fprintf(xbee.err,"XBee: New Tx status connection!\n");
       break;
     case xbee_modemStatus:
-      fprintf(stderr,"XBee: New modem status connection!\n");
+      fprintf(xbee.err,"XBee: New modem status connection!\n");
       break;
     case xbee_unknown:
     default:
-      fprintf(stderr,"XBee: New unknown connection!\n");
+      fprintf(xbee.err,"XBee: New unknown connection!\n");
+    }
   }
-#endif
 
   /* make it the last in the list */
   con->next = NULL;
@@ -454,9 +469,9 @@ void xbee_endcon2(xbee_con **con) {
   }
   if (!u) {
     /* invalid connection given... */
-#ifdef DEBUG
-    fprintf(stderr,"XBee: Attempted to close invalid connection...\n");
-#endif
+    if (xbee.errfd) {
+      fprintf(xbee.err,"XBee: Attempted to close invalid connection...\n");
+    }
     /* unlock the connection mutex */
     pthread_mutex_unlock(&xbee.conmutex);
     return;
@@ -520,7 +535,6 @@ xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...) {
 }
 
 xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
-  xbee_pkt *p;
   unsigned char data[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
   int length;
 
@@ -530,16 +544,15 @@ xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   length = vsnprintf((char *)data,128,format,ap);
 
   /* hand it over :) */
-  p = xbee_nsenddata(con,(char *)data,length);
-  return p;
+  return xbee_nsenddata(con,(char *)data,length,1);
 }
 
-xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
+xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length, int getPkt) {
   t_data *pkt;
   int i;
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
   xbee_pkt *p = NULL; /* response packet */
-  int to = 100; /* resonse timeout */
+  int to = 50; /* resonse timeout */
 
   ISREADY;
 
@@ -547,14 +560,14 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
   if (con->type == xbee_unknown) return (void *)-1;
   if (length > 127) return (void *)-1;
 
-#ifdef DEBUG
-  fprintf(stderr,"XBee: --== TX Packet ============--\n");
-  fprintf(stderr,"XBee: Length: %d\n",length);
-  for (i=0;i<length;i++) {
-    fprintf(stderr,"XBee: %3d | 0x%02X ",i,data[i]);
-    if ((data[i] > 32) && (data[i] < 127)) fprintf(stderr,"'%c'\n",data[i]); else fprintf(stderr," _\n");
+  if (xbee.errfd) {
+    fprintf(xbee.err,"XBee: --== TX Packet ============--\n");
+    fprintf(xbee.err,"XBee: Length: %d\n",length);
+    for (i=0;i<length;i++) {
+      fprintf(xbee.err,"XBee: %3d | 0x%02X ",i,data[i]);
+      if ((data[i] > 32) && (data[i] < 127)) fprintf(xbee.err,"'%c'\n",data[i]); else fprintf(xbee.err," _\n");
+    }
   }
-#endif
 
   /* ########################################## */
   /* if: local AT */
@@ -576,6 +589,8 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
     /* send it on */
     xbee_send_pkt(pkt);
 
+    if (!getPkt) return NULL;
+
     /* wait for a response packet */
     for (; p == NULL && to > 0; to--) {
       usleep(25400); /* tuned so that hopefully the first time round will catch the response */
@@ -584,20 +599,20 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
 
     /* if: no txStatus packet was recieved */
     if (to == 0) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: No AT status recieved before timeout\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: No AT status recieved before timeout\n");
+      }
       return NULL;
     }
 
-#ifdef DEBUG
-    switch (p->status) {
-    case 0x00: fprintf(stderr,"XBee: AT Status: OK!\n");               break;
-    case 0x01: fprintf(stderr,"XBee: AT Status: Error\n");             break;
-    case 0x02: fprintf(stderr,"XBee: AT Status: Invalid Command\n");   break;
-    case 0x03: fprintf(stderr,"XBee: AT Status: Invalid Parameter\n"); break;
+    if (xbee.errfd) {
+      switch (p->status) {
+      case 0x00: fprintf(xbee.err,"XBee: AT Status: OK!\n");               break;
+      case 0x01: fprintf(xbee.err,"XBee: AT Status: Error\n");             break;
+      case 0x02: fprintf(xbee.err,"XBee: AT Status: Invalid Command\n");   break;
+      case 0x03: fprintf(xbee.err,"XBee: AT Status: Invalid Parameter\n"); break;
+      }
     }
-#endif
     return p;
   /* ########################################## */
   /* if: remote AT */
@@ -629,6 +644,8 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
     /* send it on */
     xbee_send_pkt(pkt);
 
+    if (!getPkt) return NULL;
+
     /* wait for a response packet */
     for (; p == NULL && to > 0; to--) {
       usleep(25400); /* tuned so that hopefully the first time round will catch the response */
@@ -637,21 +654,21 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
 
     /* if: no txStatus packet was recieved */
     if (to == 0) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: No AT status recieved before timeout\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: No AT status recieved before timeout\n");
+      }
       return NULL;
     }
 
-#ifdef DEBUG
-    switch (p->status) {
-    case 0x00: fprintf(stderr,"XBee: AT Status: OK!\n");               break;
-    case 0x01: fprintf(stderr,"XBee: AT Status: Error\n");             break;
-    case 0x02: fprintf(stderr,"XBee: AT Status: Invalid Command\n");   break;
-    case 0x03: fprintf(stderr,"XBee: AT Status: Invalid Parameter\n"); break;
-    case 0x04: fprintf(stderr,"XBee: AT Status: No Response\n");       break;
+    if (xbee.errfd) {
+      switch (p->status) {
+      case 0x00: fprintf(xbee.err,"XBee: AT Status: OK!\n");               break;
+      case 0x01: fprintf(xbee.err,"XBee: AT Status: Error\n");             break;
+      case 0x02: fprintf(xbee.err,"XBee: AT Status: Invalid Command\n");   break;
+      case 0x03: fprintf(xbee.err,"XBee: AT Status: Invalid Parameter\n"); break;
+      case 0x04: fprintf(xbee.err,"XBee: AT Status: No Response\n");       break;
+      }
     }
-#endif
     return p;
   /* ########################################## */
   /* if: 16 or 64bit Data */
@@ -690,6 +707,8 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
     /* send it on */
     xbee_send_pkt(pkt);
 
+    if (!getPkt) return NULL;
+
     /* wait for a response packet */
     for (; p == NULL && to > 0; to--) {
       usleep(25400); /* tuned so that hopefully the first time round will catch the response */
@@ -698,20 +717,20 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
 
     /* if: no txStatus packet was recieved */
     if (to == 0) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: No txStatus recieved before timeout\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: No txStatus recieved before timeout\n");
+      }
       return NULL;
     }
 
-#ifdef DEBUG
-    switch (p->status) {
-    case 0x00: fprintf(stderr,"XBee: txStatus: Success!\n");    break;
-    case 0x01: fprintf(stderr,"XBee: txStatus: No ACK\n");      break;
-    case 0x02: fprintf(stderr,"XBee: txStatus: CCA Failure\n"); break;
-    case 0x03: fprintf(stderr,"XBee: txStatus: Purged\n");      break;
+    if (xbee.errfd) {
+      switch (p->status) {
+      case 0x00: fprintf(xbee.err,"XBee: txStatus: Success!\n");    break;
+      case 0x01: fprintf(xbee.err,"XBee: txStatus: No ACK\n");      break;
+      case 0x02: fprintf(xbee.err,"XBee: txStatus: CCA Failure\n"); break;
+      case 0x03: fprintf(xbee.err,"XBee: txStatus: Purged\n");      break;
+      }
     }
-#endif
     /* return the packet */
     return p;
   /* ########################################## */
@@ -719,7 +738,7 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
   } else if ((con->type == xbee_64bitIO) ||
 	     (con->type == xbee_16bitIO)) {
     /* not currently implemented... is it even allowed? */
-    fprintf(stderr,"******* TODO ********\n");
+    fprintf(xbee.err,"******* TODO ********\n");
   }
 
   return (void *)-1;
@@ -731,10 +750,10 @@ xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length) {
    once the packet has been retrieved, it is removed for the list! */
 xbee_pkt *xbee_getpacket(xbee_con *con) {
   xbee_pkt *l, *p, *q;
-#ifdef DEBUG
   int c;
-  fprintf(stderr,"XBee: --== Get Packet ==========--\n");
-#endif
+  if (xbee.errfd) {
+    fprintf(xbee.err,"XBee: --== Get Packet ==========--\n");
+  }
 
   /* lock the packet mutex */
   pthread_mutex_lock(&xbee.pktmutex);
@@ -742,9 +761,9 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   /* if: there are no packets */
   if ((p = xbee.pktlist) == NULL) {
     pthread_mutex_unlock(&xbee.pktmutex);
-#ifdef DEBUG
-    fprintf(stderr,"XBee: No packets avaliable...\n");
-#endif
+    if (xbee.errfd) {
+      fprintf(xbee.err,"XBee: No packets avaliable...\n");
+    }
     return NULL;
   }
 
@@ -765,9 +784,9 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   /* if: no packet was found */
   if (!q) {
     pthread_mutex_unlock(&xbee.pktmutex);
-#ifdef DEBUG
-    fprintf(stderr,"XBee: No packets avaliable (for connection)...\n");
-#endif
+    if (xbee.errfd) {
+      fprintf(xbee.err,"XBee: No packets avaliable (for connection)...\n");
+    }
     return NULL;
   }
 
@@ -783,11 +802,11 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   /* unlink this packet from the chain! */
   q->next = NULL;
 
-#ifdef DEBUG
-  fprintf(stderr,"XBee: Got a packet\n");
-  for (p = xbee.pktlist,c = 0;p;c++,p = p->next);
-  fprintf(stderr,"XBee: Packets left: %d\n",c);
-#endif
+  if (xbee.errfd) {
+    fprintf(xbee.err,"XBee: Got a packet\n");
+    for (p = xbee.pktlist,c = 0;p;c++,p = p->next);
+    fprintf(xbee.err,"XBee: Packets left: %d\n",c);
+  }
 
   /* unlock the packet mutex */
   pthread_mutex_unlock(&xbee.pktmutex);
@@ -828,9 +847,7 @@ int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
 void xbee_listen(t_info *info) {
   unsigned char c, t, d[128];
   unsigned int l, i, chksum, o;
-#ifdef DEBUG
   int j;
-#endif
   xbee_pkt *p, *q, *po;
   xbee_con *con;
   int hasCon;
@@ -843,9 +860,9 @@ void xbee_listen(t_info *info) {
     /* wait for a valid start byte */
     if (xbee_getRawByte() != 0x7E) continue;
 
-#ifdef DEBUG
-    fprintf(stderr,"XBee: --== RX Packet ===========--\nXBee: Got a packet!...\n");
-#endif
+    if (xbee.errfd) {
+      fprintf(xbee.err,"XBee: --== RX Packet ===========--\nXBee: Got a packet!...\n");
+    }
 
     /* get the length */
     l = xbee_getByte() << 8;
@@ -853,21 +870,21 @@ void xbee_listen(t_info *info) {
 
     /* check it is a valid length... */
     if (!l) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Recived zero length packet!\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Recived zero length packet!\n");
+      }
       continue;
     }
     if (l > 100) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Recived oversized packet! Length: %d\n",l - 1);
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Recived oversized packet! Length: %d\n",l - 1);
+      }
       continue;
     }
 
-#ifdef DEBUG
-    fprintf(stderr,"XBee: Length: %d\n",l - 1);
-#endif
+    if (xbee.errfd) {
+      fprintf(xbee.err,"XBee: Length: %d\n",l - 1);
+    }
 
     /* get the packet type */
     t = xbee_getByte();
@@ -881,10 +898,10 @@ void xbee_listen(t_info *info) {
       c = xbee_getByte();
       d[i] = c;
       chksum += c;
-#ifdef DEBUG
-      fprintf(stderr,"XBee: %3d | 0x%02X | ",i,c);
-      if ((c > 32) && (c < 127)) fprintf(stderr,"'%c'\n",c); else fprintf(stderr," _\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: %3d | 0x%02X | ",i,c);
+	if ((c > 32) && (c < 127)) fprintf(xbee.err,"'%c'\n",c); else fprintf(xbee.err," _\n");
+      }
     }
     i--; /* it went up too many times!... */
 
@@ -893,17 +910,17 @@ void xbee_listen(t_info *info) {
 
     /* check if the whole packet was recieved, or something else occured... unlikely... */
     if (l>1) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Didn't get whole packet... :(\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Didn't get whole packet... :(\n");
+      }
       continue;
     }
 
     /* check the checksum */
     if ((chksum & 0xFF) != 0xFF) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Invalid Checksum: 0x%02X\n",chksum);
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Invalid Checksum: 0x%02X\n",chksum);
+      }
       continue;
     }
 
@@ -915,20 +932,20 @@ void xbee_listen(t_info *info) {
     /* ########################################## */
     /* if: modem status */
     if (t == 0x8A) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: Modem Status (0x8A)\n");
-      fprintf(stderr,"XBee: ");
-      switch (d[0]) {
-      case 0x00: fprintf(stderr,"Hardware reset"); break;
-      case 0x01: fprintf(stderr,"Watchdog timer reset"); break;
-      case 0x02: fprintf(stderr,"Associated"); break;
-      case 0x03: fprintf(stderr,"Disassociated"); break;
-      case 0x04: fprintf(stderr,"Synchronization lost"); break;
-      case 0x05: fprintf(stderr,"Coordinator realignment"); break;
-      case 0x06: fprintf(stderr,"Coordinator started"); break;
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: Modem Status (0x8A)\n");
+	fprintf(xbee.err,"XBee: ");
+	switch (d[0]) {
+	case 0x00: fprintf(xbee.err,"Hardware reset"); break;
+	case 0x01: fprintf(xbee.err,"Watchdog timer reset"); break;
+	case 0x02: fprintf(xbee.err,"Associated"); break;
+	case 0x03: fprintf(xbee.err,"Disassociated"); break;
+	case 0x04: fprintf(xbee.err,"Synchronization lost"); break;
+	case 0x05: fprintf(xbee.err,"Coordinator realignment"); break;
+	case 0x06: fprintf(xbee.err,"Coordinator started"); break;
+	}
+	fprintf(xbee.err,"...\n");
       }
-      fprintf(stderr,"...\n");
-#endif
       p->type = xbee_modemStatus;
 
       p->sAddr64 = FALSE;
@@ -945,15 +962,15 @@ void xbee_listen(t_info *info) {
     /* ########################################## */
     /* if: local AT response */
     } else if (t == 0x88) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: Local AT Response (0x88)\n");
-      fprintf(stderr,"XBee: FrameID: 0x%02X\n",d[0]);
-      fprintf(stderr,"XBee: AT Command: %c%c\n",d[1],d[2]);
-      if (d[3] == 0) fprintf(stderr,"XBee: Status: OK\n");
-      else if (d[3] == 1) fprintf(stderr,"XBee: Status: Error\n");
-      else if (d[3] == 2) fprintf(stderr,"XBee: Status: Invalid Command\n");
-      else if (d[3] == 3) fprintf(stderr,"XBee: Status: Invalid Parameter\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: Local AT Response (0x88)\n");
+	fprintf(xbee.err,"XBee: FrameID: 0x%02X\n",d[0]);
+	fprintf(xbee.err,"XBee: AT Command: %c%c\n",d[1],d[2]);
+	if (d[3] == 0) fprintf(xbee.err,"XBee: Status: OK\n");
+	else if (d[3] == 1) fprintf(xbee.err,"XBee: Status: Error\n");
+	else if (d[3] == 2) fprintf(xbee.err,"XBee: Status: Invalid Command\n");
+	else if (d[3] == 3) fprintf(xbee.err,"XBee: Status: Invalid Parameter\n");
+      }
       p->type = xbee_localAT;
 
       p->sAddr64 = FALSE;
@@ -976,26 +993,26 @@ void xbee_listen(t_info *info) {
     /* ########################################## */
     /* if: remote AT response */
     } else if (t == 0x97) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: Remote AT Response (0x97)\n");
-      fprintf(stderr,"XBee: FrameID: 0x%02X\n",d[0]);
-      fprintf(stderr,"XBee: 64-bit Address: ");
-      for (j=0;j<8;j++) {
-	fprintf(stderr,(j?":%02X":"%02X"),d[1+j]);
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: Remote AT Response (0x97)\n");
+	fprintf(xbee.err,"XBee: FrameID: 0x%02X\n",d[0]);
+	fprintf(xbee.err,"XBee: 64-bit Address: ");
+	for (j=0;j<8;j++) {
+	  fprintf(xbee.err,(j?":%02X":"%02X"),d[1+j]);
+	}
+	fprintf(xbee.err,"\n");
+	fprintf(xbee.err,"XBee: 16-bit Address: ");
+	for (j=0;j<2;j++) {
+	  fprintf(xbee.err,(j?":%02X":"%02X"),d[9+j]);
+	}
+	fprintf(xbee.err,"\n");
+	fprintf(xbee.err,"XBee: AT Command: %c%c\n",d[11],d[12]);
+	if (d[13] == 0) fprintf(xbee.err,"XBee: Status: OK\n");
+	else if (d[13] == 1) fprintf(xbee.err,"XBee: Status: Error\n");
+	else if (d[13] == 2) fprintf(xbee.err,"XBee: Status: Invalid Command\n");
+	else if (d[13] == 3) fprintf(xbee.err,"XBee: Status: Invalid Parameter\n");
+	else if (d[13] == 4) fprintf(xbee.err,"XBee: Status: No Response\n");
       }
-      fprintf(stderr,"\n");
-      fprintf(stderr,"XBee: 16-bit Address: ");
-      for (j=0;j<2;j++) {
-	fprintf(stderr,(j?":%02X":"%02X"),d[9+j]);
-      }
-      fprintf(stderr,"\n");
-      fprintf(stderr,"XBee: AT Command: %c%c\n",d[11],d[12]);
-      if (d[13] == 0) fprintf(stderr,"XBee: Status: OK\n");
-      else if (d[13] == 1) fprintf(stderr,"XBee: Status: Error\n");
-      else if (d[13] == 2) fprintf(stderr,"XBee: Status: Invalid Command\n");
-      else if (d[13] == 3) fprintf(stderr,"XBee: Status: Invalid Parameter\n");
-      else if (d[13] == 4) fprintf(stderr,"XBee: Status: No Response\n");
-#endif
       p->type = xbee_remoteAT;
 
       p->sAddr64 = FALSE;
@@ -1031,14 +1048,14 @@ void xbee_listen(t_info *info) {
     /* ########################################## */
     /* if: TX status */
     } else if (t == 0x89) {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: TX Status Report (0x89)\n");
-      fprintf(stderr,"XBee: FrameID: 0x%02X\n",d[0]);
-      if (d[1] == 0) fprintf(stderr,"XBee: Status: Success\n");
-      else if (d[1] == 1) fprintf(stderr,"XBee: Status: No ACK\n");
-      else if (d[1] == 2) fprintf(stderr,"XBee: Status: CCA Failure\n");
-      else if (d[1] == 3) fprintf(stderr,"XBee: Status: Purged\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: TX Status Report (0x89)\n");
+	fprintf(xbee.err,"XBee: FrameID: 0x%02X\n",d[0]);
+	if (d[1] == 0) fprintf(xbee.err,"XBee: Status: Success\n");
+	else if (d[1] == 1) fprintf(xbee.err,"XBee: Status: No ACK\n");
+	else if (d[1] == 2) fprintf(xbee.err,"XBee: Status: CCA Failure\n");
+	else if (d[1] == 3) fprintf(xbee.err,"XBee: Status: Purged\n");
+      }
       p->type = xbee_txStatus;
 
       p->sAddr64 = FALSE;
@@ -1063,19 +1080,20 @@ void xbee_listen(t_info *info) {
       if (t == 0x80) { /* 64bit */
 	offset = 8;
       } else { /* 16bit */
+
 	offset = 2;
       }
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: %d-bit RX Data (0x%02X)\n",((t == 0x80)?64:16),t);
-      fprintf(stderr,"XBee: %d-bit Address: ",((t == 0x80)?64:16));
-      for (j=0;j<offset;j++) {
-	fprintf(stderr,(j?":%02X":"%02X"),d[j]);
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: %d-bit RX Data (0x%02X)\n",((t == 0x80)?64:16),t);
+	fprintf(xbee.err,"XBee: %d-bit Address: ",((t == 0x80)?64:16));
+	for (j=0;j<offset;j++) {
+	  fprintf(xbee.err,(j?":%02X":"%02X"),d[j]);
+	}
+	fprintf(xbee.err,"\n");
+	fprintf(xbee.err,"XBee: RSSI: -%ddB\n",d[offset]);
+	if (d[offset + 1] & 0x02) fprintf(xbee.err,"XBee: Options: Address Broadcast\n");
+	if (d[offset + 1] & 0x03) fprintf(xbee.err,"XBee: Options: PAN Broadcast\n");
       }
-      fprintf(stderr,"\n");
-      fprintf(stderr,"XBee: RSSI: -%ddB\n",d[offset]);
-      if (d[offset + 1] & 0x02) fprintf(stderr,"XBee: Options: Address Broadcast\n");
-      if (d[offset + 1] & 0x03) fprintf(stderr,"XBee: Options: PAN Broadcast\n");
-#endif
       p->dataPkt = TRUE;
       p->txStatusPkt = FALSE;
       p->modemStatusPkt = FALSE;
@@ -1127,25 +1145,25 @@ void xbee_listen(t_info *info) {
 	offset = 2;
 	samples = d[4];
       }
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: %d-bit RX I/O Data (0x%02X)\n",((t == 0x82)?64:16),t);
-      fprintf(stderr,"XBee: %d-bit Address: ",((t == 0x82)?64:16));
-      for (j = 0; j < offset; j++) {
-	fprintf(stderr,(j?":%02X":"%02X"),d[j]);
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: %d-bit RX I/O Data (0x%02X)\n",((t == 0x82)?64:16),t);
+	fprintf(xbee.err,"XBee: %d-bit Address: ",((t == 0x82)?64:16));
+	for (j = 0; j < offset; j++) {
+	  fprintf(xbee.err,(j?":%02X":"%02X"),d[j]);
+	}
+	fprintf(xbee.err,"\n");
+	fprintf(xbee.err,"XBee: RSSI: -%ddB\n",d[offset]);
+	if (d[9] & 0x02) fprintf(xbee.err,"XBee: Options: Address Broadcast\n");
+	if (d[9] & 0x02) fprintf(xbee.err,"XBee: Options: PAN Broadcast\n");
+	fprintf(xbee.err,"XBee: Samples: %d\n",d[offset + 2]);
       }
-      fprintf(stderr,"\n");
-      fprintf(stderr,"XBee: RSSI: -%ddB\n",d[offset]);
-      if (d[9] & 0x02) fprintf(stderr,"XBee: Options: Address Broadcast\n");
-      if (d[9] & 0x02) fprintf(stderr,"XBee: Options: PAN Broadcast\n");
-      fprintf(stderr,"XBee: Samples: %d\n",d[offset + 2]);
-#endif
       i = offset + 5;
 
       /* each sample is split into its own packet here, for simplicity */
       for (o = samples; o > 0; o--) {
-#ifdef DEBUG
-	fprintf(stderr,"XBee: --- Sample %3d -------------\n", o - samples + 1);
-#endif
+	if (xbee.errfd) {
+	  fprintf(xbee.err,"XBee: --- Sample %3d -------------\n", o - samples + 1);
+	}
 	/* if we arent still using the origional packet */
 	if (o < samples) {
 	  /* make a new one and link it up! */
@@ -1208,34 +1226,34 @@ void xbee_listen(t_info *info) {
 	if (d[11]&0x10) {p->IOanalog[3] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[11]&0x20) {p->IOanalog[4] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
 	if (d[11]&0x40) {p->IOanalog[5] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
-#ifdef DEBUG
-	if (p->IOmask & 0x0001) fprintf(stderr,"XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
-	if (p->IOmask & 0x0002) fprintf(stderr,"XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
-	if (p->IOmask & 0x0004) fprintf(stderr,"XBee: Digital 2: %c\n",((p->IOdata & 0x0004)?'1':'0'));
-	if (p->IOmask & 0x0008) fprintf(stderr,"XBee: Digital 3: %c\n",((p->IOdata & 0x0008)?'1':'0'));
-	if (p->IOmask & 0x0010) fprintf(stderr,"XBee: Digital 4: %c\n",((p->IOdata & 0x0010)?'1':'0'));
-	if (p->IOmask & 0x0020) fprintf(stderr,"XBee: Digital 5: %c\n",((p->IOdata & 0x0020)?'1':'0'));
-	if (p->IOmask & 0x0040) fprintf(stderr,"XBee: Digital 6: %c\n",((p->IOdata & 0x0040)?'1':'0'));
-	if (p->IOmask & 0x0080) fprintf(stderr,"XBee: Digital 7: %c\n",((p->IOdata & 0x0080)?'1':'0'));
-	if (p->IOmask & 0x0100) fprintf(stderr,"XBee: Digital 8: %c\n",((p->IOdata & 0x0100)?'1':'0'));
-	if (p->IOmask & 0x0200) fprintf(stderr,"XBee: Analog  0: %.2fv\n",(3.3/1023)*p->IOanalog[0]);
-	if (p->IOmask & 0x0400) fprintf(stderr,"XBee: Analog  1: %.2fv\n",(3.3/1023)*p->IOanalog[1]);
-	if (p->IOmask & 0x0800) fprintf(stderr,"XBee: Analog  2: %.2fv\n",(3.3/1023)*p->IOanalog[2]);
-	if (p->IOmask & 0x1000) fprintf(stderr,"XBee: Analog  3: %.2fv\n",(3.3/1023)*p->IOanalog[3]);
-	if (p->IOmask & 0x2000) fprintf(stderr,"XBee: Analog  4: %.2fv\n",(3.3/1023)*p->IOanalog[4]);
-	if (p->IOmask & 0x4000) fprintf(stderr,"XBee: Analog  5: %.2fv\n",(3.3/1023)*p->IOanalog[5]);
-#endif
+	if (xbee.errfd) {
+	  if (p->IOmask & 0x0001) fprintf(xbee.err,"XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
+	  if (p->IOmask & 0x0002) fprintf(xbee.err,"XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
+	  if (p->IOmask & 0x0004) fprintf(xbee.err,"XBee: Digital 2: %c\n",((p->IOdata & 0x0004)?'1':'0'));
+	  if (p->IOmask & 0x0008) fprintf(xbee.err,"XBee: Digital 3: %c\n",((p->IOdata & 0x0008)?'1':'0'));
+	  if (p->IOmask & 0x0010) fprintf(xbee.err,"XBee: Digital 4: %c\n",((p->IOdata & 0x0010)?'1':'0'));
+	  if (p->IOmask & 0x0020) fprintf(xbee.err,"XBee: Digital 5: %c\n",((p->IOdata & 0x0020)?'1':'0'));
+	  if (p->IOmask & 0x0040) fprintf(xbee.err,"XBee: Digital 6: %c\n",((p->IOdata & 0x0040)?'1':'0'));
+	  if (p->IOmask & 0x0080) fprintf(xbee.err,"XBee: Digital 7: %c\n",((p->IOdata & 0x0080)?'1':'0'));
+	  if (p->IOmask & 0x0100) fprintf(xbee.err,"XBee: Digital 8: %c\n",((p->IOdata & 0x0100)?'1':'0'));
+	  if (p->IOmask & 0x0200) fprintf(xbee.err,"XBee: Analog  0: %.2fv\n",(3.3/1023)*p->IOanalog[0]);
+	  if (p->IOmask & 0x0400) fprintf(xbee.err,"XBee: Analog  1: %.2fv\n",(3.3/1023)*p->IOanalog[1]);
+	  if (p->IOmask & 0x0800) fprintf(xbee.err,"XBee: Analog  2: %.2fv\n",(3.3/1023)*p->IOanalog[2]);
+	  if (p->IOmask & 0x1000) fprintf(xbee.err,"XBee: Analog  3: %.2fv\n",(3.3/1023)*p->IOanalog[3]);
+	  if (p->IOmask & 0x2000) fprintf(xbee.err,"XBee: Analog  4: %.2fv\n",(3.3/1023)*p->IOanalog[4]);
+	  if (p->IOmask & 0x4000) fprintf(xbee.err,"XBee: Analog  5: %.2fv\n",(3.3/1023)*p->IOanalog[5]);
+	}
       }
-#ifdef DEBUG
-      fprintf(stderr,"XBee: ----------------------------\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: ----------------------------\n");
+      }
 
     /* ########################################## */
     /* if: Unknown */
     } else {
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Packet type: Unknown (0x%02X)\n",t);
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Packet type: Unknown (0x%02X)\n",t);
+      }
       p->type = xbee_unknown;
     }
     p->next = NULL;
@@ -1258,9 +1276,9 @@ void xbee_listen(t_info *info) {
     /* if the packet doesn't have a connection, don't add it! */
     if (!hasCon) {
       Xfree(p);
-#ifdef DEBUG
-      fprintf(stderr,"XBee: Connectionless packet... discarding!\n");
-#endif
+      if (xbee.errfd) {
+	fprintf(xbee.err,"XBee: Connectionless packet... discarding!\n");
+      }
       continue;
     }
 
@@ -1281,14 +1299,14 @@ void xbee_listen(t_info *info) {
       q->next = po;
     }
 
-#ifdef DEBUG
-    while (q && q->next) {
-      q = q->next;
-      i++;
+    if (xbee.errfd) {
+      while (q && q->next) {
+	q = q->next;
+	i++;
+      }
+      fprintf(xbee.err,"XBee: --========================--\n");
+      fprintf(xbee.err,"XBee: Packets: %d\n",i);
     }
-    fprintf(stderr,"XBee: --========================--\n");
-    fprintf(stderr,"XBee: Packets: %d\n",i);
-#endif
 
     po = p = q = NULL;
 
@@ -1359,17 +1377,15 @@ void xbee_send_pkt(t_data *pkt) {
   /* unlock the mutex */
   pthread_mutex_unlock(&xbee.sendmutex);
 
-#ifdef DEBUG
-  {
+  if (xbee.errfd) {
     int i;
     /* prints packet in hex byte-by-byte */
-    fprintf(stderr,"XBee: TX Packet - ");
+    fprintf(xbee.err,"XBee: TX Packet - ");
     for (i=0;i<pkt->length;i++) {
-      fprintf(stderr,"0x%02X ",pkt->data[i]);
+      fprintf(xbee.err,"0x%02X ",pkt->data[i]);
     }
-    fprintf(stderr,"\n");
+    fprintf(xbee.err,"\n");
   }
-#endif
 
   /* free the packet */
   Xfree(pkt);
