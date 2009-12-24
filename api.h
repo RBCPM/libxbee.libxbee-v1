@@ -66,8 +66,8 @@ struct {
   int ttyfd;
   FILE *tty;
 
-  int errfd;
-  FILE *err;
+  int logfd;
+  FILE *log;
 
   char *path;
 } xbee;

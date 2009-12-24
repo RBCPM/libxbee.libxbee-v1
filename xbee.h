@@ -88,7 +88,7 @@ struct xbee_pkt {
 typedef struct xbee_pkt xbee_pkt;
 
 int xbee_setup(char *path, int baudrate);
-int xbee_setuperr(char *path, int baudrate, int errfd);
+int xbee_setuplog(char *path, int baudrate, int logfd);
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 #define xbee_endcon(x) xbee_endcon2((void **)&x)
 void xbee_endcon2(xbee_con **con);
