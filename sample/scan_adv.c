@@ -40,7 +40,7 @@ int BREAK = 0;
 xbee_con *con;
 
 void sighandler(int sig) {
-  xbee_pkt *rpkt;
+  xbee_pkt *pkt;
   if (sig == SIGINT) {
     BREAK = 1;
     /* wait for the rest of the timeout... */
@@ -52,14 +52,19 @@ void sighandler(int sig) {
     /* Restore the XBee's channel setting */
     printf("\r%c[2KRestoring channel to 0x%02X...",27,ATCH);
     fflush(stdout);
-    if ((rpkt = xbee_senddata(con,"CH%c",ATCH)) == NULL) {
+    if (xbee_senddata(con,"CH%c",ATCH)) {
+      printf("xbee_senddata: Error\n");
+      exit(1);
+    }
+    if ((pkt = xbee_getpacketwait(con)) == NULL) {
       printf("\r%c[2K*** XBee didnt return a result for CH... ***\nPlease manually reset your channel to 0x%02X\n",27,ATCH);
-    } else if (rpkt->status) {
+    }
+    if (pkt->status) {
       printf("\r%c[2K*** An error occured while restoring the channel setting... ***\nPlease manually reset your channel to 0x%02X\n",27,ATCH);
     } else {
       printf("\nDone!\n");
     }
-    free(rpkt);
+    free(pkt);
     /* Restore the terminal */
     printf("%c[?25h%c[0m",27,27);
     fflush(stdout);
@@ -90,7 +95,7 @@ int main(int argc, char *argv[]) {
   char stime[32];
 
   /* handle ^C */
-  (void) signal(SIGINT, sighandler);
+  signal(SIGINT, sighandler);
 
   /* setup libxbee */
   if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
@@ -101,21 +106,29 @@ int main(int argc, char *argv[]) {
   con = xbee_newcon('I',xbee_localAT);
 
   /* get the current channel */
-  if ((rpkt = xbee_senddata(con,"CH")) == NULL) {
+  if (xbee_senddata(con,"CH")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("XBee didnt return a result for CH\n");
     return 1;
   }
-  ATCH = rpkt->data[0];
-  free(rpkt);
+  ATCH = pkt->data[0];
+  free(pkt);
 
   /* XBee     - 0x0B - 0x1A
      XBee Pro - 0x0C - 0x17 */
-  if ((rpkt = xbee_senddata(con,"CH%c",0x0B)) == NULL) {
+  if (xbee_senddata(con,"CH%c",0x0B)) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("XBee didnt return a result for CH\n");
     return 1;
   }
   /* did that fail? */
-  if (rpkt->status == 0) {
+  if (pkt->status == 0) {
     /* nope.. its not a pro */
     printf("Using XBee (not Pro) channels (0x0B - 0x1A)...\n");
     XBeePro = 0;
@@ -126,41 +139,65 @@ int main(int argc, char *argv[]) {
     XBeePro = 1;
     ATCHc = 0x0C;
   }
-  free(rpkt);
+  free(pkt);
 
   /* find and print data for the local node */
   printf("\n%c[31mCH:%c[32m 0x%02X    ",27,27,ATCH);
-  if ((rpkt = xbee_senddata(con,"ID")) == NULL) {
+  if (xbee_senddata(con,"ID")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for ID\n");
     return 1;
   }
-  printf("%c[31mID:%c[32m 0x%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"MY")) == NULL) {
+  printf("%c[31mID:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"MY")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for MY\n");
     return 1;
   }
-  printf("%c[31mMY:%c[32m 0x%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"SH")) == NULL) {
+  printf("%c[31mMY:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"SH")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for SH\n");
     return 1;
   }
-  printf("%c[31mSH:%c[32m 0x%02X%02X%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1],rpkt->data[2],rpkt->data[3]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"SL")) == NULL) {
+  printf("%c[31mSH:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[0],pkt->data[1],pkt->data[2],pkt->data[3]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"SL")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for SL\n");
     return 1;
   }
-  printf("%c[31mSL:%c[32m 0x%02X%02X%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1],rpkt->data[2],rpkt->data[3]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"BD")) == NULL) {
+  printf("%c[31mSL:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[0],pkt->data[1],pkt->data[2],pkt->data[3]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"BD")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for BD\n");
     return 1;
   }
   printf("%c[31mBD:%c[32m ",27,27);
   /* print the baud rate */
-  switch (rpkt->data[3]) {
+  switch (pkt->data[3]) {
   case 0:  printf("  1200"); break;
   case 1:  printf("  2400"); break;
   case 2:  printf("  4800"); break;
@@ -172,48 +209,78 @@ int main(int argc, char *argv[]) {
   default: printf(" other"); break;
   }
   printf("    ");
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"AP")) == NULL) {
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"AP")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for AP\n");
     return 1;
   }
-  printf("%c[31mAP:%c[32m 0x%02X    ",27,27,rpkt->data[0]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"HV")) == NULL) {
+  printf("%c[31mAP:%c[32m 0x%02X    ",27,27,pkt->data[0]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"HV")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for HV\n");
     return 1;
   }
-  printf("%c[31mHV:%c[32m 0x%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"VR")) == NULL) {
+  printf("%c[31mHV:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"VR")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for VR\n");
     return 1;
   }
-  printf("%c[31mVR:%c[32m 0x%02X%02X    ",27,27,rpkt->data[0],rpkt->data[1]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"CC")) == NULL) {
+  printf("%c[31mVR:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"CC")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for CC\n");
     return 1;
   }
-  printf("%c[31mCC:%c[32m '%c' (0x%02X)    ",27,27,rpkt->data[0],rpkt->data[0]);
-  free(rpkt);
-  if ((rpkt = xbee_senddata(con,"NI")) == NULL) {
+  printf("%c[31mCC:%c[32m '%c' (0x%02X)    ",27,27,pkt->data[0],pkt->data[0]);
+  free(pkt);
+  /* ### */
+  if (xbee_senddata(con,"NI")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("\nXBee didnt return a result for NI\n");
     return 1;
   }
-  printf("%c[31mNI:%c[32m %-20s   ",27,27,rpkt->data);
-  free(rpkt);
+  printf("%c[31mNI:%c[32m %-20s   ",27,27,pkt->data);
+  free(pkt);
+  /* ### */
   printf("%c[95m* This is the lobal XBee *",27);
 
   printf("%c[34m\n---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------%c[0m\n\n",27,27);
 
   /* get the ND timeout */
-  if ((rpkt = xbee_senddata(con,"NT")) == NULL) {
+  if (xbee_senddata(con,"NT")) {
+    printf("xbee_senddata: Error\n");
+    return 1;
+  }
+  if ((pkt = xbee_getpacketwait(con)) == NULL) {
     printf("XBee didnt return a result for NT\n");
     return 1;
   }
-  ATNT = rpkt->data[0];
-  free(rpkt);
+  ATNT = pkt->data[0];
+  free(pkt);
 
   printf("%c[?25l",27);
   fflush(stdout);
@@ -222,150 +289,148 @@ int main(int argc, char *argv[]) {
 
   while (!BREAK) {
     /* set the channel to scan */
-    rpkt = xbee_senddata(con,"CH%c",ATCHc);
-    if (!rpkt || rpkt->status) {
+    if (xbee_senddata(con,"CH%c",ATCHc)) {
+      printf("xbee_senddata: Error\n");
+      return 1;
+    }
+    pkt = xbee_getpacketwait(con);
+    if (!pkt || pkt->status) {
       printf("\nXBee didnt return a result for CH\n");
       return 1;
     }
-    free(rpkt);
+    free(pkt);
     printf("%c[2KScanning channel 0x%02X...\r",27,ATCHc);
     fflush(stdout);
     /* send a ND - Node Discover request */
-    rpkt = xbee_senddata(con,"ND");
-    /* only wait for a bit longer than the ND timeout */
-    ATNTc = ATNT + 10;
-    /* loop until the end packet has been received or timeout reached */
-    while (!BREAK && ATNTc--) {
-      /* got a packet? */
-      if (rpkt) {
-	/* here we use the origionally returned packet */
-	pkt = rpkt;
-	rpkt = NULL;
-      } else {
-	/* here we get a new one */
+    if (!xbee_senddata(con,"ND")) {
+      /* only wait for a bit longer than the ND timeout */
+      ATNTc = ATNT + 10;
+      /* loop until the end packet has been received or timeout reached */
+      while (!BREAK && ATNTc--) {
+	/* get a packet */
 	pkt = xbee_getpacket(con);
-      }
-      /* check a packet was returned, and that its one we are after... */
-      if (pkt && !memcmp(pkt->atCmd,"ND",2)) {
-	/* is this the end packet? you can tell from the 0 datalen */
-	if (pkt->datalen == 0) {
-	  /* free the packet */
-	  free(pkt);
-	  break;
-	} else {
-	  /* check if we know this node already */
-	  for (i = 0; i < nodes; i++) {
-	    /* the 64bit address will match one in the list */
-	    if (!memcmp(&(pkt->data[2]),&(addrs[i][0]),8)) break;
-	  }
-	  ttime = time(NULL);
-	  strftime(stime,32,"%I:%M:%S %p",gmtime(&ttime));
-	  /* is there space for another? */
-	  if ((i == nodes) &&
-	      (nodes == MAXNODES) &&
-	      (!saidfull)) {
-	    printf("%c[2KMAXNODES reached... Can't add more...\r",27);
+	/* check a packet was returned, and that its one we are after... */
+	if (pkt && !memcmp(pkt->atCmd,"ND",2)) {
+	  /* is this the end packet? you can tell from the 0 datalen */
+	  if (pkt->datalen == 0) {
+	    /* free the packet */
+	    free(pkt);
+	    break;
+	  } else {
+	    /* check if we know this node already */
+	    for (i = 0; i < nodes; i++) {
+	      /* the 64bit address will match one in the list */
+	      if (!memcmp(&(pkt->data[2]),&(addrs[i][0]),8)) break;
+	    }
+	    ttime = time(NULL);
+	    strftime(stime,32,"%I:%M:%S %p",gmtime(&ttime));
+	    /* is there space for another? */
+	    if ((i == nodes) &&
+		(nodes == MAXNODES) &&
+		(!saidfull)) {
+	      printf("%c[2KMAXNODES reached... Can't add more...\r",27);
+	      /* flush so the change is seen! */
+	      fflush(stdout);
+	      saidfull = 1;
+	    } else {
+	      /* is this a rewrite? */
+	      if (i != nodes) {
+		/* find the line to edit */
+		printf("%c[%dA",27,nodes-i+1);
+		/* clear the line */
+		printf("%c[2K",27);
+	      } else {
+		/* fill the blank line */
+		printf("%c[%dA",27,1);
+	      }
+	      /* save the channel */
+	      addrs[i][8] = ATCHc;
+	      /* write out the info */
+	      printf("%c[31mCH:%c[32m 0x%02X    ",27,27,ATCHc);
+	      printf("%c[31mID:%c[32m 0x",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x80)) {
+		printf("....");
+	      } else {
+		printf("%02X%02X",addrs[i][9],addrs[i][10]);
+	      }
+	      printf("    ");
+	      printf("%c[31mMY:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
+	      printf("%c[31mSH:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[2],pkt->data[3],pkt->data[4],pkt->data[5]);
+	      printf("%c[31mSL:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[6],pkt->data[7],pkt->data[8],pkt->data[9]);
+	      printf("%c[31mBD:%c[32m ",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x40)) {
+		printf("......");
+	      } else {
+		switch (addrs[i][11]) {
+		case 0:  printf("  1200"); break;
+		case 1:  printf("  2400"); break;
+		case 2:  printf("  4800"); break;
+		case 3:  printf("  9600"); break;
+		case 4:  printf(" 19200"); break;
+		case 5:  printf(" 38400"); break;
+		case 6:  printf(" 57600"); break;
+		case 7:  printf("115200"); break;
+		default: printf(" other"); break;
+		}
+	      }
+	      printf("    ");
+	      printf("%c[31mAP:%c[32m 0x",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x20)) {
+		printf("..");
+	      } else {
+		printf("%02X",addrs[i][12]);
+	      }
+	      printf("    ");
+	      printf("%c[31mHV:%c[32m 0x",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x10)) {
+		printf("....");
+	      } else {
+		printf("%02X%02X",addrs[i][13],addrs[i][14]);
+	      }
+	      printf("    ");
+	      printf("%c[31mVR:%c[32m 0x",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x08)) {
+		printf("....");
+	      } else {
+		printf("%02X%02X",addrs[i][15],addrs[i][16]);
+	      }
+	      printf("    ");
+	      printf("%c[31mCC:%c[32m ",27,27);
+	      if (i == nodes || !(addrs[i][18] & 0x04)) {
+		printf(" .  (0x..)");
+	      } else {
+		printf("'%c' (0x%02X)",addrs[i][17],addrs[i][17]);
+	      }
+	      printf("    ");
+	      printf("%c[31mNI:%c[32m %-20s    ",27,27,&(pkt->data[11]));
+	      printf("%c[31mdB:%c[32m -%2d    ",27,27,pkt->data[10]);
+	      printf("%c[31m@:%c[32m %s",27,27,stime);
+	      /* is this a rewrite? */
+	      if (i != nodes) {
+		/* go back the the bottom */
+		printf("%c[%dB\r",27,nodes-i+1);
+	      } else {
+		/* if its new... save the address */
+		memcpy(&(addrs[nodes][0]),&(pkt->data[2]),8);
+		/* turn off all the flags */
+		addrs[nodes][18] = 0;
+		/* new line is only wanted for new nodes */
+		printf("\n%c[2K\n%c[0m",27,27);
+		/* if not, then add 1 to the number of nodes! */
+		nodes++;
+	      }
+	      printf("%c[0m%c[2KScanning channel 0x%02X...\r",27,27,ATCHc);
+	      fflush(stdout);
+	    }
 	    /* flush so the change is seen! */
 	    fflush(stdout);
-	    saidfull = 1;
-	  } else {
-	    /* is this a rewrite? */
-	    if (i != nodes) {
-	      /* find the line to edit */
-	      printf("%c[%dA",27,nodes-i+1);
-	      /* clear the line */
-	      printf("%c[2K",27);
-	    } else {
-	      /* fill the blank line */
-	      printf("%c[%dA",27,1);
-	    }
-	    /* save the channel */
-	    addrs[i][8] = ATCHc;
-	    /* write out the info */
-	    printf("%c[31mCH:%c[32m 0x%02X    ",27,27,ATCHc);
-	    printf("%c[31mID:%c[32m 0x",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x80)) {
-	      printf("....");
-	    } else {
-	      printf("%02X%02X",addrs[i][9],addrs[i][10]);
-	    }
-	    printf("    ");
-	    printf("%c[31mMY:%c[32m 0x%02X%02X    ",27,27,pkt->data[0],pkt->data[1]);
-	    printf("%c[31mSH:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[2],pkt->data[3],pkt->data[4],pkt->data[5]);
-	    printf("%c[31mSL:%c[32m 0x%02X%02X%02X%02X    ",27,27,pkt->data[6],pkt->data[7],pkt->data[8],pkt->data[9]);
-	    printf("%c[31mBD:%c[32m ",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x40)) {
-	      printf("......");
-	    } else {
-	      switch (addrs[i][11]) {
-	      case 0:  printf("  1200"); break;
-	      case 1:  printf("  2400"); break;
-	      case 2:  printf("  4800"); break;
-	      case 3:  printf("  9600"); break;
-	      case 4:  printf(" 19200"); break;
-	      case 5:  printf(" 38400"); break;
-	      case 6:  printf(" 57600"); break;
-	      case 7:  printf("115200"); break;
-	      default: printf(" other"); break;
-	      }
-	    }
-	    printf("    ");
-	    printf("%c[31mAP:%c[32m 0x",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x20)) {
-	      printf("..");
-	    } else {
-	      printf("%02X",addrs[i][12]);
-	    }
-	    printf("    ");
-	    printf("%c[31mHV:%c[32m 0x",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x10)) {
-	      printf("....");
-	    } else {
-	      printf("%02X%02X",addrs[i][13],addrs[i][14]);
-	    }
-	    printf("    ");
-	    printf("%c[31mVR:%c[32m 0x",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x08)) {
-	      printf("....");
-	    } else {
-	      printf("%02X%02X",addrs[i][15],addrs[i][16]);
-	    }
-	    printf("    ");
-	    printf("%c[31mCC:%c[32m ",27,27);
-	    if (i == nodes || !(addrs[i][18] & 0x04)) {
-	      printf(" .  (0x..)");
-	    } else {
-	      printf("'%c' (0x%02X)",addrs[i][17],addrs[i][17]);
-	    }
-	    printf("    ");
-	    printf("%c[31mNI:%c[32m %-20s    ",27,27,&(pkt->data[11]));
-	    printf("%c[31mdB:%c[32m -%2d    ",27,27,pkt->data[10]);
-	    printf("%c[31m@:%c[32m %s",27,27,stime);
-	    /* is this a rewrite? */
-	    if (i != nodes) {
-	      /* go back the the bottom */
-	      printf("%c[%dB\r",27,nodes-i+1);
-	    } else {
-	      /* if its new... save the address */
-	      memcpy(&(addrs[nodes][0]),&(pkt->data[2]),8);
-	      /* turn off all the flags */
-	      addrs[nodes][18] = 0;
-	      /* new line is only wanted for new nodes */
-	      printf("\n%c[2K\n%c[0m",27,27);
-	      /* if not, then add 1 to the number of nodes! */
-	      nodes++;
-	    }
-	    printf("%c[0m%c[2KScanning channel 0x%02X...\r",27,27,ATCHc);
-	    fflush(stdout);
 	  }
-	  /* flush so the change is seen! */
-	  fflush(stdout);
-        }
-	/* free the packet */
-	free(pkt);
+	  /* free the packet */
+	  free(pkt);
+	}
+	/* sleep for 100ms (same as NT steps */
+	usleep(100000);
       }
-      /* sleep for 100ms (same as NT steps */
-      usleep(100000);
     }
     fflush(stdout);
     /* check for all nodes on this channel, and get thier pan id */
@@ -389,7 +454,11 @@ int main(int argc, char *argv[]) {
 	  printf("\r%c[%dA",27,nodes-i+1);
 
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"ID")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"ID")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the ID column */
 	    printf("\r%c[18C",27);
 	    /* print the ID */
@@ -402,7 +471,11 @@ int main(int argc, char *argv[]) {
 	  }
 
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"BD")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"BD")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the BD column */
 	    printf("\r%c[80C",27);
 	    if ((rpkt->data[0] != 0x00) || (rpkt->data[1] != 0x00) || (rpkt->data[2] != 0x00) || ((rpkt->data[3] & 0xF8) != 0x00)) {
@@ -429,7 +502,11 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"AP")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"AP")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the AP column */
 	    printf("\r%c[96C",27);
 	    /* print the ID */
@@ -440,7 +517,11 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"HV")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"HV")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the HV column */
 	    printf("\r%c[108C",27);
 	    /* print the ID */
@@ -452,7 +533,11 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"VR")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"VR")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the VR column */
 	    printf("\r%c[122C",27);
 	    /* print the ID */
@@ -464,7 +549,11 @@ int main(int argc, char *argv[]) {
 	    free(rpkt);
 	  }
 	  /* in this case we dont care if we dont get a response packet... */
-	  if (((rpkt = xbee_senddata(tcon,"CC")) != NULL) && (rpkt->status == 0)) {
+	  if (xbee_senddata(tcon,"CC")) {
+	    printf("xbee_senddata: Error\n");
+	    return 1;
+	  }
+	  if (((rpkt = xbee_getpacketwait(tcon)) != NULL) && (rpkt->status == 0)) {
 	    /* move over the CC column */
 	    printf("\r%c[134C",27);
 	    /* print the ID */

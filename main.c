@@ -188,7 +188,10 @@ int main(int argc, char *argv[]) {
       if (pkt->IOmask & 0x2000) printf("A4: %.2fv  ",(Vref/1024)*pkt->IOanalog[4]);
       if (pkt->IOmask & 0x4000) printf("A5: %.2fv  ",(Vref/1024)*pkt->IOanalog[5]);
       printf("\n");
-      p = xbee_senddata(con2, "the time is %d\r", time(NULL));
+      if (xbee_senddata(con2, "the time is %d\r", time(NULL))) {
+	printf("Error: xbee_senddata\n");
+	return 1;
+      }
       free(pkt);
       if (p) {
 	switch (p->status) {
@@ -201,7 +204,10 @@ int main(int argc, char *argv[]) {
     }
     while ((pkt = xbee_getpacket(con2)) != NULL) {
       printf("he said '%s'\n", pkt->data);
-      p = xbee_senddata(con2, "you said '%s'\r", pkt->data);
+      if (xbee_senddata(con2, "you said '%s'\r", pkt->data)) {
+	printf("Error: xbee_senddata\n");
+	return 1;
+      }
       free(pkt);
       if (p) {
 	switch (p->status) {

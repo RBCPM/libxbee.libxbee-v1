@@ -89,12 +89,17 @@ typedef struct xbee_pkt xbee_pkt;
 
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);
+
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
+
 #define xbee_endcon(x) xbee_endcon2((void **)&x)
 void xbee_endcon2(xbee_con **con);
-xbee_pkt *xbee_senddata(xbee_con *con, char *format, ...);
-xbee_pkt *xbee_vsenddata(xbee_con *con, char *format, va_list ap);
-xbee_pkt *xbee_nsenddata(xbee_con *con, char *data, int length, int getPkt);
+
+int xbee_senddata(xbee_con *con, char *format, ...);
+int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+int xbee_nsenddata(xbee_con *con, char *data, int length);
+
+xbee_pkt *xbee_getpacketwait(xbee_con *con);
 xbee_pkt *xbee_getpacket(xbee_con *con);
 
 int xbee_hasdigital(xbee_pkt *pkt, int input);

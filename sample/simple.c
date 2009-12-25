@@ -41,6 +41,8 @@ int main(int argc, char *argv[]) {
   /* setup a connection */
   con = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
 
+  printf("Waiting...\n");
+
   /* just wait for data, and echo it back! */
   while (1) {
     /* while there are packets avaliable... */
@@ -48,21 +50,12 @@ int main(int argc, char *argv[]) {
       /* print the recieved data */
       printf("Rx: %s\n",pkt->data);
       /* say thank you */
-      rpkt = xbee_senddata(con,"thank you for saying '%s'\r",pkt->data);
+      if (xbee_senddata(con,"thank you for saying '%s'\r\n",pkt->data)) {
+	printf("xbee_senddata: Error\n");
+	return 1;
+      }
       /* free the packet */
       free(pkt);
-      /* was a packet returned? */
-      if (rpkt) {
-        /* check the response status */
-        if (rpkt->status != 0) {
-          /* uhoh... */
-          printf("An error occured while sending (0x%02X)\n",rpkt->status);
-          free(rpkt);
-          exit(1);
-        }
-        /* free the packet */
-        free(rpkt);
-      }
     }
     usleep(100000);
   }
