@@ -23,6 +23,11 @@ exit
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* this sample will control the digital 0 output from the keyboard. Type:
+     0, <RETURN> - off
+     1, <RETURN> - on
+     q, <RETURN> - quit */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

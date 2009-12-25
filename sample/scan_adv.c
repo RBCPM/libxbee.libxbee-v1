@@ -23,6 +23,9 @@ exit
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* this sample will scan all possible channels for remote nodes and return
+   the value of a few useful settings */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

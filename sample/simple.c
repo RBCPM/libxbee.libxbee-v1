@@ -23,6 +23,8 @@ exit
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* this sample will politely return any recieved data */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <xbee.h>

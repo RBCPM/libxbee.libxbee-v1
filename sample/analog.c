@@ -23,6 +23,8 @@ exit
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* this sample will output the voltage read from analog 0 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <xbee.h>
