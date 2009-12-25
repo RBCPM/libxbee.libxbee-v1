@@ -21,11 +21,13 @@ xbee_senddata, xbee_vsenddata
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
-.BI "xbee_pkt *xbee_senddata(xbee_con *" con ", char *" format ", ...);"
+.BI "int xbee_senddata(xbee_con *" con ", char *" format ", ...);"
+.sp
+.BI "int xbee_nsenddata(xbee_con *" con ", char *" data ", int " length ");"
 .sp
 .B #include <stdarg.h>
 .sp
-.BI "xbee_pkt *xbee_vsenddata(xbee_con *" con ", char *" format ", va_list " ap ");
+.BI "int xbee_vsenddata(xbee_con *" con ", char *" format ", va_list " ap ");
 .ad b
 .SH DESCRIPTION
 The
@@ -48,29 +50,19 @@ Please see the
 man page for more information.
 .sp
 If you are using
+.BR xbee_nsenddata ()
+you must provide a character array of the data, and the data's length.
+.sp
+If you are using
 .BR xbee_vsenddata ()
-you must provide a va_list rather than a variable number of arguments.
-This function does not call the
-.I va_end
-marco. Because it invokes the
-.I va_arg
-macro, the value of
-.I ap
-is undefined after the call.
-See
+you must provide a va_list. See
 .BR stdarg (3).
 .SH "RETURN VALUE"
-Upon successful return, these functions return the response
-.I xbee_pkt
-pointer.
+Upon successful completion, these functions return 0.
 .sp
-If a response packet was not returned before the internal timeout, a
-.B NULL
-is returned.
+If an invalid packet or connection was provided, -1 is returned.
 .sp
-If an error occured a
-.B -1
-is returned.
+If an unknown error occured, -2 is returned.
 .SH EXAMPLE
 To send the string "Hello World!" through a previously made connection:
 .in +4n

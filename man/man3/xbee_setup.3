@@ -22,6 +22,8 @@ xbee_setup
 .B #include <xbee.h>
 .sp
 .BI "int xbee_setup(char *" path ", int " baudrate ");"
+.sp
+.BI "int xbee_setuplog(char *" path ", int " baudrate ", int " logfd ");"
 .ad b
 .SH DESCRIPTION
 The
@@ -47,6 +49,11 @@ is the baud rate that the local XBee is configured to run at. The following are 
 .B 57600
 .BR 115200 " - this is potentially unstable (read the XBee manual to find out why...)"
 .fi
+.sp
+.in
+Using
+.BR xbee_setuplog ()
+is exactly the same, but instead you give an open file descriptor. All log messages will be written to this file. 
 .SH "RETURN VALUE"
 If any error occures,
 .B -1

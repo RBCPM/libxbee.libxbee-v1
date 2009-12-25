@@ -665,7 +665,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
     fprintf(xbee.log,"******* TODO ********\n");
   }
 
-  return -1;
+  return -2;
 }
 
 /* #################################################################

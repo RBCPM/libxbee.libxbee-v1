@@ -22,6 +22,8 @@ xbee_getpacket
 .B #include <xbee.h>
 .sp
 .BI "xbee_pkt *xbee_getpacket(xbee_con *" con ");"
+.sp
+.BI "xbee_pkt *xbee_getpacketwait(xbee_con *" con ");"
 .ad b
 .SH DESCRIPTION
 The
@@ -33,6 +35,10 @@ The argument
 .I con
 points to a connection made previously with
 .BR xbee_newcon ().
+.sp
+The
+.BR xbee_getpacketwait ()
+function behaves the same, but will wait for an internally specified time for a packet to arrive (currently around 1 second).
 .SH "RETURN VALUE"
 Upon successful return, this function returns the packet, having unlinked it from the internal list of packets.
 You must keep hold of the packet until you are finished with it, and then you must
