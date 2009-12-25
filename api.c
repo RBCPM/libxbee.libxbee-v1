@@ -560,7 +560,11 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
     fprintf(xbee.log,"XBee: Length: %d\n",length);
     for (i=0;i<length;i++) {
       fprintf(xbee.log,"XBee: %3d | 0x%02X ",i,data[i]);
-      if ((data[i] > 32) && (data[i] < 127)) fprintf(xbee.log,"'%c'\n",data[i]); else fprintf(xbee.log," _\n");
+      if ((data[i] > 32) && (data[i] < 127)) {
+	fprintf(xbee.log,"'%c'\n",data[i]);
+      } else{
+	fprintf(xbee.log," _\n");
+      }
     }
   }
 

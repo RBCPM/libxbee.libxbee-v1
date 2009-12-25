@@ -48,7 +48,7 @@ endif
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
-.PHONY: all run new clean cleanpdfs main pdfs 
+.PHONY: all run new clean cleanpdfs main pdfs
 .PHONY: install install_su install_man
 .PHONY: uninstall uninstall_su uninstall_man/
 
@@ -185,8 +185,8 @@ endif
 
 
 # pdfs - generate PDFs for each source file #
-ifneq ($(strip $(wildcard /usr/bin/enscript)),)
 ifneq ($(strip $(wildcard /usr/bin/ps2pdf)),)
+ifneq ($(strip $(wildcard /usr/bin/enscript)),)
 pdfs: ./pdf/ ${addprefix ./pdf/,${addsuffix .pdf,${PDFS}}}
 
 ./pdf/:
@@ -202,9 +202,9 @@ pdfs: ./pdf/ ${addprefix ./pdf/,${addsuffix .pdf,${PDFS}}}
 	@echo "*** Cannot make $@ - '$*' does not exist ***"
 else
 pdfs:
-	@echo "WARNING: ps2pdf is not installed - cannot generate PDF files"
+	@echo "WARNING: enscript is not installed - cannot generate PDF files"
 endif
 else
 pdfs:
-	@echo "WARNING: enscript is not installed - cannot generate PDF files"
+	@echo "WARNING: ps2pdf is not installed - cannot generate PDF files"
 endif
