@@ -56,7 +56,8 @@ int main(int argc, char *argv[]) {
   con = xbee_newcon('I',xbee_localAT);
 
   /* get the ND timeout */
-  if ((rpkt = xbee_senddata(con,"NT")) == NULL) {
+  xbee_senddata(con,"NT");
+  if ((rpkt = xbee_getpacketwait(con)) == NULL) {
     printf("XBee didnt return a result for NT\n");
     return 1;
   }
@@ -65,20 +66,13 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     /* send a ND - Node Discover request */
-    rpkt = xbee_senddata(con,"ND");
+    xbee_senddata(con,"ND");
     /* only wait for a bit longer than the ND timeout */
     ATNTc = ATNT + 10;
     /* loop until the end packet has been received or timeout reached */
     while (ATNTc--) {
-      /* got a packet? */
-      if (rpkt) {
-        /* here we use the origionally returned packet */
-        pkt = rpkt;
-        rpkt = NULL;
-      } else {
-        /* here we get a new one */
-        pkt = xbee_getpacket(con);
-      }
+      /* get a packet */
+      pkt = xbee_getpacketwait(con);
       /* check a packet was returned, and that its one we are after... */
       if (pkt && !memcmp(pkt->atCmd,"ND",2)) {
         /* is this the end packet? you can tell from the 0 datalen */
