@@ -450,6 +450,17 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
 }
 
 /* #################################################################
+   xbee_conflush
+   removes any packets that have been collected for the specified
+   connection */
+void xbee_flushcon(xbee_con *con) {
+  xbee_pkt *p;
+  while ((p = xbee_getpacket(con)) != NULL) {
+    free(p);
+  }
+}
+
+/* #################################################################
    xbee_endcon
    close the unwanted connection */
 void xbee_endcon2(xbee_con **con) {

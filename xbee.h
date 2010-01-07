@@ -92,6 +92,8 @@ int xbee_setuplog(char *path, int baudrate, int logfd);
 
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 
+void xbee_flushcon(xbee_con *con);
+
 #define xbee_endcon(x) xbee_endcon2((void **)&x)
 void xbee_endcon2(xbee_con **con);
 

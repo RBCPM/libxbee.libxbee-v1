@@ -23,6 +23,8 @@ xbee_newcon
 .sp
 .BI "xbee_con *xbee_newcon(unsigned char " frameID ", xbee_types " type ", ...);"
 .sp
+.BI "void xbee_flushcon(xbee_con *" con ");"
+.sp
 .BI "void xbee_endcon(xbee_con *" con ");"
 .ad b
 .SH DESCRIPTION
@@ -79,6 +81,10 @@ containing the 16-bit address (e.g. 0x1234).
 .sp
 If you are using any 64-bit connection, you must also specify 2 integers containing the
 64-bit address, first the high 32-bits, then the low 32-bits.
+.sp
+The
+.BR xbee_flushcon ()
+function is very basic. It removes any packets that have been collected in the buffer for the specified connection.
 .sp
 The
 .BR xbee_endcon ()
