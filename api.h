@@ -72,15 +72,15 @@ struct {
   char *path;
 } xbee;
 
-void *Xmalloc(size_t size);
-void *Xrealloc(void *ptr, size_t size);
+static void *Xmalloc(size_t size);
+static void *Xrealloc(void *ptr, size_t size);
 #define Xfree(x) Xfree2((void **)&x)
-void Xfree2(void **ptr);
+static void Xfree2(void **ptr);
 
-void xbee_listen(t_info *info);
-unsigned char xbee_getByte(void);
-unsigned char xbee_getRawByte(void);
-int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
+static void xbee_listen(t_info *info);
+static unsigned char xbee_getByte(void);
+static unsigned char xbee_getRawByte(void);
+static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
-t_data *xbee_make_pkt(unsigned char *data, int len);
-void xbee_send_pkt(t_data *pkt);
+static t_data *xbee_make_pkt(unsigned char *data, int len);
+static void xbee_send_pkt(t_data *pkt);

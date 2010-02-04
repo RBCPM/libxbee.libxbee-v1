@@ -31,7 +31,7 @@ int xbee_ready = 0;
 /* ################################################################# */
 
 /* malloc wrapper function */
-void *Xmalloc(size_t size) {
+static void *Xmalloc(size_t size) {
   void *t;
   t = malloc(size);
   if (!t) {
@@ -43,7 +43,7 @@ void *Xmalloc(size_t size) {
 }
 
 /* calloc wrapper function */
-void *Xcalloc(size_t size) {
+static void *Xcalloc(size_t size) {
   void *t;
   t = calloc(1, size);
   if (!t) {
@@ -55,7 +55,7 @@ void *Xcalloc(size_t size) {
 }
 
 /* realloc wrapper function */
-void *Xrealloc(void *ptr, size_t size) {
+static void *Xrealloc(void *ptr, size_t size) {
   void *t;
   t = realloc(ptr,size);
   if (!t) {
@@ -67,7 +67,7 @@ void *Xrealloc(void *ptr, size_t size) {
 }
 
 /* free wrapper function (uses the Xfree macro and sets the pointer to NULL after freeing it) */
-void Xfree2(void **ptr) {
+static void Xfree2(void **ptr) {
   free(*ptr);
   *ptr = NULL;
 }
@@ -188,8 +188,8 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
   }
 
   /* take a copy of the XBee device path */
-  if ((xbee.path = malloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
-    perror("xbee_setup():malloc(path)");
+  if ((xbee.path = Xmalloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
+    perror("xbee_setup():Xmalloc(path)");
     return -1;
   }
   strcpy(xbee.path,path);
@@ -770,7 +770,7 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 /* #################################################################
    xbee_matchpktcon - INTERNAL
    checks if the packet matches the connection */
-int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
+static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
   /* if: the connection type matches the packet type OR
      the connection is 16/64bit remote AT, and the packet is a remote AT response */
   if ((pkt->type == con->type) || /* -- */
@@ -802,7 +802,7 @@ int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
    xbee_listen - INTERNAL
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
-void xbee_listen(t_info *info) {
+static void xbee_listen(t_info *info) {
   unsigned char c, t, d[128];
   unsigned int l, i, chksum, o;
   int j;
@@ -1277,7 +1277,7 @@ void xbee_listen(t_info *info) {
 /* #################################################################
    xbee_getByte - INTERNAL
    waits for an escaped byte of data */
-unsigned char xbee_getByte(void) {
+static unsigned char xbee_getByte(void) {
   unsigned char c;
 
   ISREADY;
@@ -1293,7 +1293,7 @@ unsigned char xbee_getByte(void) {
 /* #################################################################
    xbee_getRawByte - INTERNAL
    waits for a raw byte of data */
-unsigned char xbee_getRawByte(void) {
+static unsigned char xbee_getRawByte(void) {
   unsigned char c;
   fd_set fds;
 
@@ -1322,7 +1322,7 @@ unsigned char xbee_getRawByte(void) {
 /* #################################################################
    xbee_send_pkt - INTERNAL
    sends a complete packet of data */
-void xbee_send_pkt(t_data *pkt) {
+static void xbee_send_pkt(t_data *pkt) {
   ISREADY;
 
 
@@ -1355,7 +1355,7 @@ void xbee_send_pkt(t_data *pkt) {
    adds delimiter field
    calculates length and checksum
    escapes bytes */
-t_data *xbee_make_pkt(unsigned char *data, int length) {
+static t_data *xbee_make_pkt(unsigned char *data, int length) {
   t_data *pkt;
   unsigned int l, i, o, t, x, m;
   char d = 0;
