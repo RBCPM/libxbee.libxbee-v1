@@ -249,6 +249,8 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
   tc.c_lflag &= ~NOFLSH;           /* disable flushing on SIGINT */
   tc.c_lflag &= ~IEXTEN;           /* disable input processing */
   tcsetattr(xbee.ttyfd, TCSANOW, &tc);
+  tcflow(xbee.ttyfd,TCOON);        /* enable output transmission */
+  tcflow(xbee.ttyfd,TCION);        /* enable input transmission */
 
   /* open the serial port as a FILE* */
   if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
