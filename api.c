@@ -1073,7 +1073,9 @@ static int xbee_listen(t_info *info) {
 
       if (p->status == 0x00 && p->atCmd[0] == 'I' && p->atCmd[1] == 'S') {
 	/* parse the io data */
+	fprintf(xbee.log,"XBee: --- Sample -----------------\n");
 	xbee_parse_io(p, d, 15, 17);
+	fprintf(xbee.log,"XBee: ----------------------------\n");
       } else {
 	/* copy in the data */
 	p->datalen = i-13;
