@@ -688,7 +688,9 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
   } else if ((con->type == xbee_64bitIO) ||
 	     (con->type == xbee_16bitIO)) {
     /* not currently implemented... is it even allowed? */
-    fprintf(xbee.log,"******* TODO ********\n");
+    if (xbee.logfd) {
+      fprintf(xbee.log,"******* TODO ********\n");
+    }
   }
 
   return -2;
@@ -1073,9 +1075,9 @@ static int xbee_listen(t_info *info) {
 
       if (p->status == 0x00 && p->atCmd[0] == 'I' && p->atCmd[1] == 'S') {
 	/* parse the io data */
-	fprintf(xbee.log,"XBee: --- Sample -----------------\n");
+	if (xbee.logfd) fprintf(xbee.log,"XBee: --- Sample -----------------\n");
 	xbee_parse_io(p, d, 15, 17);
-	fprintf(xbee.log,"XBee: ----------------------------\n");
+	if (xbee.logfd) fprintf(xbee.log,"XBee: ----------------------------\n");
       } else {
 	/* copy in the data */
 	p->datalen = i-13;
