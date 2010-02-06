@@ -24,7 +24,7 @@
 /* ready flag.
    needs to be set to -1 so that the listen thread can begin.
    then 1 so that functions can be used (after setup of course...) */
-int xbee_ready = 0;
+volatile int xbee_ready = 0;
 
 /* ################################################################# */
 /* ### Memory Handling ############################################# */
@@ -219,12 +219,23 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
   }
 
 
+  /* open the serial port as a FILE* */
+  if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
+    perror("xbee_setup():fdopen()");
+    Xfree(xbee.path);
+    close(xbee.ttyfd);
+    xbee.ttyfd = -1;
+    xbee.tty = NULL;
+    return -1;
+  }
+
+  /* flush the serial port */
+  fflush(xbee.tty);
+
   /* setup the baud rate and other io attributes */
   tcgetattr(xbee.ttyfd, &tc);
-  cfsetispeed(&tc, chosenbaud);    /* set input baud rate */
-  cfsetospeed(&tc, chosenbaud);    /* set output baud rate */
   /* input flags */
-  tc.c_iflag |= IGNBRK;            /* enable ignoring break */
+  tc.c_iflag &= ~IGNBRK;           /* enable ignoring break */
   tc.c_iflag &= ~(IGNPAR | PARMRK);/* disable parity checks */
   tc.c_iflag &= ~INPCK;            /* disable parity checking */
   tc.c_iflag &= ~ISTRIP;           /* disable stripping 8th bit */
@@ -246,30 +257,21 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
   tc.c_lflag &= ~ISIG;             /* disable generating signals */
   tc.c_lflag &= ~ICANON;           /* disable canonical mode - line by line */
   tc.c_lflag &= ~ECHO;             /* disable echoing characters */
+  tc.c_lflag &= ~ECHONL;           /* ??? */
   tc.c_lflag &= ~NOFLSH;           /* disable flushing on SIGINT */
   tc.c_lflag &= ~IEXTEN;           /* disable input processing */
+  /* control characters */
+  memset(tc.c_cc,0,sizeof(tc.c_cc));
+  /* i/o rates */
+  cfsetspeed(&tc, chosenbaud);     /* set i/o baud rate */
   tcsetattr(xbee.ttyfd, TCSANOW, &tc);
-  tcflow(xbee.ttyfd,TCOON);        /* enable output transmission */
-  tcflow(xbee.ttyfd,TCION);        /* enable input transmission */
-
-  /* open the serial port as a FILE* */
-  if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
-    perror("xbee_setup():fdopen()");
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
-    xbee.ttyfd = -1;
-    xbee.tty = NULL;
-    return -1;
-  }
-
-  /* flush the serial port */
-  fflush(xbee.tty);
+  tcflow(xbee.ttyfd, TCOON|TCION); /* enable input & output transmission */
 
   /* allow the listen thread to start */
   xbee_ready = -1;
 
   /* can start xbee_listen thread now */
-  if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen,(void *)&info) != 0) {
+  if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen_wrapper,(void *)&info) != 0) {
     perror("xbee_setup():pthread_create()");
     Xfree(xbee.path);
     fclose(xbee.tty);
@@ -277,6 +279,15 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
     xbee.ttyfd = -1;
     xbee.tty = NULL;
     return -1;
+  }
+
+  usleep(100);
+  while (xbee_ready != -2) {
+    usleep(100);
+    if (xbee.logfd) {
+      fprintf(xbee.log,"XBee: Waiting for xbee_listen() to be ready...\n");
+    }
+    
   }
 
   /* allow other functions to be used! */
@@ -801,10 +812,30 @@ static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con) {
 }
 
 /* #################################################################
-   xbee_listen - INTERNAL
+   xbee_listen_wrapper - INTERNAL
+   the xbee_listen wrapper. Prints an error when xbee_listen ends */
+static void xbee_listen_wrapper(t_info *info) {
+  int ret;
+
+  /* just falls out if the proper 'go-ahead' isn't given */
+  if (xbee_ready != -1) return;
+  /* now allow the parent to continue */
+  xbee_ready = -2;
+
+  info->i = -1;
+  for (;;) {
+    ret = xbee_listen(info);
+    if (xbee.logfd) {
+      fprintf(xbee.log,"XBee: xbee_listen() returned [%d]... Restarting in 250ms!\n",ret);
+    }
+    usleep(25000);
+  }
+}
+
+/* xbee_listen - INTERNAL
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
-static void xbee_listen(t_info *info) {
+static int xbee_listen(t_info *info) {
   unsigned char c, t, d[128];
   unsigned int l, i, chksum, o;
   int j;
@@ -813,7 +844,7 @@ static void xbee_listen(t_info *info) {
   int hasCon;
 
   /* just falls out if the proper 'go-ahead' isn't given */
-  if (xbee_ready != -1) return;
+  if (info->i != -1) return -1;
 
   /* do this forever :) */
   while(1) {

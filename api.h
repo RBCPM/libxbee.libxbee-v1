@@ -77,7 +77,8 @@ static void *Xrealloc(void *ptr, size_t size);
 #define Xfree(x) Xfree2((void **)&x)
 static void Xfree2(void **ptr);
 
-static void xbee_listen(t_info *info);
+static void xbee_listen_wrapper(t_info *info);
+static int xbee_listen(t_info *info);
 static unsigned char xbee_getByte(void);
 static unsigned char xbee_getRawByte(void);
 static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
