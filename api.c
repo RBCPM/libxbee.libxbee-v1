@@ -832,21 +832,36 @@ static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int offset, int i) {
   if (p->IOmask & 0x2000) {p->IOanalog[4] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
   if (p->IOmask & 0x4000) {p->IOanalog[5] = (((d[i]<<8) | d[i+1]) & 0x03FF);i+=2;}
   if (xbee.logfd) {
-    if (p->IOmask & 0x0001) fprintf(xbee.log,"XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
-    if (p->IOmask & 0x0002) fprintf(xbee.log,"XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
-    if (p->IOmask & 0x0004) fprintf(xbee.log,"XBee: Digital 2: %c\n",((p->IOdata & 0x0004)?'1':'0'));
-    if (p->IOmask & 0x0008) fprintf(xbee.log,"XBee: Digital 3: %c\n",((p->IOdata & 0x0008)?'1':'0'));
-    if (p->IOmask & 0x0010) fprintf(xbee.log,"XBee: Digital 4: %c\n",((p->IOdata & 0x0010)?'1':'0'));
-    if (p->IOmask & 0x0020) fprintf(xbee.log,"XBee: Digital 5: %c\n",((p->IOdata & 0x0020)?'1':'0'));
-    if (p->IOmask & 0x0040) fprintf(xbee.log,"XBee: Digital 6: %c\n",((p->IOdata & 0x0040)?'1':'0'));
-    if (p->IOmask & 0x0080) fprintf(xbee.log,"XBee: Digital 7: %c\n",((p->IOdata & 0x0080)?'1':'0'));
-    if (p->IOmask & 0x0100) fprintf(xbee.log,"XBee: Digital 8: %c\n",((p->IOdata & 0x0100)?'1':'0'));
-    if (p->IOmask & 0x0200) fprintf(xbee.log,"XBee: Analog  0: %d (~%.2fv)\n",p->IOanalog[0],(3.3/1023)*p->IOanalog[0]);
-    if (p->IOmask & 0x0400) fprintf(xbee.log,"XBee: Analog  1: %d (~%.2fv)\n",p->IOanalog[1],(3.3/1023)*p->IOanalog[1]);
-    if (p->IOmask & 0x0800) fprintf(xbee.log,"XBee: Analog  2: %d (~%.2fv)\n",p->IOanalog[2],(3.3/1023)*p->IOanalog[2]);
-    if (p->IOmask & 0x1000) fprintf(xbee.log,"XBee: Analog  3: %d (~%.2fv)\n",p->IOanalog[3],(3.3/1023)*p->IOanalog[3]);
-    if (p->IOmask & 0x2000) fprintf(xbee.log,"XBee: Analog  4: %d (~%.2fv)\n",p->IOanalog[4],(3.3/1023)*p->IOanalog[4]);
-    if (p->IOmask & 0x4000) fprintf(xbee.log,"XBee: Analog  5: %d (~%.2fv)\n",p->IOanalog[5],(3.3/1023)*p->IOanalog[5]);
+    if (p->IOmask & 0x0001)
+      fprintf(xbee.log,"XBee: Digital 0: %c\n",((p->IOdata & 0x0001)?'1':'0'));
+    if (p->IOmask & 0x0002)
+      fprintf(xbee.log,"XBee: Digital 1: %c\n",((p->IOdata & 0x0002)?'1':'0'));
+    if (p->IOmask & 0x0004)
+      fprintf(xbee.log,"XBee: Digital 2: %c\n",((p->IOdata & 0x0004)?'1':'0'));
+    if (p->IOmask & 0x0008)
+      fprintf(xbee.log,"XBee: Digital 3: %c\n",((p->IOdata & 0x0008)?'1':'0'));
+    if (p->IOmask & 0x0010)
+      fprintf(xbee.log,"XBee: Digital 4: %c\n",((p->IOdata & 0x0010)?'1':'0'));
+    if (p->IOmask & 0x0020)
+      fprintf(xbee.log,"XBee: Digital 5: %c\n",((p->IOdata & 0x0020)?'1':'0'));
+    if (p->IOmask & 0x0040)
+      fprintf(xbee.log,"XBee: Digital 6: %c\n",((p->IOdata & 0x0040)?'1':'0'));
+    if (p->IOmask & 0x0080)
+      fprintf(xbee.log,"XBee: Digital 7: %c\n",((p->IOdata & 0x0080)?'1':'0'));
+    if (p->IOmask & 0x0100)
+      fprintf(xbee.log,"XBee: Digital 8: %c\n",((p->IOdata & 0x0100)?'1':'0'));
+    if (p->IOmask & 0x0200)
+      fprintf(xbee.log,"XBee: Analog  0: %d (~%.2fv)\n",p->IOanalog[0],(3.3/1023)*p->IOanalog[0]);
+    if (p->IOmask & 0x0400)
+      fprintf(xbee.log,"XBee: Analog  1: %d (~%.2fv)\n",p->IOanalog[1],(3.3/1023)*p->IOanalog[1]);
+    if (p->IOmask & 0x0800)
+      fprintf(xbee.log,"XBee: Analog  2: %d (~%.2fv)\n",p->IOanalog[2],(3.3/1023)*p->IOanalog[2]);
+    if (p->IOmask & 0x1000)
+      fprintf(xbee.log,"XBee: Analog  3: %d (~%.2fv)\n",p->IOanalog[3],(3.3/1023)*p->IOanalog[3]);
+    if (p->IOmask & 0x2000)
+      fprintf(xbee.log,"XBee: Analog  4: %d (~%.2fv)\n",p->IOanalog[4],(3.3/1023)*p->IOanalog[4]);
+    if (p->IOmask & 0x4000)
+      fprintf(xbee.log,"XBee: Analog  5: %d (~%.2fv)\n",p->IOanalog[5],(3.3/1023)*p->IOanalog[5]);
   }
 
   return i;
