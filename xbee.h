@@ -110,4 +110,6 @@ int xbee_getdigital(xbee_pkt *pkt, int input);
 int xbee_hasanalog(xbee_pkt *pkt, int input);
 double xbee_getanalog(xbee_pkt *pkt, int input, double Vref);
 
+const char *svn_version(void);
+
 #endif

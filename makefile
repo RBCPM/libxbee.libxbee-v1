@@ -49,6 +49,7 @@ endif
 SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
+.PHONY: FORCE
 .PHONY: all run new clean cleanpdfs main pdfs
 .PHONY: install install_su install_man
 .PHONY: uninstall uninstall_su uninstall_man/
@@ -163,7 +164,7 @@ main: ./bin/main
 ./bin/:
 	mkdir ./bin/
 
-./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
+./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}}  ./svn_version.c ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
 ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
@@ -177,6 +178,16 @@ endif
 
 ./obj/:
 	mkdir ./obj/
+
+./svn_version.c: api.c api.h globals.h xbee.h
+	echo -n 'const char *svn_version(void) { return "' > ./svn_version.c
+ifneq ($(strip $(wildcard /usr/bin/svnversion)),)
+	svnversion -n . >> svn_version.c
+else
+	echo 'Unknown' >> svn_version.c
+endif
+	echo -n '";}' >> svn_version.c
+	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} svn_version.c -o ./obj/svn_version.o
 
 ./obj/%.o: %.c %.h xbee.h globals.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
