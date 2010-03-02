@@ -150,7 +150,7 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
     }
   }
 
-  fprintf(xbee.log,"libxbee: Starting (r%s)\n",svn_version());
+  if (xbee.log) fprintf(xbee.log,"libxbee: Starting (r%s)\n",svn_version());
 
   /* select the baud rate */
   switch (baudrate) {
