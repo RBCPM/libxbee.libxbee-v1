@@ -290,7 +290,6 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
     if (xbee.logfd) {
       fprintf(xbee.log,"XBee: Waiting for xbee_listen() to be ready...\n");
     }
-    
   }
 
   /* allow other functions to be used! */
@@ -536,7 +535,6 @@ void xbee_endcon2(xbee_con **con) {
 
   /* unlock the packet mutex */
   pthread_mutex_unlock(&xbee.pktmutex);
-
 
   Xfree(*con);
 }
@@ -897,7 +895,7 @@ static void xbee_listen_wrapper(t_info *info) {
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
 static int xbee_listen(t_info *info) {
-  unsigned char c, t, d[128];
+  unsigned char c, t, d[1024];
   unsigned int l, i, chksum, o;
   int j;
   xbee_pkt *p, *q, *po;
@@ -930,6 +928,11 @@ static int xbee_listen(t_info *info) {
     if (l > 100) {
       if (xbee.logfd) {
 	fprintf(xbee.log,"XBee: Recived oversized packet! Length: %d\n",l - 1);
+      }
+    }
+    if (l > sizeof(d) - 1) {
+      if (xbee.logfd) {
+	fprintf(xbee.log,"XBee: Recived packet larger than buffer! Discarding... Length: %d\n",l - 1);
       }
       continue;
     }
@@ -1227,7 +1230,7 @@ static int xbee_listen(t_info *info) {
       /* each sample is split into its own packet here, for simplicity */
       for (o = samples; o > 0; o--) {
 	if (xbee.logfd) {
-	  fprintf(xbee.log,"XBee: --- Sample %3d -------------\n", o - samples + 1);
+	  fprintf(xbee.log,"XBee: --- Sample %3d -------------\n", 1 + (samples - o));
 	}
 	/* if we arent still using the origional packet */
 	if (o < samples) {
