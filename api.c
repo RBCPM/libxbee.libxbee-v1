@@ -147,6 +147,9 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
       /* errno == 9 is bad file descriptor (probrably not provided) */
       if (errno != 9) perror("Failed opening logfile");
       xbee.logfd = 0;
+    } else {
+      /* set to line buffer - ensure lines are written to file when complete */
+      setvbuf(xbee.log,NULL,_IOLBF,BUFSIZ);
     }
   }
 
@@ -993,7 +996,7 @@ static int xbee_listen(t_info *info) {
 	case 0x05: fprintf(xbee.log,"Coordinator realignment"); break;
 	case 0x06: fprintf(xbee.log,"Coordinator started"); break;
 	}
-	fprintf(xbee.log,"...\n");
+	fprintf(xbee.log,"... (0x%02X)\n",d[0]);
       }
       p->type = xbee_modemStatus;
 
@@ -1015,10 +1018,12 @@ static int xbee_listen(t_info *info) {
 	fprintf(xbee.log,"XBee: Packet type: Local AT Response (0x88)\n");
 	fprintf(xbee.log,"XBee: FrameID: 0x%02X\n",d[0]);
 	fprintf(xbee.log,"XBee: AT Command: %c%c\n",d[1],d[2]);
-	if (d[3] == 0) fprintf(xbee.log,"XBee: Status: OK\n");
-	else if (d[3] == 1) fprintf(xbee.log,"XBee: Status: Error\n");
-	else if (d[3] == 2) fprintf(xbee.log,"XBee: Status: Invalid Command\n");
-	else if (d[3] == 3) fprintf(xbee.log,"XBee: Status: Invalid Parameter\n");
+        fprintf(xbee.log,"XBee: Status: ");
+	if (d[3] == 0) fprintf(xbee.log,"OK");
+	else if (d[3] == 1) fprintf(xbee.log,"Error");
+	else if (d[3] == 2) fprintf(xbee.log,"Invalid Command");
+	else if (d[3] == 3) fprintf(xbee.log,"Invalid Parameter");
+        fprintf(xbee.log," (0x%02X)\n",d[3]);
       }
       p->type = xbee_localAT;
 
@@ -1056,11 +1061,13 @@ static int xbee_listen(t_info *info) {
 	}
 	fprintf(xbee.log,"\n");
 	fprintf(xbee.log,"XBee: AT Command: %c%c\n",d[11],d[12]);
-	if (d[13] == 0) fprintf(xbee.log,"XBee: Status: OK\n");
-	else if (d[13] == 1) fprintf(xbee.log,"XBee: Status: Error\n");
-	else if (d[13] == 2) fprintf(xbee.log,"XBee: Status: Invalid Command\n");
-	else if (d[13] == 3) fprintf(xbee.log,"XBee: Status: Invalid Parameter\n");
-	else if (d[13] == 4) fprintf(xbee.log,"XBee: Status: No Response\n");
+        fprintf(xbee.log,"XBee: Status: ");
+	if (d[13] == 0) fprintf(xbee.log,"OK");
+	else if (d[13] == 1) fprintf(xbee.log,"Error");
+	else if (d[13] == 2) fprintf(xbee.log,"Invalid Command");
+	else if (d[13] == 3) fprintf(xbee.log,"Invalid Parameter");
+	else if (d[13] == 4) fprintf(xbee.log,"No Response");
+        fprintf(xbee.log," (0x%02X)\n",d[13]);
       }
       p->type = xbee_remoteAT;
 
@@ -1107,10 +1114,12 @@ static int xbee_listen(t_info *info) {
       if (xbee.logfd) {
 	fprintf(xbee.log,"XBee: Packet type: TX Status Report (0x89)\n");
 	fprintf(xbee.log,"XBee: FrameID: 0x%02X\n",d[0]);
-	if (d[1] == 0) fprintf(xbee.log,"XBee: Status: Success\n");
-	else if (d[1] == 1) fprintf(xbee.log,"XBee: Status: No ACK\n");
-	else if (d[1] == 2) fprintf(xbee.log,"XBee: Status: CCA Failure\n");
-	else if (d[1] == 3) fprintf(xbee.log,"XBee: Status: Purged\n");
+        fprintf(xbee.log,"XBee: Status: ");
+	if (d[1] == 0) fprintf(xbee.log,"Success");
+	else if (d[1] == 1) fprintf(xbee.log,"No ACK");
+	else if (d[1] == 2) fprintf(xbee.log,"CCA Failure");
+	else if (d[1] == 3) fprintf(xbee.log,"Purged");
+        fprintf(xbee.log," (0x%02X)\n",d[13]);
       }
       p->type = xbee_txStatus;
 

@@ -97,8 +97,8 @@ void xbee_flushcon(xbee_con *con);
 #define xbee_endcon(x) xbee_endcon2((void **)&x)
 void xbee_endcon2(xbee_con **con);
 
-int xbee_senddata(xbee_con *con, char *format, ...);
-int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
+int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
 int xbee_nsenddata(xbee_con *con, char *data, int length);
 
 xbee_pkt *xbee_getpacketwait(xbee_con *con);
