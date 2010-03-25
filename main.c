@@ -24,12 +24,14 @@ int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
   xbee_pkt *pkt, *p;
  
-  printf("%d\n",sizeof(xbee_pkt) + (sizeof(xbee_sample) * 31));
-return 0;
-
-  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
-    perror("xbee_setup()");
+  if (xbee_setuplog("/dev/ttyUSB0",57600,2) == -1) {
+    perror("xbee_setuplog()");
     exit(1);
+  }
+  if (argc >= 2 && !strcmp(argv[1],"sleep")) {
+    for (;;) {
+      sleep(86400); /* sleep for a day... forever :) */
+    }
   }
 
   /*if ((con = xbee_newcon(NULL,'X',xbee_localAT)) == (void *)-1) {
