@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
   xbee_con *con;
   xbee_pkt *pkt;
   double voltage;
+  int i;
 
   /* setup libxbee */
   if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
@@ -46,10 +47,15 @@ int main(int argc, char *argv[]) {
   while (1) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
-      /* did we get a value for D0? */
-      if (xbee_hasdigital(pkt,0)) {
+      for (i = 0; i < pkt->samples; i++) {
+        /* did we get a value for D0? */
+        if (!xbee_hasdigital(pkt,i,0)) {
+          /* there was no data for A0 in the packet */
+          printf("D0: -- No Data --\n");
+          continue;
+        }
         /* print out the reading */
-        printf("\rD0: %d ",xbee_getdigital(pkt,0));
+        printf("D0: %d\n",xbee_getdigital(pkt,i,0));
         fflush(stdout);
       }
       /* release the packet */

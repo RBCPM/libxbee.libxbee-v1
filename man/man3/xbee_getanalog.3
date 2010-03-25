@@ -21,9 +21,9 @@ xbee_hasanalog, xbee_getanalog
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
-.BI "int xbee_hasanalog(xbee_pkt *" pkt ", int " input ");"
+.BI "int xbee_hasanalog(xbee_pkt *" pkt ",int " sample ", int " input ");"
 .sp
-.BI "double xbee_getanalog(xbee_pkt *" pkt ", int " input ", double " Vref ");"
+.BI "double xbee_getanalog(xbee_pkt *" pkt ",int " sample ", int " input ", double " Vref ");"
 .ad b
 .SH DESCRIPTION
 The
@@ -34,7 +34,7 @@ The
 .BR xbee_getanalog ()
 function will read the packet and return the sample value for the specified input.
 .sp
-They both take 2 arguments, with the same purposes.
+They both take 3 arguments, with the same purposes.
 .sp
 The argument
 .I pkt
@@ -42,11 +42,15 @@ points to a packet that was previously retrieved with
 .BR xbee_getpacket ()
 .sp
 The argument
+.I sample
+selects the sample within the packet to use.
+.sp
+The argument
 .I input
 specifies which input you are interested in testing.
 .sp
 .BR xbee_getanalog ()
-also takes a third argument that allows you to provide a
+also takes a fourth argument that allows you to provide a
 .I Vref
 value. This allows the function to convert the raw ADC value into voltage.
 .SH "RETURN VALUE"
@@ -59,8 +63,8 @@ if the provided packet has sample data for the specified input, otherwise
 .sp
 The
 .BR xbee_getanalog ()
-function will return the raw ADC value if the provided packet has sample data for the specified input and Vref was not provided.
-If Vref was provided, then the return value will be the voltage read.
+function will return the raw ADC value if the provided packet has sample data for the specified input and Vref was given as zero.
+If Vref was non-zero, then the return value will be the voltage read.
 A
 .B -1
 will be returned if the packet does not contain sample data.
@@ -73,8 +77,8 @@ To read sample data from previously made connection:
 xbee_pkt *pkt;
 double Vref = 3.3;
 if ((pkt = xbee_getpacket(con)) != NULL) {
-  if (xbee_hasanalog(pkt,0)) {
-    printf("A0 read %fv\n",xbee_getanalog(pkt,0,Vref));
+  if (xbee_hasanalog(pkt,0,0)) {
+    printf("A0 read %fv\n",xbee_getanalog(pkt,0,0,Vref));
   } else {
     printf("No A0 data\n");
   }

@@ -55,14 +55,16 @@ int main(int argc, char *argv[]) {
 	if (pkt->status != 0x00) {
 	  /* if the return status was not 0x00 (OK) then the request failed... */
 	  printf("Sample A0: -- Request Failed --\n");
-	} else if (xbee_hasanalog(pkt,0)) {
-	  /* it appears that there is sample data for A0! */
-	  printf("Sample A0: %.0f (~%.2fv)\n",
-		 xbee_getanalog(pkt,0,0),
-		 xbee_getanalog(pkt,0,Vref));
 	} else {
-	  /* there was no data for A0 in the packet */
-	  printf("Sample A0: -- No Data --\n");
+          if (!xbee_hasanalog(pkt,0,0)) {
+            /* there was no data for A0 in the packet */
+            printf("Sample A0: -- No Data --\n");
+          } else {
+            /* it appears that there is sample data for A0! */
+	    printf("Sample A0: %.0f (~%.2fv)\n",
+		   xbee_getanalog(pkt,0,0,0),
+		   xbee_getanalog(pkt,0,0,Vref));
+	  }
 	}
 	/* dont forget to free the packet! */
 	free(pkt);

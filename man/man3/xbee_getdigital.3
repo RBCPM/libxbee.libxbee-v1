@@ -21,25 +21,29 @@ xbee_hasdigital, xbee_getdigital
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
-.BI "int xbee_hasdigital(xbee_pkt *" pkt ", int " input ");"
+.BI "int xbee_hasdigital(xbee_pkt *" pkt ", int " sample ", int " input ");"
 .sp
-.BI "int xbee_getdigital(xbee_pkt *" pkt ", int " input ");"
+.BI "int xbee_getdigital(xbee_pkt *" pkt ", int " sample ", int " input ");"
 .ad b
 .SH DESCRIPTION
 The
 .BR xbee_hasdigital ()
-function will check the packet for the presence of a sample on the specified input.
+function will check the packet for the presence of a given sample on the specified input.
 .sp
 The
 .BR xbee_getdigital ()
 function will read the packet and return the sample value for the specified input.
 .sp
-They both take 2 arguments, with the same purposes.
+They both take 3 arguments, with the same purposes.
 .sp
 The argument
 .I pkt
 points to a packet that was previously retrieved with 
 .BR xbee_getpacket ()
+.sp
+The argument
+.I sample
+selects the sample within the packet to use.
 .sp
 The argument
 .I input
@@ -68,7 +72,7 @@ To read sample data from previously made connection:
 #include <xbee.h>
 xbee_pkt *pkt;
 if ((pkt = xbee_getpacket(con)) != NULL) {
-  if (xbee_hasdigital(pkt,0)) {
+  if (xbee_hasdigital(pkt,0,0)) {
     printf("D0 read %d\n",xbee_getdigital(pkt,0));
   } else {
     printf("No D0 data\n");

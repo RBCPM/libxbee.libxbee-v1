@@ -171,23 +171,18 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     while ((pkt = xbee_getpacket(con)) != NULL) {
-      if (pkt->IOmask & 0x0001) printf("D0: %c  ",((pkt->IOdata & 0x0001)?'1':'0'));
-      if (pkt->IOmask & 0x0002) printf("D1: %c  ",((pkt->IOdata & 0x0002)?'1':'0'));
-      if (pkt->IOmask & 0x0004) printf("D2: %c  ",((pkt->IOdata & 0x0004)?'1':'0'));
-      if (pkt->IOmask & 0x0008) printf("D3: %c  ",((pkt->IOdata & 0x0008)?'1':'0'));
-      if (pkt->IOmask & 0x0010) printf("D4: %c  ",((pkt->IOdata & 0x0010)?'1':'0'));
-      if (pkt->IOmask & 0x0020) printf("D5: %c  ",((pkt->IOdata & 0x0020)?'1':'0'));
-      if (pkt->IOmask & 0x0040) printf("D6: %c  ",((pkt->IOdata & 0x0040)?'1':'0'));
-      if (pkt->IOmask & 0x0080) printf("D7: %c  ",((pkt->IOdata & 0x0080)?'1':'0'));
-      if (pkt->IOmask & 0x0100) printf("D8: %c  ",((pkt->IOdata & 0x0100)?'1':'0'));
+      int i;
+      for (i = 0; i < pkt->samples; i++) {
+        int m;
+        for (m = 0; m <= 8; m++) {
+          if (xbee_hasdigital(pkt,i,m)) printf("D%d: %d  ",m,xbee_getdigital(pkt,i,m));
+        }
 #define Vref 3.23
-      if (pkt->IOmask & 0x0200) printf("A0: %.2fv  ",(Vref/1024)*pkt->IOanalog[0]);
-      if (pkt->IOmask & 0x0400) printf("A1: %.2fv  ",(Vref/1024)*pkt->IOanalog[1]);
-      if (pkt->IOmask & 0x0800) printf("A2: %.2fv  ",(Vref/1024)*pkt->IOanalog[2]);
-      if (pkt->IOmask & 0x1000) printf("A3: %.2fv  ",(Vref/1024)*pkt->IOanalog[3]);
-      if (pkt->IOmask & 0x2000) printf("A4: %.2fv  ",(Vref/1024)*pkt->IOanalog[4]);
-      if (pkt->IOmask & 0x4000) printf("A5: %.2fv  ",(Vref/1024)*pkt->IOanalog[5]);
-      printf("\n");
+        for (m = 0; m <= 5; m++) {
+          if (xbee_hasanalog(pkt,i,m)) printf("A%d: %.2fv  ",m,xbee_getanalog(pkt,i,m,Vref));
+        }
+        printf("\n");
+      }
       if (xbee_senddata(con2, "the time is %d\r", time(NULL))) {
 	printf("Error: xbee_senddata\n");
 	return 1;

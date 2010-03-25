@@ -56,6 +56,16 @@ struct xbee_con {
 };
 typedef struct xbee_con xbee_con;
 
+struct xbee_sample {
+  /* X  A5 A4 A3 A2 A1 A0 D8    D7 D6 D5 D4 D3 D2 D1 D0  */
+  unsigned short IOmask;          /*                  IO */
+  /* X  X  X  X  X  X  X  D8    D7 D6 D5 D4 D3 D2 D1 D0  */
+  unsigned short IOdigital;       /*                  IO */
+  /* X  X  X  X  X  D  D  D     D  D  D  D  D  D  D  D   */
+  unsigned short IOanalog[6];     /*                  IO */
+};
+typedef struct xbee_sample xbee_sample;
+
 struct xbee_pkt {
   unsigned int sAddr64        : 1; /* yes / no */
   unsigned int dataPkt        : 1; /* if no - AT packet */
@@ -74,16 +84,11 @@ struct xbee_pkt {
   unsigned char RSSI;             /*     Data            */
   unsigned int datalen;
 
-  /* X  A5 A4 A3 A2 A1 A0 D8    D7 D6 D5 D4 D3 D2 D1 D0 */
-  unsigned short IOmask;          /*                  IO */
-
-  /* X  X  X  X  X  X  X  D8    D7 D6 D5 D4 D3 D2 D1 D0 */
-  unsigned short IOdata;          /*                  IO */
-
-  /* X  X  X  X  X  D  D  D     D  D  D  D  D  D  D  D  */
-  unsigned short IOanalog[6];     /*                  IO */
-
   struct xbee_pkt *next;
+
+  int samples;
+  xbee_sample IOdata[1];  /* this array can be extended by using a this trick:
+                             p = calloc(sizeof(xbee_pkt) + (sizeof(xbee_sample) * (samples - 1))) */
 };
 typedef struct xbee_pkt xbee_pkt;
 
@@ -104,11 +109,11 @@ int xbee_nsenddata(xbee_con *con, char *data, int length);
 xbee_pkt *xbee_getpacketwait(xbee_con *con);
 xbee_pkt *xbee_getpacket(xbee_con *con);
 
-int xbee_hasdigital(xbee_pkt *pkt, int input);
-int xbee_getdigital(xbee_pkt *pkt, int input);
+int xbee_hasdigital(xbee_pkt *pkt, int sample, int input);
+int xbee_getdigital(xbee_pkt *pkt, int sample, int input);
 
-int xbee_hasanalog(xbee_pkt *pkt, int input);
-double xbee_getanalog(xbee_pkt *pkt, int input, double Vref);
+int xbee_hasanalog(xbee_pkt *pkt, int sample, int input);
+double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 
 const char *svn_version(void);
 

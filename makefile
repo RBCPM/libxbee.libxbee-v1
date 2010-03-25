@@ -72,6 +72,7 @@ new: clean all
 # clean - remove any compiled files and PDFs #
 clean:
 	rm -f ./*~
+	rm -f ./svn_version.c
 	rm -f ./sample/*~
 	rm -f ./obj/*.o
 	rm -f ./lib/libxbee.so*
