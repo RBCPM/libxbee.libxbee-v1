@@ -178,6 +178,9 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
 
   /* setup the packet mutex */
   xbee.pktlist = NULL;
+  xbee.pktlast = NULL;
+  xbee.pktcount = 0;
+  xbee.listenrun = 1;
   if (pthread_mutex_init(&xbee.pktmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(pktmutex)");
     return -1;
@@ -488,6 +491,7 @@ void xbee_flushcon(xbee_con *con) {
 	  /* otherwise relink the list */
 	  r->next = p->next;
 	}
+        xbee.pktcount--;
 
 	/* free this packet! */
 	Xfree(p);
@@ -496,6 +500,7 @@ void xbee_flushcon(xbee_con *con) {
       r = p;
       p = p->next;
     } while (p);
+    xbee.pktlast = r;
   }
 
   /* unlock the packet mutex */
@@ -718,7 +723,6 @@ xbee_pkt *xbee_getpacketwait(xbee_con *con) {
 }
 xbee_pkt *xbee_getpacket(xbee_con *con) {
   xbee_pkt *l, *p, *q;
-  int c;
   if (xbee.logfd) {
     fprintf(xbee.log,"XBee: --== Get Packet ==========--\n");
   }
@@ -758,22 +762,28 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
     return NULL;
   }
 
-  /* if it was not the first packet */
+  /* if it was the first packet */
   if (l) {
-    /* otherwise relink the list */
+    /* relink the list */
     l->next = p->next;
+    if (!l->next) xbee.pktlast = l;
   } else {
     /* move the chain along */
     xbee.pktlist = p->next;
+    if (!xbee.pktlist) {
+      xbee.pktlast = NULL;
+    } else if (!xbee.pktlist->next) {
+      xbee.pktlast = xbee.pktlist;
+    }
   }
+  xbee.pktcount--;
 
   /* unlink this packet from the chain! */
   q->next = NULL;
 
   if (xbee.logfd) {
     fprintf(xbee.log,"XBee: Got a packet\n");
-    for (p = xbee.pktlist,c = 0;p;c++,p = p->next);
-    fprintf(xbee.log,"XBee: Packets left: %d\n",c);
+    fprintf(xbee.log,"XBee: Packets left: %d\n",xbee.pktcount);
   }
 
   /* unlock the packet mutex */
@@ -892,6 +902,13 @@ static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int samp
 }
 
 /* #################################################################
+   xbee_listen_stop
+   stops the listen thread after the current packet has been processed */
+void xbee_listen_stop(void) {
+  xbee.listenrun = 0;
+}
+
+/* #################################################################
    xbee_listen_wrapper - INTERNAL
    the xbee_listen wrapper. Prints an error when xbee_listen ends */
 static void xbee_listen_wrapper(t_info *info) {
@@ -902,8 +919,8 @@ static void xbee_listen_wrapper(t_info *info) {
   /* now allow the parent to continue */
   xbee_ready = -2;
 
-  info->i = -1;
-  for (;;) {
+  while (xbee.listenrun) {
+    info->i = -1;
     ret = xbee_listen(info);
     if (xbee.logfd) {
       fprintf(xbee.log,"XBee: xbee_listen() returned [%d]... Restarting in 250ms!\n",ret);
@@ -919,7 +936,7 @@ static int xbee_listen(t_info *info) {
   unsigned char c, t, d[1024];
   unsigned int l, i, chksum, o;
   int j;
-  xbee_pkt *p, *q, *po;
+  xbee_pkt *p, *q;
   xbee_con *con;
   int hasCon;
 
@@ -927,9 +944,10 @@ static int xbee_listen(t_info *info) {
   if (info->i != -1) return -1;
 
   /* do this forever :) */
-  while(1) {
+  while (xbee.listenrun) {
     /* wait for a valid start byte */
     if (xbee_getRawByte() != 0x7E) continue;
+    if (!xbee.listenrun) return 0;
 
     if (xbee.logfd) {
       fprintf(xbee.log,"XBee: --== RX Packet ===========--\nXBee: Got a packet!...\n");
@@ -1001,7 +1019,7 @@ static int xbee_listen(t_info *info) {
     }
 
     /* make a new packet */
-    po = p = Xcalloc(sizeof(xbee_pkt));
+    p = Xcalloc(sizeof(xbee_pkt));
     q = NULL;
     p->datalen = 0;
 
@@ -1339,35 +1357,39 @@ static int xbee_listen(t_info *info) {
 
     /* lock the packet mutex, so we can safely add the packet to the list */
     pthread_mutex_lock(&xbee.pktmutex);
-    i = 1;
+
     /* if: the list is empty */
     if (!xbee.pktlist) {
       /* start the list! */
-      xbee.pktlist = po;
-    } else {
+      xbee.pktlist = p;
+    } else if (xbee.pktlast) {
       /* add the packet to the end */
+      xbee.pktlast->next = p;
+    } else {
+      /* pktlast wasnt set... look for the end and then set it */
+      i = 0;
       q = xbee.pktlist;
       while (q->next) {
 	q = q->next;
 	i++;
       }
-      q->next = po;
+      q->next = p;
+      xbee.pktcount = i;
     }
-
-    if (xbee.logfd) {
-      while (q && q->next) {
-	q = q->next;
-	i++;
-      }
-      fprintf(xbee.log,"XBee: --========================--\n");
-      fprintf(xbee.log,"XBee: Packets: %d\n",i);
-    }
-
-    po = p = q = NULL;
+    xbee.pktlast = p;
+    xbee.pktcount++;
 
     /* unlock the packet mutex */
     pthread_mutex_unlock(&xbee.pktmutex);
+
+    if (xbee.logfd) {
+      fprintf(xbee.log,"XBee: --========================--\n");
+      fprintf(xbee.log,"XBee: Packets: %d\n",xbee.pktcount);
+    }
+
+    p = q = NULL;
   }
+  return 0;
 }
 
 /* #################################################################

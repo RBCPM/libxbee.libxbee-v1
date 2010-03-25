@@ -55,11 +55,14 @@ struct {
   pthread_mutex_t conmutex;
 
   xbee_pkt *pktlist;
+  xbee_pkt *pktlast;
+  int pktcount;
   pthread_mutex_t pktmutex;
 
   pthread_mutex_t sendmutex;
 
   pthread_t listent;
+  int listenrun;
 
   xbee_con *con_txStatus;
 

@@ -23,6 +23,9 @@
 int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
   xbee_pkt *pkt, *p;
+ 
+  printf("%d\n",sizeof(xbee_pkt) + (sizeof(xbee_sample) * 31));
+return 0;
 
   if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
     perror("xbee_setup()");

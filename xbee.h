@@ -117,4 +117,6 @@ double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 
 const char *svn_version(void);
 
+void xbee_listen_stop(void);
+
 #endif
