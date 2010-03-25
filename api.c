@@ -830,12 +830,30 @@ static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int samp
   sampleOffset += ((s->IOmask & 0x01FF)?2:0);
 
   /* copy in the analog I/O data */
-  if (s->IOmask & 0x0200) {s->IOanalog[0] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
-  if (s->IOmask & 0x0400) {s->IOanalog[1] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
-  if (s->IOmask & 0x0800) {s->IOanalog[2] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
-  if (s->IOmask & 0x1000) {s->IOanalog[3] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
-  if (s->IOmask & 0x2000) {s->IOanalog[4] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
-  if (s->IOmask & 0x4000) {s->IOanalog[5] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);sampleOffset+=2;}
+  if (s->IOmask & 0x0200) {
+    s->IOanalog[0] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
+  if (s->IOmask & 0x0400) {
+    s->IOanalog[1] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
+  if (s->IOmask & 0x0800) {
+    s->IOanalog[2] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
+  if (s->IOmask & 0x1000) {
+    s->IOanalog[3] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
+  if (s->IOmask & 0x2000) {
+    s->IOanalog[4] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
+  if (s->IOmask & 0x4000) {
+    s->IOanalog[5] = (((d[sampleOffset]<<8) | d[sampleOffset+1]) & 0x03FF);
+    sampleOffset+=2;
+  }
 
   if (xbee.logfd) {
     if (s->IOmask & 0x0001)
