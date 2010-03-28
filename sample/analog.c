@@ -44,15 +44,14 @@ int main(int argc, char *argv[]) {
   }
 
   /* get a connection to the remote XBee */
-  con = xbee_newcon('I',xbee_64bitIO,   0x0013A200, 0x403CB26A);
-
+  con = xbee_newcon('I',xbee_64bitIO, 0x13A200, 0x403CB26A);
   /* do this forever! */
   while (1) {
     /* get as many packets as we can */
     while ((pkt = xbee_getpacket(con)) != NULL) {
       for (i = 0; i < pkt->samples; i++) {
-        /* did we get a value for D0? */
-        if (!xbee_hasdigital(pkt,i,0)) {
+        /* did we get a value for A0? */
+        if (!xbee_hasanalog(pkt,i,0)) {
           /* there was no data for A0 in the packet */
           printf("A0: -- No Data --\n");
           continue;
