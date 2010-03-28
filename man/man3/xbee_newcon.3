@@ -50,6 +50,12 @@ specifies the type of connection you would like. The following types are avaliab
 .B xbee_localAT
 communicates AT commands with the local XBee
 .TP
+.B xbee_txStatus
+recieves transmit status information
+.TP
+.B xbee_modemStatus
+recieves modem status information
+.TP
 .B xbee_16bitRemoteAT
 communicates AT commands with a remote node (using 16-bit addressing)
 .TP
@@ -69,7 +75,7 @@ sends/recieves I/O data through a remote node (using 16-bit addressing)
 sends/recieves I/O data through a remote node (using 64-bit addressing)
 .PP
 If you are using
-.B xbee_localAT
+.BR xbee_localAT ", " xbee_txStatus " or " xbee_modemStatus
 then only the
 .I frameID
 and
