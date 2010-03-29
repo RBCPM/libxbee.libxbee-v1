@@ -94,12 +94,16 @@ typedef struct xbee_pkt xbee_pkt;
 
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);
+int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
+int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
+
+int xbee_end(void);
 
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 
 void xbee_flushcon(xbee_con *con);
 
-#define xbee_endcon(x) xbee_endcon2((void **)&x)
+#define xbee_endcon(x) xbee_endcon2((xbee_con **)&x)
 void xbee_endcon2(xbee_con **con);
 
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));

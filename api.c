@@ -122,21 +122,233 @@ double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref) {
 /* ################################################################# */
 
 /* #################################################################
+   xbee_sendAT - INTERNAL
+   allows for an at command to be send, and the reply to be captured */
+static int xbee_sendAT(char *command, char *retBuf) {
+  return xbee_sendATdelay(0,0,command,retBuf);
+}
+static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf) {
+  fd_set fds;
+  struct timeval to;
+  int ret;
+  int bufi = 0;
+
+  /* if there is a preDelay given, then use it */
+  if (preDelay) usleep(preDelay * 1200);
+
+  /* send the requested command */
+  if (xbee.log) fprintf(xbee.log, "XBee: sendATdelay: Sending '%s'\n", command);
+  fwrite(command, strlen(command), 1, xbee.tty);
+  fflush(xbee.tty);
+
+  /* if there is a postDelay, then use it */
+  if (postDelay) usleep(postDelay * 2000);
+
+  /* select on the xbee fd... wait at most 1 second for the response */
+  memset(retBuf, 0, sizeof(retBuf));
+  memset(&to, 0, sizeof(to));
+  to.tv_usec = 1000 * 1000;
+  FD_ZERO(&fds);
+  FD_SET(xbee.ttyfd, &fds);
+  if ((ret = select(xbee.ttyfd+1, &fds, NULL, NULL, &to)) == -1) {
+    perror("xbee:xbee_sendATdelay()");
+    exit(1);
+  }
+
+  if (!ret) {
+    /* timed out, and there is nothing to be read */
+    if (xbee.log) fprintf(xbee.log, "XBee: sendATdelay: Error: No Data to read - Timeout...\n");
+    retBuf[0] = '\0';
+    return 1;
+  }
+
+  /* check for any dribble... */
+  do {
+    /* if the data avaliable is larger than the retBuf... then truncate :( */
+    if (ret > (sizeof(retBuf) - bufi)) {
+      ret = sizeof(retBuf) - bufi;
+    }
+    /* if there is actually no space in the retBuf then break out */
+    if (ret < 1) break;
+
+    /* read as much data as is possible into retBuf */
+    if ((ret = read(xbee.ttyfd, &retBuf[bufi], ret)) == 0) break;
+
+    /* advance the 'end of string' pointer */
+    bufi += ret;
+
+    /* wait at most 5ms for any more data */
+    memset(&to, 0, sizeof(to));
+    to.tv_usec = 10000;
+    FD_ZERO(&fds);
+    FD_SET(xbee.ttyfd, &fds);
+    if ((ret = select(xbee.ttyfd+1, &fds, NULL, NULL, &to)) == -1) {
+      perror("xbee:xbee_sendATdelay()");
+      exit(1);
+    }
+
+    /* if there is no more data, or there is no more space in the buffer then break out */
+  } while (ret && bufi < sizeof(retBuf));
+
+  /* terminate the string */
+  retBuf[bufi] = '\0';
+  if (!bufi) {
+    if (xbee.log) fprintf(xbee.log,"XBee: sendATdelay: No response...\n");
+    return 1;
+  }
+
+  if (xbee.log) fprintf(xbee.log,"XBee: sendATdelay: Success!\n");
+  return 0;
+}
+
+
+/* #################################################################
+   xbee_start
+   sets up the correct API mode for the xbee
+   cmdSeq  = CC
+   cmdTime = GT */
+static int xbee_startAPI(void) {
+  char buf[32];
+
+  if (xbee.cmdSeq == 0 || xbee.cmdTime == 0) return 1;
+
+  /* setup the command sequence string */
+  memset(buf,xbee.cmdSeq,3);
+  buf[3] = '\0';
+
+  /* try the command sequence */
+  if (xbee_sendATdelay(xbee.cmdTime, xbee.cmdTime, buf, buf)) {
+    /* if it failed... try just entering 'AT' which should return OK */
+    if (xbee_sendAT("AT\r\n", buf) || strncmp(buf,"OK\r",3)) return 1;
+  } else if (strncmp(buf,"OK\r",3)) {
+    /* if data was returned, but it wasn't OK... then something went wrong! */
+    return 1;
+  }
+
+  /* get the current API mode */
+  if (xbee_sendAT("ATAP\r\n", buf)) return 1;
+  buf[1] = '\0';
+  xbee.oldAPI = atoi(buf);
+
+  if (xbee.oldAPI != 2) {
+    /* if it wasnt set to mode 2 already, then set it to mode 2 */
+    if (xbee_sendAT("ATAP2\r\n", buf) || strncmp(buf,"OK\r",3)) return 1;
+  }
+
+  /* quit from command mode, ready for some packets! :) */
+  if (xbee_sendAT("ATCN\r\n", buf) || strncmp(buf,"OK\r",3)) return 1;
+
+  return 0;
+}
+
+/* #################################################################
+   xbee_end
+   resets the API mode to the saved value - you must have called xbee_setup[log]API */
+int xbee_end(void) {
+  int ret = 1;
+  xbee_con *con, *ncon;
+  xbee_pkt *pkt, *npkt;
+  int logfd;
+
+  ISREADY;
+
+  pkt = NULL;
+
+  if (xbee.log) fprintf(xbee.log,"libxbee: Stopping...\n");
+
+  /* if the api mode was not 2 to begin with then put it back */
+  if (xbee.oldAPI == 2) {
+    ret = 0;
+  } else {
+    int to = 5;
+
+    con = xbee_newcon('I',xbee_localAT);
+    xbee_senddata(con,"AP%c",xbee.oldAPI);
+
+    while (!pkt && to--) {
+      pkt = xbee_getpacketwait(con);
+    }
+    if (pkt) {
+      ret = pkt->status;
+      free(pkt);
+    }
+    xbee_endcon(con);
+  }
+
+  fflush(xbee.log);
+
+  /* nullify everything */
+
+  /* xbee_* functions may no longer run */
+  xbee_ready = 0;
+
+  /* stop listening for data... either after timeout or next char read which ever is first */
+  xbee.listenrun = 0;
+
+  /* destroy connection mutex */
+  pthread_mutex_destroy(&xbee.conmutex);
+  /* free all connections */
+  if ((con = xbee.conlist) != NULL) {
+    ncon = con->next;
+    Xfree(con);
+    con = ncon;
+  }
+  xbee.conlist = NULL;
+
+  /* destroy connection mutex */
+  pthread_mutex_destroy(&xbee.pktmutex);
+  /* free all packets */
+  xbee.pktlast = NULL;
+  if ((pkt = xbee.pktlist) != NULL) {
+    npkt = pkt->next;
+    Xfree(pkt);
+    pkt = npkt;
+  }
+  xbee.pktlist = NULL;
+
+  /* destroy send mutex */
+  pthread_mutex_destroy(&xbee.sendmutex);
+
+  /* close the serial port */
+  fclose(xbee.tty);
+  close(xbee.ttyfd);
+
+  /* close log and tty */
+  if (xbee.log) {
+    fprintf(xbee.log,"libxbee: Stopped! (r%s)\n",svn_version());
+    fclose(xbee.log);
+  }
+  logfd = xbee.logfd;
+
+  /* wipe everything else... */
+  memset(&xbee,0,sizeof(xbee));
+
+  return ret;
+}
+
+/* #################################################################
    xbee_setup
    opens xbee serial port & creates xbee listen thread
    the xbee must be configured for API mode 2
    THIS MUST BE CALLED BEFORE ANY OTHER XBEE FUNCTION */
 int xbee_setup(char *path, int baudrate) {
-  return xbee_setuplog(path,baudrate,0);
+  return xbee_setuplogAPI(path,baudrate,0,0,0);
 }
 int xbee_setuplog(char *path, int baudrate, int logfd) {
+  return xbee_setuplogAPI(path,baudrate,logfd,0,0);
+}
+int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime) {
+  return xbee_setuplogAPI(path,baudrate,0,cmdSeq,cmdTime);
+}
+int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime) {
   t_info info;
   struct flock fl;
   struct termios tc;
   speed_t chosenbaud;
 
 #ifdef DEBUG
-  xbee.logfd = ((logfd)?logfd:stdout);
+  /* logfd or stdout */
+  xbee.logfd = ((logfd)?logfd:1);
 #else
   xbee.logfd = logfd;
 #endif
@@ -152,7 +364,7 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
     }
   }
 
-  if (xbee.log) fprintf(xbee.log,"libxbee: Starting (r%s)\n",svn_version());
+  if (xbee.log) fprintf(xbee.log,"libxbee: Starting (r%s)...\n",svn_version());
 
   /* select the baud rate */
   switch (baudrate) {
@@ -223,7 +435,6 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
     return -1;
   }
 
-
   /* open the serial port as a FILE* */
   if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
     perror("xbee_setup():fdopen()");
@@ -272,6 +483,14 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
   tcsetattr(xbee.ttyfd, TCSANOW, &tc);
   tcflow(xbee.ttyfd, TCOON|TCION); /* enable input & output transmission */
 
+  /* when xbee_end() is called, if this is not 2 then ATAP will be set to this value */
+  xbee.oldAPI = 2;
+  xbee.cmdSeq = cmdSeq;
+  xbee.cmdTime = cmdTime;
+  if (xbee.cmdSeq && xbee.cmdTime) {
+    xbee_startAPI();
+  }
+
   /* allow the listen thread to start */
   xbee_ready = -1;
 
@@ -296,6 +515,8 @@ int xbee_setuplog(char *path, int baudrate, int logfd) {
 
   /* allow other functions to be used! */
   xbee_ready = 1;
+
+  if (xbee.log) fprintf(xbee.log,"libxbee: Started!\n");
 
   return 0;
 }
@@ -922,6 +1143,7 @@ static void xbee_listen_wrapper(t_info *info) {
   while (xbee.listenrun) {
     info->i = -1;
     ret = xbee_listen(info);
+    if (!xbee.listenrun) break;
     if (xbee.logfd) {
       fprintf(xbee.log,"XBee: xbee_listen() returned [%d]... Restarting in 250ms!\n",ret);
     }
@@ -1412,20 +1634,27 @@ static unsigned char xbee_getByte(void) {
    xbee_getRawByte - INTERNAL
    waits for a raw byte of data */
 static unsigned char xbee_getRawByte(void) {
-  unsigned char c;
+  unsigned char c = 0x00;
   fd_set fds;
+  int ret;
+  struct timeval to;
 
   ISREADY;
 
   /* the loop is just incase there actually isnt a byte there to be read... */
   do {
     /* wait for a read to be possible */
+    /* timeout every 1 second to keep alive */
+    memset(&to, 0, sizeof(to));
+    to.tv_usec = 1000 * 1000;
     FD_ZERO(&fds);
     FD_SET(xbee.ttyfd,&fds);
-    if (select(xbee.ttyfd+1,&fds,NULL,NULL,NULL) == -1) {
+    if ((ret = select(xbee.ttyfd+1,&fds,NULL,NULL,&to)) == -1) {
       perror("xbee:xbee_listen():xbee_getRawByte()");
       exit(1);
     }
+    if (!xbee.listenrun) break;
+    if (ret == 0) continue;
 
     /* read 1 character */
     if (read(xbee.ttyfd,&c,1) == 0) {
@@ -1442,7 +1671,6 @@ static unsigned char xbee_getRawByte(void) {
    sends a complete packet of data */
 static void xbee_send_pkt(t_data *pkt) {
   ISREADY;
-
 
   /* lock the send mutex */
   pthread_mutex_lock(&xbee.sendmutex);

@@ -29,6 +29,7 @@
 #include <errno.h>
 
 #include <pthread.h>
+#include <signal.h>
 
 #include "xbee.h"
 

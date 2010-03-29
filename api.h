@@ -51,23 +51,25 @@ struct t_info {
 typedef struct t_info t_info;
 
 struct {
-  xbee_con *conlist;
   pthread_mutex_t conmutex;
+  xbee_con *conlist;
 
+  pthread_mutex_t pktmutex;
   xbee_pkt *pktlist;
   xbee_pkt *pktlast;
   int pktcount;
-  pthread_mutex_t pktmutex;
 
   pthread_mutex_t sendmutex;
 
   pthread_t listent;
   int listenrun;
 
-  xbee_con *con_txStatus;
-
-  int ttyfd;
   FILE *tty;
+  int ttyfd;
+
+  int oldAPI;
+  char cmdSeq;
+  int cmdTime;
 
   int logfd;
   FILE *log;
@@ -79,6 +81,11 @@ static void *Xmalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);
 #define Xfree(x) Xfree2((void **)&x)
 static void Xfree2(void **ptr);
+
+static int xbee_startAPI(void);
+
+static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf);
+static int xbee_sendAT(char *command, char *retBuf);
 
 static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
 static void xbee_listen_wrapper(t_info *info);
