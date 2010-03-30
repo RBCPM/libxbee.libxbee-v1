@@ -179,7 +179,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
 
     /* wait at most 5ms for any more data */
     memset(&to, 0, sizeof(to));
-    to.tv_usec = 10000;
+    to.tv_usec = 5000;
     FD_ZERO(&fds);
     FD_SET(xbee.ttyfd, &fds);
     if ((ret = select(xbee.ttyfd+1, &fds, NULL, NULL, &to)) == -1) {
