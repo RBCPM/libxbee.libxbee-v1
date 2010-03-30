@@ -133,7 +133,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   int ret;
   int bufi = 0;
 
-  /* if there is a preDelay given, then use it */
+  /* if there is a preDelay given, then use it and a bit more */
   if (preDelay) usleep(preDelay * 1200);
 
   /* send the requested command */
@@ -142,11 +142,26 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   fflush(xbee.tty);
 
   /* if there is a postDelay, then use it */
-  if (postDelay) usleep(postDelay * 2000);
+  if (postDelay) {
+    usleep(postDelay * 900);
+    /* ignore any sludge... */
+    memset(&to, 0, sizeof(to));
+    to.tv_usec = 1000; /* 1ms */
+    FD_ZERO(&fds);
+    FD_SET(xbee.ttyfd, &fds);
+    ret = select(xbee.ttyfd+1, &fds, NULL, NULL, &to);
+    if (ret > 0) {
+      char *t;
+      t = malloc(sizeof(char) * (ret + 1));
+      read(xbee.ttyfd,t,ret);
+      printf("SLUDGE:\n---\n%s\n---\n",t);
+      free(t);
+    }
+  }
 
-  /* select on the xbee fd... wait at most 1 second for the response */
   memset(retBuf, 0, sizeof(retBuf));
   memset(&to, 0, sizeof(to));
+  /* select on the xbee fd... wait at most 1 second for the response */
   to.tv_usec = 1000 * 1000;
   FD_ZERO(&fds);
   FD_SET(xbee.ttyfd, &fds);
@@ -179,7 +194,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
 
     /* wait at most 5ms for any more data */
     memset(&to, 0, sizeof(to));
-    to.tv_usec = 5000;
+    to.tv_usec = 100000;
     FD_ZERO(&fds);
     FD_SET(xbee.ttyfd, &fds);
     if ((ret = select(xbee.ttyfd+1, &fds, NULL, NULL, &to)) == -1) {
@@ -197,7 +212,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
     return 1;
   }
 
-  if (xbee.log) fprintf(xbee.log,"XBee: sendATdelay: Success!\n");
+  if (xbee.log) fprintf(xbee.log,"XBee: sendATdelay: Recieved '%s'\n",retBuf);
   return 0;
 }
 
@@ -220,7 +235,8 @@ static int xbee_startAPI(void) {
   if (xbee_sendATdelay(xbee.cmdTime, xbee.cmdTime, buf, buf)) {
     /* if it failed... try just entering 'AT' which should return OK */
     if (xbee_sendAT("AT\r\n", buf) || strncmp(buf,"OK\r",3)) return 1;
-  } else if (strncmp(buf,"OK\r",3)) {
+  } else if (strncmp(&buf[strlen(buf)-3],"OK\r",3)) {
+    printf("\n\n\nbuf=[%s]\n\n\n",buf);
     /* if data was returned, but it wasn't OK... then something went wrong! */
     return 1;
   }
@@ -275,7 +291,7 @@ int xbee_end(void) {
     xbee_endcon(con);
   }
 
-  fflush(xbee.log);
+  if (xbee.log) fflush(xbee.log);
 
   /* nullify everything */
 
@@ -346,6 +362,8 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   struct termios tc;
   speed_t chosenbaud;
 
+  memset(&xbee,0,sizeof(xbee));
+
 #ifdef DEBUG
   /* logfd or stdout */
   xbee.logfd = ((logfd)?logfd:1);
@@ -378,6 +396,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     case 115200:chosenbaud = B115200; break;
     default:
       fprintf(stderr,"XBee: Unknown or incompatiable baud rate specified... (%d)\n",baudrate);
+      xbee_end();
       return -1;
   };
 
@@ -385,6 +404,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   xbee.conlist = NULL;
   if (pthread_mutex_init(&xbee.conmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(conmutex)");
+    xbee_end();
     return -1;
   }
 
@@ -395,18 +415,21 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   xbee.listenrun = 1;
   if (pthread_mutex_init(&xbee.pktmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(pktmutex)");
+    xbee_end();
     return -1;
   }
 
   /* setup the send mutex */
   if (pthread_mutex_init(&xbee.sendmutex,NULL)) {
     perror("xbee_setup():pthread_mutex_init(sendmutex)");
+    xbee_end();
     return -1;
   }
 
   /* take a copy of the XBee device path */
   if ((xbee.path = Xmalloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
     perror("xbee_setup():Xmalloc(path)");
+    xbee_end();
     return -1;
   }
   strcpy(xbee.path,path);
@@ -414,9 +437,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* open the serial port as a file descriptor */
   if ((xbee.ttyfd = open(path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
     perror("xbee_setup():open()");
-    Xfree(xbee.path);
-    xbee.ttyfd = -1;
-    xbee.tty = NULL;
+    xbee_end();
     return -1;
   }
 
@@ -428,20 +449,14 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   fl.l_pid = getpid();
   if (fcntl(xbee.ttyfd, F_SETLK, &fl) == -1) {
     perror("xbee_setup():fcntl()");
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
-    xbee.ttyfd = -1;
-    xbee.tty = NULL;
+    xbee_end();
     return -1;
   }
 
   /* open the serial port as a FILE* */
   if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
     perror("xbee_setup():fdopen()");
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
-    xbee.ttyfd = -1;
-    xbee.tty = NULL;
+    xbee_end();
     return -1;
   }
 
@@ -488,7 +503,13 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   xbee.cmdSeq = cmdSeq;
   xbee.cmdTime = cmdTime;
   if (xbee.cmdSeq && xbee.cmdTime) {
-    xbee_startAPI();
+    if (xbee_startAPI()) {
+      if (xbee.logfd) {
+        fprintf(xbee.log,"XBee: Couldn't communicate with XBee...\n");
+      }
+      xbee_end();
+      return -1;
+    }
   }
 
   /* allow the listen thread to start */
@@ -497,11 +518,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* can start xbee_listen thread now */
   if (pthread_create(&xbee.listent,NULL,(void *(*)(void *))xbee_listen_wrapper,(void *)&info) != 0) {
     perror("xbee_setup():pthread_create()");
-    Xfree(xbee.path);
-    fclose(xbee.tty);
-    close(xbee.ttyfd);
-    xbee.ttyfd = -1;
-    xbee.tty = NULL;
+    xbee_end();
     return -1;
   }
 
