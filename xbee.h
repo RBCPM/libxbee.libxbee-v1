@@ -80,7 +80,7 @@ struct xbee_pkt {
   unsigned char status;           /* AT  Data  Status    */ /* status / options */
   unsigned char Addr64[8];        /* AT  Data            */
   unsigned char Addr16[2];        /* AT  Data            */
-  unsigned char data[128];        /* AT  Data            */
+  unsigned char data[128];        /* AT  Data            */ /* a little bigger than spec, ready for oversized packets... */
   unsigned char RSSI;             /*     Data            */
   unsigned int datalen;
 

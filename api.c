@@ -154,7 +154,6 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
       char *t;
       t = malloc(sizeof(char) * (ret + 1));
       read(xbee.ttyfd,t,ret);
-      printf("SLUDGE:\n---\n%s\n---\n",t);
       free(t);
     }
   }
@@ -1402,7 +1401,7 @@ static int xbee_listen(t_info *info) {
 	else if (d[1] == 1) fprintf(xbee.log,"No ACK");
 	else if (d[1] == 2) fprintf(xbee.log,"CCA Failure");
 	else if (d[1] == 3) fprintf(xbee.log,"Purged");
-        fprintf(xbee.log," (0x%02X)\n",d[13]);
+        fprintf(xbee.log," (0x%02X)\n",d[1]);
       }
       p->type = xbee_txStatus;
 
@@ -1428,7 +1427,6 @@ static int xbee_listen(t_info *info) {
       if (t == 0x80) { /* 64bit */
 	offset = 8;
       } else { /* 16bit */
-
 	offset = 2;
       }
       if (xbee.logfd) {
