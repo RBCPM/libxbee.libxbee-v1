@@ -303,7 +303,8 @@ int xbee_end(void) {
   /* destroy connection mutex */
   pthread_mutex_destroy(&xbee.conmutex);
   /* free all connections */
-  if ((con = xbee.conlist) != NULL) {
+  con = xbee.conlist;
+  while (con) {
     ncon = con->next;
     Xfree(con);
     con = ncon;
@@ -314,7 +315,8 @@ int xbee_end(void) {
   pthread_mutex_destroy(&xbee.pktmutex);
   /* free all packets */
   xbee.pktlast = NULL;
-  if ((pkt = xbee.pktlist) != NULL) {
+  pkt = xbee.pktlist;
+  while (pkt) {
     npkt = pkt->next;
     Xfree(pkt);
     pkt = npkt;
@@ -331,6 +333,7 @@ int xbee_end(void) {
   /* close log and tty */
   if (xbee.log) {
     fprintf(xbee.log,"libxbee: Stopped! (r%s)\n",svn_version());
+    fflush(xbee.log);
     fclose(xbee.log);
   }
   logfd = xbee.logfd;
