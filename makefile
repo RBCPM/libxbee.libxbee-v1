@@ -91,7 +91,7 @@ ifneq ($(shell echo $$USER),root)
 	@echo "### To Install this library I need the root password please!"
 	@echo "#######################################################################################"
 endif
-	sudo make install_su --no-print-directory
+	su -c "make install_su --no-print-directory"
 	@echo
 ifeq (${FIRSTTIME},TRUE)
 	@echo "#######################################################################################"
