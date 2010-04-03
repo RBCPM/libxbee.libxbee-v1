@@ -711,7 +711,7 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
    removes any packets that have been collected for the specified
    connection */
 void xbee_flushcon(xbee_con *con) {
-  xbee_pkt *r, *p;
+  xbee_pkt *r, *p, *n;
 
   /* lock the packet mutex */
   pthread_mutex_lock(&xbee.pktmutex);
@@ -734,11 +734,15 @@ void xbee_flushcon(xbee_con *con) {
         xbee.pktcount--;
 
 	/* free this packet! */
+        n = p->next;
 	Xfree(p);
+        /* move on */
+        p = n;
+      } else {
+        /* move on */
+        r = p;
+        p = p->next;
       }
-      /* move on */
-      r = p;
-      p = p->next;
     } while (p);
     xbee.pktlast = r;
   }
