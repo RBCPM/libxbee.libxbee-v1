@@ -1,3 +1,7 @@
+#ifdef WIN32
+#error "You are using windows..."
+#endif
+
 /*
     libxbee - a C library to aid the use of Digi's Series 1 XBee modules
               running in API mode (AP=2).
