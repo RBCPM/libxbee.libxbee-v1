@@ -10,7 +10,7 @@ Begin VB.Form Form1
    ScaleWidth      =   17460
    StartUpPosition =   3  'Windows Default
    Begin VB.Timer Timer1 
-      Interval        =   1000
+      Interval        =   100
       Left            =   960
       Top             =   1320
    End
@@ -57,5 +57,6 @@ Private Sub Timer1_Timer()
                         thePkt.Addr64(0) & " " & thePkt.Addr64(1) & " " & thePkt.Addr64(2) & " " & thePkt.Addr64(3) & " " & _
                         thePkt.Addr64(4) & " " & thePkt.Addr64(5) & " " & thePkt.Addr64(6) & " " & thePkt.Addr64(7) & " -=- " & _
                         "-" & thePkt.RSSI & "dB"
+        xbee_sendstring myCon, Chr(thePkt.data(0))
     Loop Until ret = 0
 End Sub

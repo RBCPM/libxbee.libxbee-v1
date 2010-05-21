@@ -35,8 +35,6 @@
 #include <termios.h>
 #include <pthread.h>
 
-#define xbee_select(a,b,c,d,e)    select((a),(b),(c),(d),(e))
-
 #define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)&(c))
 #define xbee_thread_kill(a,b)     pthread_kill((a),(b))
 
@@ -44,6 +42,9 @@
 #define xbee_mutex_destroy(a)     pthread_mutex_destroy(&(a))
 #define xbee_mutex_lock(a)        pthread_mutex_lock(&(a))
 #define xbee_mutex_unlock(a)      pthread_mutex_unlock(&(a))
+
+#define xbee_write(a,b)           fwrite((a),(b),1,xbee.tty)
+#define xbee_read(a,b)            fread((a),(b),1,xbee.tty)
 
 /* #################### */
 #else           /* ---- */

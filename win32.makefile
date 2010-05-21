@@ -13,10 +13,10 @@ CC:="C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\cl.exe"
 all: .\obj .\lib
 	${CC} \
 		${DEBUG} \
-    /nologo \
-    /MT \
-    /Ox \
-    /Gz \
+		/nologo \
+		/MT \
+		/Ox \
+		/Gz \
 		"/IC:\Program Files\Microsoft SDKs\Windows\v6.0A\Include" \
 		"/IC:\${ProgFiles32bit}\Microsoft Visual Studio 9.0\VC\include" \
 		/Fo.\obj\libxbee.obj \
@@ -24,7 +24,7 @@ all: .\obj .\lib
 		api.c \
 		/LD \
 		/link \
-    /MAP:lib\libxbee.map \
+		/MAP:lib\libxbee.map \
 		"/DEF:win32.def" \
 		"/LIBPATH:C:\Program Files\Microsoft SDKs\Windows\v6.0A\Lib" \
 		"/LIBPATH:C:\${ProgFiles32bit}\Microsoft Visual Studio 9.0\VC\lib"

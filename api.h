@@ -60,16 +60,25 @@ struct {
   pthread_mutex_t pktmutex;
   pthread_mutex_t sendmutex;
   pthread_t listent;
+  
+  FILE *tty;
+  int ttyfd;
 #else           /* ---- */
   HANDLE conmutex;
   HANDLE pktmutex;
   HANDLE sendmutex;
   HANDLE listent;
+  
+  HANDLE tty;
+  int ttyr;
+  int ttyw;
+  
+  OVERLAPPED ttyovrw;
+  OVERLAPPED ttyovrr;
+  OVERLAPPED ttyovrs;
 #endif          /* ---- */
 
   char *path; /* serial port path */
-  FILE *tty;
-  int ttyfd;
   
   FILE *log;
   int logfd;
@@ -94,14 +103,16 @@ static void Xfree2(void **ptr);
 
 static int xbee_startAPI(void);
 
+static int xbee_select(struct timeval *timeout);
+
 static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf);
 static int xbee_sendAT(char *command, char *retBuf);
 
 static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
 static void xbee_listen_wrapper(t_info *info);
 static int xbee_listen(t_info *info);
-static unsigned char xbee_getByte(void);
-static unsigned char xbee_getRawByte(void);
+static unsigned char xbee_getbyte(void);
+static unsigned char xbee_getrawbyte(void);
 static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
 static t_data *xbee_make_pkt(unsigned char *data, int len);
