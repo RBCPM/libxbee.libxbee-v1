@@ -244,7 +244,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
     /* advance the 'end of string' pointer */
     bufi += ret;
 
-    /* wait at most 5ms for any more data */
+    /* wait at most 100ms for any more data */
     memset(&to, 0, sizeof(to));
     to.tv_usec = 100000;
     if ((ret = xbee_select(&to)) == -1) {
