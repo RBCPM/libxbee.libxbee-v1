@@ -20,16 +20,50 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <stdarg.h>
-#include <unistd.h>
+
 #include <string.h>
 #include <fcntl.h>
-#include <termios.h>
-
 #include <errno.h>
-
-#include <pthread.h>
 #include <signal.h>
+
+/* #################### */
+#ifdef __GNUC__ /* ---- */
+
+#include <unistd.h>
+#include <termios.h>
+#include <pthread.h>
+
+#define xbee_select(a,b,c,d,e)    select((a),(b),(c),(d),(e))
+
+#define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)&(c))
+#define xbee_thread_kill(a,b)     pthread_kill((a),(b))
+
+#define xbee_mutex_init(a)        pthread_mutex_init(&(a),NULL)
+#define xbee_mutex_destroy(a)     pthread_mutex_destroy(&(a))
+#define xbee_mutex_lock(a)        pthread_mutex_lock(&(a))
+#define xbee_mutex_unlock(a)      pthread_mutex_unlock(&(a))
+
+/* #################### */
+#else           /* ---- */
+
+#include <Windows.h>
+#include <io.h>
+
+/* this uses miliseconds not microseconds... */
+#define usleep(a)                 Sleep((a)/1000)
+
+#define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)&(c),0,NULL)) == NULL)
+#define xbee_thread_kill(a,b)     TerminateThread((a),(b))
+
+#define xbee_mutex_init(a)        (((a) = CreateSemaphore(NULL, 1, 1, NULL)) == NULL)
+#define xbee_mutex_destroy(a)     CloseHandle((a))
+#define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
+#define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
+
+/* #################### */
+#endif          /* ---- */
 
 #include "xbee.h"
 

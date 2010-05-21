@@ -26,14 +26,14 @@
 enum xbee_types {
   xbee_unknown,
 
-  xbee_localAT, /* frame ID */
-
+  xbee_localAT,       /* frame ID */
   xbee_remoteAT,
+
   xbee_16bitRemoteAT, /* frame ID */
   xbee_64bitRemoteAT, /* frame ID */
 
-  xbee_16bitData, /* frame ID for ACKs */
-  xbee_64bitData, /* frame ID for ACKs  */
+  xbee_16bitData,     /* frame ID for ACKs */
+  xbee_64bitData,     /* frame ID for ACKs */
 
   xbee_16bitIO,
   xbee_64bitIO,
@@ -44,11 +44,11 @@ enum xbee_types {
 typedef enum xbee_types xbee_types;
 
 struct xbee_con {
-  unsigned int tAddr64       : 1;
-  unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
-  unsigned int txDisableACK  : 1;
-  unsigned int txBroadcast   : 1; /* broadcasts to PAN */
-  unsigned int __spare__     : 4;
+  unsigned char tAddr64       : 1;
+  unsigned char atQueue       : 1; /* queues AT commands until AC is sent */
+  unsigned char txDisableACK  : 1;
+  unsigned char txBroadcast   : 1; /* broadcasts to PAN */
+  unsigned char __spare__     : 4;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
@@ -67,26 +67,32 @@ struct xbee_sample {
 typedef struct xbee_sample xbee_sample;
 
 struct xbee_pkt {
-  unsigned int sAddr64        : 1; /* yes / no */
-  unsigned int dataPkt        : 1; /* if no - AT packet */
-  unsigned int txStatusPkt    : 1;
-  unsigned int modemStatusPkt : 1;
-  unsigned int remoteATPkt    : 1;
-  unsigned int IOPkt          : 1;
-  unsigned int __spare__      : 2;
-  xbee_types type;
+  unsigned char sAddr64        : 1; /* yes / no */
+  unsigned char dataPkt        : 1; /* if no - AT packet */
+  unsigned char txStatusPkt    : 1;
+  unsigned char modemStatusPkt : 1;
+  unsigned char remoteATPkt    : 1;
+  unsigned char IOPkt          : 1;
+  unsigned char __spare__      : 2;
+  
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
+  
   unsigned char status;           /* AT  Data  Status    */ /* status / options */
-  unsigned char Addr64[8];        /* AT  Data            */
-  unsigned char Addr16[2];        /* AT  Data            */
-  unsigned char data[128];        /* AT  Data            */ /* a little bigger than spec, ready for oversized packets... */
+  unsigned char samples;
   unsigned char RSSI;             /*     Data            */
+  
+  unsigned char Addr16[2];        /* AT  Data            */
+  
+  unsigned char Addr64[8];        /* AT  Data            */
+  
+  unsigned char data[128];        /* AT  Data            */ /* a little bigger than spec, ready for oversized packets... */
+  
   unsigned int datalen;
+  xbee_types type;
 
   struct xbee_pkt *next;
 
-  int samples;
   xbee_sample IOdata[1];  /* this array can be extended by using a this trick:
                              p = calloc(sizeof(xbee_pkt) + (sizeof(xbee_sample) * (samples - 1))) */
 };
@@ -106,8 +112,14 @@ void xbee_flushcon(xbee_con *con);
 #define xbee_endcon(x) xbee_endcon2((xbee_con **)&x)
 void xbee_endcon2(xbee_con **con);
 
+#ifdef __GNUC__ /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
+#else           /* ---- */
+int xbee_senddata(xbee_con *con, char *format, ...);
+int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+#endif          /* ---- */
+
 int xbee_nsenddata(xbee_con *con, char *data, int length);
 
 xbee_pkt *xbee_getpacketwait(xbee_con *con);
@@ -119,7 +131,7 @@ int xbee_getdigital(xbee_pkt *pkt, int sample, int input);
 int xbee_hasanalog(xbee_pkt *pkt, int sample, int input);
 double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 
-const char *svn_version(void);
+const char *xbee_svn_version(void);
 
 void xbee_listen_stop(void);
 

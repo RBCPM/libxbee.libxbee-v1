@@ -181,7 +181,7 @@ endif
 	mkdir ./obj/
 
 ./svn_version.c: api.c api.h globals.h xbee.h
-	echo -n 'const char *svn_version(void) { return "' > ./svn_version.c
+	echo -n 'const char *xbee_svn_version(void) { return "' > ./svn_version.c
 ifneq ($(strip $(wildcard /usr/bin/svnversion)),)
 	svnversion -n . >> svn_version.c
 else

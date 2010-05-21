@@ -1,0 +1,31 @@
+LIBRARY libxbee
+
+EXPORTS
+  xbee_free
+  
+  xbee_setup
+  xbee_setuplog
+  xbee_setupAPI
+  xbee_setuplogAPI
+  
+  xbee_end
+  xbee_listen_stop
+
+  xbee_newcon
+  xbee_endcon2
+  xbee_flushcon
+
+  xbee_senddata
+  xbee_nsenddata
+  xbee_vsenddata
+
+  xbee_getpacket
+  xbee_getpacketwait
+
+  xbee_hasanalog
+  xbee_getanalog
+
+  xbee_hasdigital
+  xbee_getdigital
+
+  xbee_svn_version

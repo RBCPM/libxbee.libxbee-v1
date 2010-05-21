@@ -18,12 +18,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if !defined(__GNUC__) && !defined(_WIN32)
+#error "This library is only currently compatible with Linux and Win32"
+#endif
+
 #define TRUE 1
 #define FALSE 0
 
 #define ISREADY					  \
   if (!xbee_ready) {				  \
-    fprintf(stderr,"XBee: Run xbee_setup() first!...\n"); \
+    if (stderr) fprintf(stderr,"libxbee: Run xbee_setup() first!...\n"); \
     exit(1);					  \
   }
 
@@ -51,30 +55,36 @@ struct t_info {
 typedef struct t_info t_info;
 
 struct {
+#ifdef __GNUC__ /* ---- */
   pthread_mutex_t conmutex;
+  pthread_mutex_t pktmutex;
+  pthread_mutex_t sendmutex;
+  pthread_t listent;
+#else           /* ---- */
+  HANDLE conmutex;
+  HANDLE pktmutex;
+  HANDLE sendmutex;
+  HANDLE listent;
+#endif          /* ---- */
+
+  char *path; /* serial port path */
+  FILE *tty;
+  int ttyfd;
+  
+  FILE *log;
+  int logfd;
+
   xbee_con *conlist;
 
-  pthread_mutex_t pktmutex;
   xbee_pkt *pktlist;
   xbee_pkt *pktlast;
   int pktcount;
 
-  pthread_mutex_t sendmutex;
-
-  pthread_t listent;
   int listenrun;
-
-  FILE *tty;
-  int ttyfd;
 
   int oldAPI;
   char cmdSeq;
   int cmdTime;
-
-  int logfd;
-  FILE *log;
-
-  char *path;
 } xbee;
 
 static void *Xmalloc(size_t size);
