@@ -581,12 +581,12 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* open the serial port */
   xbee.tty = CreateFile(TEXT(path),
                         GENERIC_READ | GENERIC_WRITE,
-                        0,    // exclusive access 
-                        NULL, // default security attributes 
+                        0,    /* exclusive access */
+                        NULL, /* default security attributes */
                         OPEN_EXISTING,
                         FILE_FLAG_OVERLAPPED,
                         NULL);
-    
+
   GetCommState(xbee.tty, &tc);
   tc.BaudRate =          baudrate;
   tc.fBinary =           TRUE;
@@ -1820,11 +1820,13 @@ static unsigned char xbee_getrawbyte(void) {
 
     /* read 1 character */
     xbee_read(&c,1);
+#ifdef _WIN32
     ret = xbee.ttyr;
     if (ret == 0) {
       usleep(10);
       continue;
     }
+#endif
   } while (0);
   
   return (c & 0xFF);
