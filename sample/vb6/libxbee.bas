@@ -30,7 +30,7 @@ Type xbee_sample
 End Type
 
 Type xbee_pkt
-    flags As Byte               '# bit 0 - is64
+    flags As Long               '# bit 0 - is64
                                 '# bit 1 - dataPkt
                                 '# bit 2 - txStatusPkt
                                 '# bit 3 - modemStatusPkt
