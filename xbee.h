@@ -44,11 +44,11 @@ enum xbee_types {
 typedef enum xbee_types xbee_types;
 
 struct xbee_con {
-  unsigned char tAddr64       : 1;
-  unsigned char atQueue       : 1; /* queues AT commands until AC is sent */
-  unsigned char txDisableACK  : 1;
-  unsigned char txBroadcast   : 1; /* broadcasts to PAN */
-  unsigned char __spare__     : 4;
+  unsigned int tAddr64       : 1;
+  unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
+  unsigned int txDisableACK  : 1;
+  unsigned int txBroadcast   : 1; /* broadcasts to PAN */
+  unsigned int __spare__     : 4;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
@@ -67,13 +67,13 @@ struct xbee_sample {
 typedef struct xbee_sample xbee_sample;
 
 struct xbee_pkt {
-  unsigned char sAddr64        : 1; /* yes / no */
-  unsigned char dataPkt        : 1; /* if no - AT packet */
-  unsigned char txStatusPkt    : 1;
-  unsigned char modemStatusPkt : 1;
-  unsigned char remoteATPkt    : 1;
-  unsigned char IOPkt          : 1;
-  unsigned char __spare__      : 2;
+  unsigned int sAddr64        : 1; /* yes / no */
+  unsigned int dataPkt        : 1; /* if no - AT packet */
+  unsigned int txStatusPkt    : 1;
+  unsigned int modemStatusPkt : 1;
+  unsigned int remoteATPkt    : 1;
+  unsigned int IOPkt          : 1;
+  unsigned int __spare__      : 2;
   
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
