@@ -77,15 +77,15 @@ static int xbee_select(struct timeval *timeout) {
 }
 
 int xbee_write(const void *ptr, size_t size) {
-  WriteFile(xbee.tty, ptr, size, &xbee.ttyw, &xbee.ttyovrw);
-  WaitForSingleObject(xbee.ttyovrw.hEvent,INFINITE);
-  return 1;
+  if (!WriteFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrw) && (GetLastError() == ERROR_IO_PENDING)) return -1;
+  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrw, &xbee.ttyw, TRUE)) return -1;
+  return xbee.ttyw;
 }
 
 int xbee_read(void *ptr, size_t size) {
-  ReadFile(xbee.tty, ptr, size, &xbee.ttyr, &xbee.ttyovrr);
-  WaitForSingleObject(xbee.ttyovrr.hEvent,INFINITE);
-  return 1;
+  if (!ReadFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrr) && (GetLastError() == ERROR_IO_PENDING)) return -1;
+  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return -1;
+  return xbee.ttyr;
 }
 
 const char *xbee_svn_version(void) {
