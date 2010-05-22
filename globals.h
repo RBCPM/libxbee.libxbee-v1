@@ -43,8 +43,8 @@
 #define xbee_mutex_lock(a)        pthread_mutex_lock(&(a))
 #define xbee_mutex_unlock(a)      pthread_mutex_unlock(&(a))
 
-#define xbee_write(a,b)           fwrite((a),(b),1,xbee.tty)
-#define xbee_read(a,b)            fread((a),(b),1,xbee.tty)
+#define xbee_write(a,b)           fwrite((a),1,(b),xbee.tty)
+#define xbee_read(a,b)            fread((a),1,(b),xbee.tty)
 
 /* #################### */
 #else           /* ---- */

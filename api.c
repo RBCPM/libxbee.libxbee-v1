@@ -32,10 +32,10 @@ volatile int xbee_ready = 0;
 /* ################################################################# */
 static int xbee_select(struct timeval *timeout) {
   fd_set fds;
-  
+
   FD_ZERO(&fds);
   FD_SET(xbee.ttyfd, &fds);
-  
+
   return select(xbee.ttyfd+1, &fds, NULL, NULL, timeout);
 }
 
@@ -52,14 +52,14 @@ static int xbee_select(struct timeval *timeout) {
   int evtMask = 0;
   COMSTAT status;
   int ret;
-  
+
   for (;;) {
     /* find out how many bytes are in the Rx buffer... */
     if (ClearCommError(xbee.tty,NULL,&status) && (status.cbInQue > 0)) {
       /* if there is data... return! */
       return status.cbInQue;
     }
-    
+
     /* otherwise wait for an Rx event... */
     xbee.ttyovrs.hEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
     if (!WaitCommEvent(xbee.tty,&evtMask,&xbee.ttyovrs)) {
@@ -71,19 +71,19 @@ static int xbee_select(struct timeval *timeout) {
     }
     CloseHandle(xbee.ttyovrs.hEvent);
   }
-  
+
   /* always return 0 for now... */
   return 0;
 }
 
 int xbee_write(const void *ptr, size_t size) {
-  if (!WriteFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrw) && (GetLastError() == ERROR_IO_PENDING)) return -1;
+  if (!WriteFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrw) && (GetLastError() != ERROR_IO_PENDING)) return -1;
   if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrw, &xbee.ttyw, TRUE)) return -1;
   return xbee.ttyw;
 }
 
 int xbee_read(void *ptr, size_t size) {
-  if (!ReadFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrr) && (GetLastError() == ERROR_IO_PENDING)) return -1;
+  if (!ReadFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrr) && (GetLastError() != ERROR_IO_PENDING)) return -1;
   if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return -1;
   return xbee.ttyr;
 }
@@ -135,6 +135,7 @@ static void *Xrealloc(void *ptr, size_t size) {
 
 /* free wrapper function (uses the Xfree macro and sets the pointer to NULL after freeing it) */
 static void Xfree2(void **ptr) {
+  if (!*ptr) return;
   free(*ptr);
   *ptr = NULL;
 }
@@ -221,7 +222,7 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   memset(retBuf, 0, sizeof(retBuf));
   memset(&to, 0, sizeof(to));
   /* select on the xbee fd... wait at most 1 second for the response */
-  to.tv_usec = 1000 * 1000;
+  to.tv_sec = 1;
   if ((ret = xbee_select(&to)) == -1) {
     perror("libxbee:xbee_sendATdelay()");
     exit(1);
@@ -230,7 +231,6 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   if (!ret) {
     /* timed out, and there is nothing to be read */
     if (xbee.log) fprintf(xbee.log, "%s(): sendATdelay: Error: No Data to read - Timeout...\n",__FUNCTION__);
-    retBuf[0] = '\0';
     return 1;
   }
 
@@ -253,15 +253,16 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
       exit(1);
     }
 
-    /* if there is no more data, or there is no more space in the buffer then break out */
-  } while (ret && bufi < sizeof(retBuf));
+    /* loop while data was read */
+  } while (ret);
 
-  /* terminate the string */
-  retBuf[bufi] = '\0';
   if (!bufi) {
     if (xbee.log) fprintf(xbee.log,"%s(): sendATdelay: No response...\n",__FUNCTION__);
     return 1;
   }
+
+  /* terminate the string */
+  retBuf[bufi] = '\0';
 
   if (xbee.log) fprintf(xbee.log,"%s(): sendATdelay: Recieved '%s'\n",__FUNCTION__,retBuf);
   return 0;
@@ -318,8 +319,6 @@ int xbee_end(void) {
 
   ISREADY;
   if (xbee.log) fprintf(xbee.log,"libxbee: Stopping...\n");
-  
-  pkt = NULL;
 
   /* if the api mode was not 2 to begin with then put it back */
   if (xbee.oldAPI == 2) {
@@ -330,12 +329,14 @@ int xbee_end(void) {
     con = xbee_newcon('I',xbee_localAT);
     xbee_senddata(con,"AP%c",xbee.oldAPI);
 
+    pkt = NULL;
+
     while (!pkt && to--) {
       pkt = xbee_getpacketwait(con);
     }
     if (pkt) {
       ret = pkt->status;
-      free(pkt);
+      Xfree(pkt);
     }
     xbee_endcon(con);
   }
@@ -507,7 +508,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
-    free(xbee.path);
+    Xfree(xbee.path);
     return -1;
   }
 
@@ -522,7 +523,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
-    free(xbee.path);
+    Xfree(xbee.path);
     close(xbee.ttyfd);
     return -1;
   }
@@ -533,7 +534,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
-    free(xbee.path);
+    Xfree(xbee.path);
     close(xbee.ttyfd);
     return -1;
   }
@@ -632,7 +633,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
       xbee_mutex_destroy(xbee.conmutex);
       xbee_mutex_destroy(xbee.pktmutex);
       xbee_mutex_destroy(xbee.sendmutex);
-      free(xbee.path);
+      Xfree(xbee.path);
 #ifdef __GNUC__
       close(xbee.ttyfd);
 #endif
@@ -650,7 +651,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
-    free(xbee.path);
+    Xfree(xbee.path);
 #ifdef __GNUC__
     close(xbee.ttyfd);
 #endif
@@ -900,7 +901,7 @@ void xbee_endcon2(xbee_con **con) {
     u = t;
     t = t->next;
   }
-  if (!u) {
+  if (!t) {
     /* invalid connection given... */
     if (xbee.log) {
       fprintf(xbee.log,"%s(): Attempted to close invalid connection...\n",__FUNCTION__);
@@ -910,7 +911,8 @@ void xbee_endcon2(xbee_con **con) {
     return;
   }
   /* extract this connection from the list */
-  u->next = u->next->next;
+  u->next = (*con)->next;
+  if (*con == xbee.conlist) xbee.conlist = NULL;
 
   /* unlock the connection mutex */
   xbee_mutex_unlock(xbee.conmutex);
