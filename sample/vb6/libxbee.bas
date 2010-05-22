@@ -73,7 +73,7 @@ Public Declare Sub xbee_flushcon Lib "..\..\lib\libxbee.dll" (ByVal con As Long)
 Public Declare Function xbee_senddata Lib "..\..\lib\libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data() As Byte, ByVal Length As Long) As Long
 Private Declare Function xbee_senddata_str Lib "..\..\lib\libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByVal data As String, ByVal Length As Long) As Long
 
-Public Declare Function xbee_getpacket2 Lib "..\..\lib\libxbee.dll" Alias "xbee_getpacket" (ByVal con As Long) As Long 'xbee_pkt *
+Public Declare Function xbee_getpacketRaw Lib "..\..\lib\libxbee.dll" Alias "xbee_getpacket" (ByVal con As Long) As Long 'xbee_pkt *
 
 Public Declare Function xbee_hasanalog Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
 Public Declare Function xbee_getanalog Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long, ByVal Vref As Double) As Double
@@ -109,11 +109,24 @@ Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
     xbee_senddata_str con, str, Len(str)
 End Function
 
+Public Function xbee_getpacketPtr(ByVal con As Long, ByRef pkt As Long) As Integer
+    Dim ptr As Long
+    
+    ptr = xbee_getpacketRaw(con)
+    If ptr = 0 Then
+        pkt = 0
+        xbee_getpacketPtr = 0
+        Exit Function
+    End If
+    
+    pkt = ptr
+    xbee_getpacketPtr = 1
+End Function
+
 Public Function xbee_getpacket(ByVal con As Long, ByRef pkt As xbee_pkt) As Integer
     Dim ptr As Long
-    Dim test As Long
     
-    ptr = xbee_getpacket2(con)
+    ptr = xbee_getpacketRaw(con)
     If ptr = 0 Then
         xbee_getpacket = 0
         Exit Function
