@@ -44,6 +44,7 @@ static int xbee_select(struct timeval *timeout) {
 /* ### Win32 Functions ############################################# */
 /* ################################################################# */
 void xbee_free(void *ptr) {
+  if (!ptr) return;
   free(ptr);
 }
 
