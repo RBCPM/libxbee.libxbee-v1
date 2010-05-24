@@ -968,6 +968,20 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
   
   if (xbee.log) {
     fprintf(xbee.log,"%s(): --== TX Packet ============--\n",__FUNCTION__);
+    fprintf(xbee.log,"%s(): Connection Type: ",__FUNCTION__);
+    switch (con->type) {
+    case xbee_unknown:       fprintf(xbee.log,"Unknown\n"); break;
+    case xbee_localAT:       fprintf(xbee.log,"Local AT\n"); break;
+    case xbee_remoteAT:      fprintf(xbee.log,"Remote AT\n"); break;
+    case xbee_16bitRemoteAT: fprintf(xbee.log,"Remote AT (16-bit)\n"); break;
+    case xbee_64bitRemoteAT: fprintf(xbee.log,"Remote AT (64-bit)\n"); break;
+    case xbee_16bitData:     fprintf(xbee.log,"Data (16-bit)\n"); break;
+    case xbee_64bitData:     fprintf(xbee.log,"Data (64-bit)\n"); break;
+    case xbee_16bitIO:       fprintf(xbee.log,"IO (16-bit)\n"); break;
+    case xbee_64bitIO:       fprintf(xbee.log,"IO (64-bit)\n"); break;
+    case xbee_txStatus:      fprintf(xbee.log,"Tx Status\n"); break;
+    case xbee_modemStatus:   fprintf(xbee.log,"Modem Status\n"); break;
+    }
     fprintf(xbee.log,"%s(): Destination: ",__FUNCTION__);
     for (i=0;i<(con->tAddr64?8:2);i++) {
       fprintf(xbee.log,(i?":%02X":"%02X"),con->tAddr[i]);
