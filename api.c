@@ -58,13 +58,22 @@ static int xbee_select(struct timeval *timeout) {
     if (ClearCommError(xbee.tty,NULL,&status) && (status.cbInQue > 0)) {
       /* if there is data... return! */
       return status.cbInQue;
+    } else if (timeout && timeout->tv_sec == 0 && timeout->tv_usec == 0) {
+      return 0;
     }
 
     /* otherwise wait for an Rx event... */
     xbee.ttyovrs.hEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
     if (!WaitCommEvent(xbee.tty,&evtMask,&xbee.ttyovrs)) {
       if (GetLastError() == ERROR_IO_PENDING) {
-        WaitForSingleObject(xbee.ttyovrs.hEvent,INFINITE);
+        DWORD timeoutval;
+        if (timeout) {
+          timeoutval = (timeout->tv_sec * 1000) + (timeout->tv_usec / 1000);
+        } else {
+          timeoutval = INFINITE;
+        }
+        ret = WaitForSingleObject(xbee.ttyovrs.hEvent,timeoutval);
+        if (ret == WAIT_TIMEOUT) return 0;
       } else {
         usleep(1000); /* 1 ms */
       }
