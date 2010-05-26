@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)&(c))
 #define xbee_thread_kill(a,b)     pthread_kill((a),(b))
@@ -51,6 +52,7 @@
 
 #include <Windows.h>
 #include <io.h>
+#include <time.h>
 
 /* this uses miliseconds not microseconds... */
 #define usleep(a)                 Sleep((a)/1000)
@@ -62,6 +64,12 @@
 #define xbee_mutex_destroy(a)     CloseHandle((a))
 #define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
 #define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
+
+#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+#else
+  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+#endif
 
 /* #################### */
 #endif          /* ---- */

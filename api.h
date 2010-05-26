@@ -105,8 +105,8 @@ static int xbee_startAPI(void);
 
 static int xbee_select(struct timeval *timeout);
 
-static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf);
-static int xbee_sendAT(char *command, char *retBuf);
+static int xbee_sendAT(char *command, char *retBuf, int retBuflen);
+static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf, int retBuflen);
 
 static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
 static void xbee_listen_wrapper(t_info *info);
