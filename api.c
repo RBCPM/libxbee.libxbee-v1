@@ -1408,7 +1408,15 @@ static int xbee_listen(t_info *info) {
       chksum += c;
       if (xbee.log) {
         fprintf(xbee.log,"%s(): %3d | 0x%02X | ",__FUNCTION__,i,c);
-        if ((c > 32) && (c < 127)) fprintf(xbee.log,"'%c'\n",c); else fprintf(xbee.log," _\n");
+        if ((c > 32) && (c < 127)) fprintf(xbee.log,"'%c'",c); else fprintf(xbee.log," _ ");
+
+        if ((t == 0x80 && i == (8 + 2)) || /* 64-bit Data packet */
+            (t == 0x81 && i == (2 + 2))) { /* 16-bit Data packet */
+          /* mark the beginning of the 'data' bytes */
+          fprintf(xbee.log,"   <-- data starts");
+        }
+
+        fprintf(xbee.log,"\n");
       }
     }
     i--; /* it went up too many times!... */
