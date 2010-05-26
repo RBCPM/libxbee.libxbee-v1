@@ -43,9 +43,29 @@ static int xbee_select(struct timeval *timeout) {
 /* ################################################################# */
 /* ### Win32 Functions ############################################# */
 /* ################################################################# */
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
+  if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {
+    xbee_end();
+  } else if ((dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) && xbee_ready == 0) {
+    memset(&xbee,0,sizeof(xbee));
+  }
+  return TRUE;
+}
+
 void xbee_free(void *ptr) {
   if (!ptr) return;
   free(ptr);
+}
+
+/* These silly little functions are required for VB6 as it freaks out when you call a function that uses va_args... */
+xbee_con *xbee_newcon_simple(unsigned char frameID, xbee_types type) {
+  return xbee_newcon(frameID,type);
+}
+xbee_con *xbee_newcon_16bit(unsigned char frameID, xbee_types type, int addr) {
+  return xbee_newcon(frameID,type, addr);
+}
+xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, int addrH) {
+  return xbee_newcon(frameID,type,addrL,addrH);
 }
 
 static int xbee_select(struct timeval *timeout) {
@@ -434,9 +454,12 @@ int xbee_end(void) {
   xbee_mutex_destroy(xbee.sendmutex);
 
   /* close the serial port */
-  if (xbee.tty) fclose(xbee.tty);
+  Xfree(xbee.path);
 #ifdef __GNUC__
+  if (xbee.tty) fclose(xbee.tty);
   if (xbee.ttyfd) close(xbee.ttyfd);
+#else
+  if (xbee.tty) CloseHandle(xbee.tty);
 #endif
 
   /* close log and tty */
@@ -646,6 +669,14 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
                         OPEN_EXISTING,
                         FILE_FLAG_OVERLAPPED,
                         NULL);
+  if (xbee.tty == INVALID_HANDLE_VALUE) {
+    perror("xbee_setup():CreateFile()");
+    xbee_mutex_destroy(xbee.conmutex);
+    xbee_mutex_destroy(xbee.pktmutex);
+    xbee_mutex_destroy(xbee.sendmutex);
+    Xfree(xbee.path);
+    return -1;
+  }
 
   GetCommState(xbee.tty, &tc);
   tc.BaudRate =          baudrate;

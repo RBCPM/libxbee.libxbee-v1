@@ -1,6 +1,8 @@
 LIBRARY libxbee
 
 EXPORTS
+  DllMain
+  
   xbee_free
   
   xbee_setup
@@ -12,6 +14,10 @@ EXPORTS
   xbee_listen_stop
 
   xbee_newcon
+  xbee_newcon_simple
+  xbee_newcon_16bit
+  xbee_newcon_64bit
+  
   xbee_endcon2
   xbee_flushcon
 
