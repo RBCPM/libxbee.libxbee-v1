@@ -498,8 +498,8 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   memset(&xbee,0,sizeof(xbee));
 
 #ifdef DEBUG
-  /* logfd or stdout */
-  xbee.logfd = ((logfd)?logfd:1);
+  /* logfd or stderr */
+  xbee.logfd = ((logfd)?logfd:2);
 #else
   xbee.logfd = logfd;
 #endif
