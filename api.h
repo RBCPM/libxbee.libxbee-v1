@@ -60,7 +60,7 @@ struct {
   pthread_mutex_t pktmutex;
   pthread_mutex_t sendmutex;
   pthread_t listent;
-  
+
   FILE *tty;
   int ttyfd;
 #else           /* ---- */
@@ -68,18 +68,18 @@ struct {
   HANDLE pktmutex;
   HANDLE sendmutex;
   HANDLE listent;
-  
+
   HANDLE tty;
   int ttyr;
   int ttyw;
-  
+
   OVERLAPPED ttyovrw;
   OVERLAPPED ttyovrr;
   OVERLAPPED ttyovrs;
 #endif          /* ---- */
 
   char *path; /* serial port path */
-  
+
   FILE *log;
   int logfd;
 
@@ -98,8 +98,12 @@ struct {
 
 static void *Xmalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);
-#define Xfree(x) Xfree2((void **)&x)
 static void Xfree2(void **ptr);
+#define Xfree(x) Xfree2((void **)&x)
+
+static void xbee_logf(const char *logformat, const char *function, char *format, ...);
+#define xbee_log(...) xbee_logf("%s(): %s\n",__FUNCTION__,__VA_ARGS__)
+#define xbee_logc(...) xbee_logf("%s(): %s",__FUNCTION__,__VA_ARGS__)
 
 static int xbee_startAPI(void);
 

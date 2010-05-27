@@ -74,20 +74,20 @@ struct xbee_pkt {
   unsigned int remoteATPkt    : 1;
   unsigned int IOPkt          : 1;
   unsigned int __spare__      : 2;
-  
+
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
-  
+
   unsigned char status;           /* AT  Data  Status    */ /* status / options */
   unsigned char samples;
   unsigned char RSSI;             /*     Data            */
-  
+
   unsigned char Addr16[2];        /* AT  Data            */
-  
+
   unsigned char Addr64[8];        /* AT  Data            */
-  
-  unsigned char data[128];        /* AT  Data            */ /* a little bigger than spec, ready for oversized packets... */
-  
+
+  unsigned char data[128];        /* AT  Data            */
+
   unsigned int datalen;
   xbee_types type;
 

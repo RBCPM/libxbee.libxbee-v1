@@ -29,7 +29,7 @@ MANPATHS:=$(foreach dir,$(shell ls man -ln | grep ^d | tr -s ' ' | cut -d ' ' -f
 PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
 
 CC:=gcc
-CFLAGS:=-Wall -Wstrict-prototypes -pedantic -c -fPIC ${DEBUG}
+CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}
 CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
 DEFINES:=
 
