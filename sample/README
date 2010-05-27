@@ -1,12 +1,10 @@
 To use these samples, you must first install libxbee.
 To install, simply type `make install` and provide the root password.
 
-If you cannot install the library for any reason, follow the instructions that can
-be found in the Wiki:
+If you cannot install the library for any reason, follow these instructions:
   http://code.google.com/p/libxbee/wiki/install_libxbee#But_I_can't_install_it!
 
 The compile line can be found at the top of the source files, surrounded by #ifdef
 and #endif. These allow us to run the source file as a shell script. Simply type
 `sh simple.c` to compile the simple sample.
 If you do not have the library installed, you must edit the compile line.
-

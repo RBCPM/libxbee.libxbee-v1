@@ -58,30 +58,30 @@ Type xbee_pkt
     IOdata As xbee_sample
 End Type
 
-Public Declare Sub xbee_free Lib "..\..\lib\libxbee.dll" (ByVal ptr As Long)
+Public Declare Sub xbee_free Lib "libxbee.dll" (ByVal ptr As Long)
 
-Public Declare Function xbee_setup Lib "..\..\lib\libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
-Public Declare Function xbee_setupAPI Lib "..\..\lib\libxbee.dll" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
+Public Declare Function xbee_setup Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
+Public Declare Function xbee_setupAPI Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 
-Public Declare Function xbee_newcon_simple Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
-Public Declare Function xbee_newcon_16bit Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
-Public Declare Function xbee_newcon_64bit Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
+Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
+Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
+Public Declare Function xbee_newcon_64bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
 
-Public Declare Sub xbee_endcon Lib "..\..\lib\libxbee.dll" Alias "xbee_endcon2" (ByVal con As Long)
-Public Declare Sub xbee_flushcon Lib "..\..\lib\libxbee.dll" (ByVal con As Long)
+Public Declare Sub xbee_endcon Lib "libxbee.dll" Alias "xbee_endcon2" (ByVal con As Long)
+Public Declare Sub xbee_flushcon Lib "libxbee.dll" (ByVal con As Long)
 
-Public Declare Function xbee_senddata Lib "..\..\lib\libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data() As Byte, ByVal Length As Long) As Long
-Private Declare Function xbee_senddata_str Lib "..\..\lib\libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByVal data As String, ByVal Length As Long) As Long
+Public Declare Function xbee_senddata Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data() As Byte, ByVal Length As Long) As Long
+Private Declare Function xbee_senddata_str Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByVal data As String, ByVal Length As Long) As Long
 
-Public Declare Function xbee_getpacketRaw Lib "..\..\lib\libxbee.dll" Alias "xbee_getpacket" (ByVal con As Long) As Long 'xbee_pkt *
+Public Declare Function xbee_getpacketRaw Lib "libxbee.dll" Alias "xbee_getpacket" (ByVal con As Long) As Long 'xbee_pkt *
 
-Public Declare Function xbee_hasanalog Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
-Public Declare Function xbee_getanalog Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long, ByVal Vref As Double) As Double
+Public Declare Function xbee_hasanalog Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
+Public Declare Function xbee_getanalog Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long, ByVal Vref As Double) As Double
 
-Public Declare Function xbee_hasdigital Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
-Public Declare Function xbee_getdigital Lib "..\..\lib\libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
+Public Declare Function xbee_hasdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
+Public Declare Function xbee_getdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
 
-Private Declare Function xbee_svn_version1 Lib "..\..\lib\libxbee.dll" Alias "xbee_svn_version" () As Long
+Private Declare Function xbee_svn_version1 Lib "libxbee.dll" Alias "xbee_svn_version" () As Long
 
 '###########################################################################################################################################################################
 

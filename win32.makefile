@@ -1,14 +1,16 @@
 #-- uncomment this to enable debugging
 #DEBUG:=/Zi
-ProgFiles32bit:=Program Files (x86)
-#ProgFiles32bit:=Program Files
+
+#-- you may need to edit these lines if your installation is different
+VCPath:=C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC
+SDKPath:=C:\Program Files\Microsoft SDKs\Windows\v6.0A
+
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
-
 SRCS:=api.c
 
-CC:="C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\cl.exe"
+CC:="${VCPath}\bin\cl.exe"
 
 all: .\obj .\lib
 	${CC} \
@@ -17,8 +19,8 @@ all: .\obj .\lib
 		/MT \
 		/Ox \
 		/Gz \
-		"/IC:\Program Files\Microsoft SDKs\Windows\v6.0A\Include" \
-		"/IC:\${ProgFiles32bit}\Microsoft Visual Studio 9.0\VC\include" \
+		"/I${VCPath}\Include" \
+		"/I${SDKPath}\Include" \
 		/Fo.\obj\libxbee.obj \
 		/Fe.\lib\libxbee.dll \
 		api.c \
@@ -26,8 +28,8 @@ all: .\obj .\lib
 		/link \
 		/MAP:lib\libxbee.map \
 		"/DEF:win32.def" \
-		"/LIBPATH:C:\Program Files\Microsoft SDKs\Windows\v6.0A\Lib" \
-		"/LIBPATH:C:\${ProgFiles32bit}\Microsoft Visual Studio 9.0\VC\lib"
+		"/LIBPATH:${VCPath}\lib" \
+		"/LIBPATH:${SDKPath}\Lib"
 
 .\obj:
 	md obj

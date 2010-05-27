@@ -7,9 +7,7 @@ site, and I will get to it ASAP:
   http://code.google.com/p/libxbee/issues/list
 
 
-Documentation is avaliable via the man page system once you have installed the library,
-or as HTML in the 'doc' directory.
-  $ man libxbee
+Documentation is avaliable as HTML in the 'doc' folder.
 
 
 Please note that this project is still in development, so should not be used for
@@ -20,13 +18,9 @@ Feel free to contact me directly with any queries:
   attie@attie.co.uk
 
 
-For those of you that are planning to use this on an embedded board, I have
-included a small makefile (umakefile) that has only the information needed to
-compile the library. I suggest you use this instead!
+=== Compiling & Using ===
 
-=== Installation ===
-To install simply type:
-  $ make install
+Compile using `make -f win32.makefile` from the command prompt
 
-For more information, or if you can't install it, please see the wiki:
-  http://code.google.com/p/libxbee/wiki/install_libxbee
+For C/C++ (and probrably others) just include xbee.h and link with libxbee.dll
+For VB6 see ./sample/vb6/ for more info & examples
