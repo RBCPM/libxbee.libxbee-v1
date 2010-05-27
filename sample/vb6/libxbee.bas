@@ -61,11 +61,11 @@ End Type
 Public Declare Sub xbee_free Lib "..\..\lib\libxbee.dll" (ByVal ptr As Long)
 
 Public Declare Function xbee_setup Lib "..\..\lib\libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
-Public Declare Function xbee_end Lib "..\..\lib\libxbee.dll" Alias "xbee_listen_stop" () As Long
+Public Declare Function xbee_setupAPI Lib "..\..\lib\libxbee.dll" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 
-Public Declare Function xbee_newcon_simple Lib "..\..\lib\libxbee.dll" Alias "xbee_newcon" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
-Public Declare Function xbee_newcon_16bit Lib "..\..\lib\libxbee.dll" Alias "xbee_newcon" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
-Public Declare Function xbee_newcon_64bit Lib "..\..\lib\libxbee.dll" Alias "xbee_newcon" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
+Public Declare Function xbee_newcon_simple Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
+Public Declare Function xbee_newcon_16bit Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
+Public Declare Function xbee_newcon_64bit Lib "..\..\lib\libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
 
 Public Declare Sub xbee_endcon Lib "..\..\lib\libxbee.dll" Alias "xbee_endcon2" (ByVal con As Long)
 Public Declare Sub xbee_flushcon Lib "..\..\lib\libxbee.dll" (ByVal con As Long)

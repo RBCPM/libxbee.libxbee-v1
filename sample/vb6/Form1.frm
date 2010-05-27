@@ -4,13 +4,21 @@ Begin VB.Form Form1
    ClientHeight    =   3030
    ClientLeft      =   120
    ClientTop       =   450
-   ClientWidth     =   17460
+   ClientWidth     =   6270
    LinkTopic       =   "Form1"
    ScaleHeight     =   3030
-   ScaleWidth      =   17460
+   ScaleWidth      =   6270
    StartUpPosition =   3  'Windows Default
+   Begin VB.TextBox tb 
+      Height          =   1995
+      Left            =   1980
+      MultiLine       =   -1  'True
+      TabIndex        =   0
+      Top             =   420
+      Width           =   3615
+   End
    Begin VB.Timer Timer1 
-      Interval        =   100
+      Interval        =   10
       Left            =   960
       Top             =   1320
    End
@@ -32,31 +40,28 @@ Private Sub Form_Load()
     Me.Show
     DoEvents
     
-    xbee_setup "COM5", 57600
+    If xbee_setup("COM8", 57600) <> 0 Then
+        MsgBox "Error while setting up the local XBee module", vbCritical, "xbee_setup()"
+        End
+    End If
     
-    myCon = xbee_newcon_64bit(&H30, xbee_64bitData, &H13A200, &H404B75DE)
+    myCon = xbee_newcon_64bit(&H30, xbee_64bitRemoteAT, &H13A200, &H403CB26A)
     
-    xbee_sendstring myCon, "TESTING!"
+    tb.Text = "Sending 'ATNI'..."
+    xbee_sendstring myCon, "NI"
     
-End Sub
-
-Private Sub Form_Unload(Cancel As Integer)
-    xbee_end
-    End
 End Sub
 
 Private Sub Timer1_Timer()
     Dim thePkt As xbee_pkt
-    Dim ret As Integer
-    Do
-        ret = xbee_getpacket(myCon, thePkt)
-        If (ret = 0) Then Exit Do
-        Me.Caption = thePkt.datalen & " -=- " & _
-                        thePkt.data(0) & " -=- " & _
-                        thePkt.Addr16(0) & " " & thePkt.Addr16(1) & " -=- " & _
-                        thePkt.Addr64(0) & " " & thePkt.Addr64(1) & " " & thePkt.Addr64(2) & " " & thePkt.Addr64(3) & " " & _
-                        thePkt.Addr64(4) & " " & thePkt.Addr64(5) & " " & thePkt.Addr64(6) & " " & thePkt.Addr64(7) & " -=- " & _
-                        "-" & thePkt.RSSI & "dB"
-        xbee_sendstring myCon, Chr(thePkt.data(0))
-    Loop Until ret = 0
+    Dim i As Integer
+    
+    If xbee_getpacket(myCon, thePkt) = 0 Then
+        Exit Sub
+    End If
+    Timer1.Enabled = False
+    tb.Text = tb.Text & vbNewLine & "Node Identifier:" & vbTab
+    For i = 0 To thePkt.datalen
+        tb.Text = tb.Text & Chr(thePkt.data(i))
+    Next
 End Sub
