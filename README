@@ -7,8 +7,8 @@ site, and I will get to it ASAP:
   http://code.google.com/p/libxbee/issues/list
 
 
-Documentation is avaliable via the man page system once you have installed the library,
-or as HTML in the 'doc' directory.
+Documentation is avaliable via the man page system once you have installed the
+library, or as HTML in the 'doc' directory.
   $ man libxbee
 
 
