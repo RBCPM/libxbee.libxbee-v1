@@ -118,6 +118,9 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((form
 #else           /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...);
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+
+/* oh and just 'cos windows has rubbish memory management rules... this too */
+void xbee_free(void *ptr);
 #endif          /* ---- */
 
 int xbee_nsenddata(xbee_con *con, char *data, int length);
