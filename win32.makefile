@@ -23,7 +23,7 @@ all: .\obj .\lib
 		"/I${SDKPath}\Include" \
 		/Fo.\obj\libxbee.obj \
 		/Fe.\lib\libxbee.dll \
-		api.c \
+		${SRCS} \
 		/LD \
 		/link \
 		/MAP:lib\libxbee.map \
