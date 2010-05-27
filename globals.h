@@ -65,18 +65,6 @@
 #define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
 #define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
 
-#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
-#else
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
-#endif
-
-struct timezone {
-  int  tz_minuteswest; /* minutes W of Greenwich */
-  int  tz_dsttime;     /* type of dst correction */
-};
-
-
 /* #################### */
 #endif          /* ---- */
 
