@@ -47,7 +47,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
   if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {
     xbee_end();
   } else if ((dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) && xbee_ready == 0) {
-    memset(&xbee,0,sizeof(xbee));
+    /* nothing right now... */
   }
   return TRUE;
 }
