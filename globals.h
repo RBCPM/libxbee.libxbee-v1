@@ -54,6 +54,17 @@
 #include <io.h>
 #include <time.h>
 
+#pragma comment( lib, "Advapi32.lib" )
+#pragma comment( lib, "User32.lib" )
+
+#define dllid   "attie-co-uk.libxbee"
+#define dlldesc "libxbee - XBee API Library"
+/* libxbee's GUID is {7A6E25AA-ECB5-4370-87B5-A1D31840FE23} */
+#define dllGUID "{7A6E25AA-ECB5-4370-87B5-A1D31840FE23}"
+/*static const GUID dllGUID = { 0x7A6E25AA, 0xECB5, 0x4370, { 0x87, 0xB5, 0xA1, 0xD3, 0x18, 0x40, 0xFE, 0x23 } };*/
+
+HMODULE glob_hModule = NULL;
+
 /* this uses miliseconds not microseconds... */
 #define usleep(a)                 Sleep((a)/1000)
 

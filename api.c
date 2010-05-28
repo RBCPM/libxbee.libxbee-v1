@@ -46,16 +46,74 @@ static int xbee_select(struct timeval *timeout) {
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
   if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {
     xbee_end();
-  } else if ((dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) && xbee_ready == 0) {
-    /* nothing right now... */
+  } else if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) {
+    glob_hModule = (HMODULE)hModule;
   }
   return TRUE;
 }
 
+/* this function is from this tutorial:
+     http://www.codeguru.com/Cpp/COM-Tech/activex/tutorials/article.php/c5567 */
+BOOL RegWriteKey(HKEY roothk, const char *lpSubKey, LPCTSTR val_name, 
+                 DWORD dwType, void *lpvData,  DWORD dwDataSize) {
+  /*  roothk:either of HKEY_CLASSES_ROOT, HKEY_LOCAL_MACHINE, etc
+      lpSubKey: the key relative to 'roothk'
+      val_name:the key value name where the data will be written
+      dwType:the type of data that will be written ,REG_SZ,REG_BINARY, etc.
+      lpvData:a pointer to the data buffer
+      dwDataSize:the size of the data pointed to by lpvData */
+  HKEY hk;
+  if (ERROR_SUCCESS != RegCreateKey(roothk,lpSubKey,&hk) ) return FALSE;
+  if (ERROR_SUCCESS != RegSetValueEx(hk,val_name,0,dwType,(CONST BYTE *)lpvData,dwDataSize)) return FALSE;
+  if (ERROR_SUCCESS != RegCloseKey(hk))   return FALSE;
+  return TRUE;
+}
+
 STDAPI DllRegisterServer(void) {
+  char key[MAX_PATH];
+  char value[MAX_PATH];
+
+  wsprintf(key,"CLSID\\%s",dllGUID);
+  wsprintf(value,"%s",dlldesc);
+  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
+
+  wsprintf(key,"CLSID\\%s\\InprocServer32",dllGUID);
+  GetModuleFileName(glob_hModule,value,MAX_PATH);
+  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
+
+  wsprintf(key,"CLSID\\%s\\ProgId",dllGUID);
+  lstrcpy(value,dllid);
+  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
+
+  lstrcpy(key,dllid);
+  lstrcpy(value,dlldesc);
+  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
+
+  wsprintf(key,"%s\\CLSID",dllid);
+  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)dllGUID, lstrlen(dllGUID));
+
   return S_OK;
 }
+
 STDAPI DllUnregisterServer(void) {
+  char key[MAX_PATH];
+  char value[MAX_PATH];
+
+  wsprintf(key,"%s\\CLSID",dllid);
+  RegDeleteKey(HKEY_CLASSES_ROOT,key);
+
+  wsprintf(key,"%s",dllid);
+  RegDeleteKey(HKEY_CLASSES_ROOT,key);
+
+  wsprintf(key,"CLSID\\%s\\InprocServer32",dllGUID);
+  RegDeleteKey(HKEY_CLASSES_ROOT,key);
+
+  wsprintf(key,"CLSID\\%s\\ProgId",dllGUID);
+  RegDeleteKey(HKEY_CLASSES_ROOT,key);
+
+  wsprintf(key,"CLSID\\%s",dllGUID);
+  RegDeleteKey(HKEY_CLASSES_ROOT,key);
+
   return S_OK;
 }
 
