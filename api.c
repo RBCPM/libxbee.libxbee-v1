@@ -52,6 +52,13 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
   return TRUE;
 }
 
+STDAPI DllRegisterServer(void) {
+  return S_OK;
+}
+STDAPI DllUnregisterServer(void) {
+  return S_OK;
+}
+
 void xbee_free(void *ptr) {
   if (!ptr) return;
   free(ptr);
