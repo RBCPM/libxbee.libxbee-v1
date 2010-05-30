@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
         /* free the packet */
         free(pkt);
       }
-      /* sleep for 100ms (same as NT steps */
+      /* sleep for 100ms (same as NT steps) */
       usleep(100000);
     }
     /* try again! */
