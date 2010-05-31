@@ -18,7 +18,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "globals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "xbee.h"
 
 int main(int argc, char *argv[]) {
   xbee_con *con, *con2;
