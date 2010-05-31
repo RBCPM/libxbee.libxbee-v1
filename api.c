@@ -431,8 +431,8 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
       if (errno != 9) perror("xbee_setup(): Failed opening logfile");
       xbee.logfd = 0;
     } else {
-      /* set to line buffer - ensure lines are written to file when complete */
 #ifdef __GNUC__ /* ---- */
+      /* set to line buffer - ensure lines are written to file when complete */
       setvbuf(xbee.log,NULL,_IOLBF,BUFSIZ);
 #else /* -------------- */
       /* Win32 is rubbish... so we have to completely disable buffering... */
