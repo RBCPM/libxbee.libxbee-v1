@@ -27,7 +27,7 @@ BEGIN
             VALUE "CompanyName", "attie.co.uk"
             VALUE "FileDescription", "Provides a simple interface for XBee radios"
             VALUE "InternalName", "libxbee"
-            VALUE "LegalCopyright", "Copyright (C) 2000-2010 Attie Grande"
+            VALUE "LegalCopyright", "Copyright (C) 2009-2010 Attie Grande"
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "libxbee.dll"
             VALUE "PrivateBuild", ""
