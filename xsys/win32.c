@@ -49,6 +49,61 @@ xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, i
   return xbee_newcon(frameID,type,addrL,addrH);
 }
 
+int init_serial(int baudrate) {
+  int chosenbaud;
+  DCB tc;
+  int evtMask;
+  COMMTIMEOUTS timeouts;
+
+  /* open the serial port */
+  xbee.tty = CreateFile(TEXT(xbee.path),
+                        GENERIC_READ | GENERIC_WRITE,
+                        0,    /* exclusive access */
+                        NULL, /* default security attributes */
+                        OPEN_EXISTING,
+                        FILE_FLAG_OVERLAPPED,
+                        NULL);
+  if (xbee.tty == INVALID_HANDLE_VALUE) {
+    perror("xbee_setup():CreateFile()");
+    xbee_mutex_destroy(xbee.conmutex);
+    xbee_mutex_destroy(xbee.pktmutex);
+    xbee_mutex_destroy(xbee.sendmutex);
+    Xfree(xbee.path);
+    return -1;
+  }
+
+  GetCommState(xbee.tty, &tc);
+  tc.BaudRate =          baudrate;
+  tc.fBinary =           TRUE;
+  tc.fParity =           FALSE;
+  tc.fOutxCtsFlow =      FALSE;
+  tc.fOutxDsrFlow =      FALSE;
+  tc.fDtrControl =       DTR_CONTROL_DISABLE;
+  tc.fDsrSensitivity =   FALSE;
+  tc.fTXContinueOnXoff = FALSE;
+  tc.fOutX =             FALSE;
+  tc.fInX =              FALSE;
+  tc.fErrorChar =        FALSE;
+  tc.fNull =             FALSE;
+  tc.fRtsControl =       RTS_CONTROL_DISABLE;
+  tc.fAbortOnError =     FALSE;
+  tc.ByteSize =          8;
+  tc.Parity =            NOPARITY;
+  tc.StopBits =          ONESTOPBIT;
+  SetCommState(xbee.tty, &tc);
+
+  timeouts.ReadIntervalTimeout = MAXDWORD;
+  timeouts.ReadTotalTimeoutMultiplier = 0;
+  timeouts.ReadTotalTimeoutConstant = 0;
+  timeouts.WriteTotalTimeoutMultiplier = 0;
+  timeouts.WriteTotalTimeoutConstant = 0;
+  SetCommTimeouts(xbee.tty, &timeouts);
+
+  SetCommMask(xbee.tty, EV_RXCHAR);
+
+  return 0;
+}
+
 /* a replacement for the linux select() function... for a serial port */
 static int xbee_select(struct timeval *timeout) {
   int evtMask = 0;
@@ -66,6 +121,7 @@ static int xbee_select(struct timeval *timeout) {
     }
 
     /* otherwise wait for an Rx event... */
+    memset(&xbee.ttyovrs,0,sizeof(OVERLAPPED));
     xbee.ttyovrs.hEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
     if (!WaitCommEvent(xbee.tty,&evtMask,&xbee.ttyovrs)) {
       if (GetLastError() == ERROR_IO_PENDING) {
@@ -80,12 +136,14 @@ static int xbee_select(struct timeval *timeout) {
         }
         ret = WaitForSingleObject(xbee.ttyovrs.hEvent,timeoutval);
         if (ret == WAIT_TIMEOUT) {
+          /* cause the WaitCommEvent() call to stop */
+          SetCommMask(xbee.tty, EV_RXCHAR);
           /* if a timeout occured, then return 0 */
           CloseHandle(xbee.ttyovrs.hEvent);
           return 0;
         }
       } else {
-        usleep(10); /* 1 ms */
+        return -1;
       }
     }
     CloseHandle(xbee.ttyovrs.hEvent);
@@ -98,16 +156,16 @@ static int xbee_select(struct timeval *timeout) {
 /* this offers the same behavior as non-blocking I/O under linux */
 int xbee_write(const void *ptr, size_t size) {
   if (!WriteFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrw) &&
-      (GetLastError() != ERROR_IO_PENDING)) return -1;
-  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrw, &xbee.ttyw, TRUE)) return -1;
+      (GetLastError() != ERROR_IO_PENDING)) return 0;
+  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrw, &xbee.ttyw, TRUE)) return 0;
   return xbee.ttyw;
 }
 
 /* this offers the same behavior as non-blocking I/O under linux */
 int xbee_read(void *ptr, size_t size) {
   if (!ReadFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrr) &&
-      (GetLastError() != ERROR_IO_PENDING)) return -1;
-  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return -1;
+      (GetLastError() != ERROR_IO_PENDING)) return 0;
+  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return 0;
   return xbee.ttyr;
 }
 

@@ -81,7 +81,7 @@ Public Declare Function xbee_getanalog Lib "libxbee.dll" (ByRef pkt As xbee_pkt,
 Public Declare Function xbee_hasdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
 Public Declare Function xbee_getdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
 
-Private Declare Function xbee_svn_version1 Lib "libxbee.dll" Alias "xbee_svn_version" () As Long
+Private Declare Function xbee_svn_versionRaw Lib "libxbee.dll" Alias "xbee_svn_version" () As Long
 
 '###########################################################################################################################################################################
 
@@ -102,15 +102,15 @@ Public Function PointerToString(lngPtr As Long) As String
 End Function
 
 Public Function xbee_svn_version() As String
-    xbee_svn_version = PointerToString(xbee_svn_version1)
-End Function
-
-Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
-    xbee_sendstring = xbee_senddata_str(con, str, Len(str))
+    xbee_svn_version = PointerToString(xbee_svn_versionRaw())
 End Function
 
 Public Function xbee_setupAPI(ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As String, ByVal cmdTime As Long)
     xbee_setupAPI = xbee_setupAPIRaw(port, baudRate, Asc(cmdSeq), cmdTime)
+End Function
+
+Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
+    xbee_sendstring = xbee_senddata_str(con, str, Len(str))
 End Function
 
 Public Function xbee_getpacketPtr(ByVal con As Long, ByRef pkt As Long) As Integer

@@ -37,3 +37,4 @@
 
 #define xbee_write(a,b)           fwrite((a),1,(b),xbee.tty)
 #define xbee_read(a,b)            fread((a),1,(b),xbee.tty)
+#define xbee_close(a)             fclose((a))

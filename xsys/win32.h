@@ -48,3 +48,5 @@ HMODULE glob_hModule = NULL;
 #define xbee_mutex_destroy(a)     CloseHandle((a))
 #define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
 #define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
+
+#define xbee_close(a)             CloseHandle((a))

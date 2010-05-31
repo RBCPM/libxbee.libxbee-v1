@@ -171,16 +171,16 @@ static void xbee_logf(const char *logformat, const char *function, char *format,
    xbee_sendAT - INTERNAL
    allows for an at command to be send, and the reply to be captured */
 static int xbee_sendAT(char *command, char *retBuf, int retBuflen) {
-  return xbee_sendATdelay(0,0,command,retBuf, retBuflen);
+  return xbee_sendATdelay(0,command,retBuf, retBuflen);
 }
-static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf, int retBuflen) {
+static int xbee_sendATdelay(int guartTime, char *command, char *retBuf, int retBuflen) {
   struct timeval to;
 
   int ret;
   int bufi = 0;
 
-  /* if there is a preDelay given, then use it and a bit more */
-  if (preDelay) usleep(preDelay * 1200);
+  /* if there is a guartTime given, then use it and a bit more */
+  if (guartTime) usleep(guartTime * 1200);
 
   /* get rid of any pre-command sludge... */
   memset(&to, 0, sizeof(to));
@@ -194,9 +194,9 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   if (xbee.log) xbee_log("sendATdelay: Sending '%s'", command);
   xbee_write(command, strlen(command));
 
-  /* if there is a postDelay, then use it */
-  if (postDelay) {
-    usleep(postDelay * 900);
+  /* if there is a guartTime, then use it */
+  if (guartTime) {
+    usleep(guartTime * 900);
 
     /* get rid of any post-command sludge... */
     memset(&to, 0, sizeof(to));
@@ -210,8 +210,13 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
   /* retrieve the data */
   memset(retBuf, 0, retBuflen);
   memset(&to, 0, sizeof(to));
-  /* select on the xbee fd... wait at most 200ms for the response */
-  to.tv_usec = 200000;
+  if (guartTime) {
+    /* select on the xbee fd... wait at most 0.2 the guartTime for the response */
+    to.tv_usec = guartTime * 200;
+  } else {
+    /* or 250ms */
+    to.tv_usec = 250000;
+  }
   if ((ret = xbee_select(&to)) == -1) {
     perror("libxbee:xbee_sendATdelay()");
     exit(1);
@@ -238,9 +243,9 @@ static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *re
     /* advance the 'end of string' pointer */
     bufi += ret;
 
-    /* wait at most 100ms for any more data */
+    /* wait at most 150ms for any more data */
     memset(&to, 0, sizeof(to));
-    to.tv_usec = 100000;
+    to.tv_usec = 150000;
     if ((ret = xbee_select(&to)) == -1) {
       perror("libxbee:xbee_sendATdelay()");
       exit(1);
@@ -277,22 +282,22 @@ static int xbee_startAPI(void) {
   buf[3] = '\0';
 
   /* try the command sequence */
-  if (xbee_sendATdelay(xbee.cmdTime, xbee.cmdTime, buf, buf, sizeof(buf))) {
+  if (xbee_sendATdelay(xbee.cmdTime, buf, buf, sizeof(buf))) {
     /* if it failed... try just entering 'AT' which should return OK */
-    if (xbee_sendAT("AT\r\n", buf, sizeof(buf)) || strncmp(buf,"OK\r",3)) return 1;
+    if (xbee_sendAT("AT\r\n", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
   } else if (strncmp(&buf[strlen(buf)-3],"OK\r",3)) {
     /* if data was returned, but it wasn't OK... then something went wrong! */
     return 1;
   }
 
   /* get the current API mode */
-  if (xbee_sendAT("ATAP\r\n", buf, sizeof(buf))) return 1;
+  if (xbee_sendAT("ATAP\r\n", buf, 3)) return 1;
   buf[1] = '\0';
   xbee.oldAPI = atoi(buf);
 
   if (xbee.oldAPI != 2) {
     /* if it wasnt set to mode 2 already, then set it to mode 2 */
-    if (xbee_sendAT("ATAP2\r\n", buf, sizeof(buf)) || strncmp(buf,"OK\r",3)) return 1;
+    if (xbee_sendAT("ATAP2\r\n", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
   }
 
   /* quit from command mode, ready for some packets! :) */
@@ -370,7 +375,7 @@ int xbee_end(void) {
   /* close the serial port */
   Xfree(xbee.path);
 #ifdef __GNUC__ /* ---- */
-  if (xbee.tty) fclose(xbee.tty);
+  if (xbee.tty) xbee_close(xbee.tty);
   if (xbee.ttyfd) close(xbee.ttyfd);
 #else /* -------------- */
   if (xbee.tty) CloseHandle(xbee.tty);
@@ -380,7 +385,7 @@ int xbee_end(void) {
   if (xbee.log) {
     fprintf(xbee.log,"libxbee: Stopped! (%s)\n",xbee_svn_version());
     fflush(xbee.log);
-    fclose(xbee.log);
+    xbee_close(xbee.log);
   }
 
   /* wipe everything else... */
@@ -404,17 +409,8 @@ int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime) {
   return xbee_setuplogAPI(path,baudrate,0,cmdSeq,cmdTime);
 }
 int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime) {
-#ifdef __GNUC__ /* ---- */
-  struct flock fl;
-  struct termios tc;
-  speed_t chosenbaud;
-#else /* -------------- */
-  int chosenbaud;
-  DCB tc;
-  int evtMask;
-  COMMTIMEOUTS timeouts;
-#endif /* ------------- */
   t_info info;
+  int ret;
 
   memset(&xbee,0,sizeof(xbee));
 
@@ -442,23 +438,6 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   }
 
   if (xbee.log) fprintf(xbee.log,"libxbee: Starting (%s)...\n",xbee_svn_version());
-
-#ifdef __GNUC__ /* ---- */
-  /* select the baud rate */
-  switch (baudrate) {
-  case 1200:  chosenbaud = B1200;   break;
-  case 2400:  chosenbaud = B2400;   break;
-  case 4800:  chosenbaud = B4800;   break;
-  case 9600:  chosenbaud = B9600;   break;
-  case 19200: chosenbaud = B19200;  break;
-  case 38400: chosenbaud = B38400;  break;
-  case 57600: chosenbaud = B57600;  break;
-  case 115200:chosenbaud = B115200; break;
-  default:
-    fprintf(stderr,"%s(): Unknown or incompatiable baud rate specified... (%d)\n",__FUNCTION__,baudrate);
-    return -1;
-  };
-#endif /* ------------- */
 
   /* setup the connection stuff */
   xbee.conlist = NULL;
@@ -496,134 +475,11 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   }
   strcpy(xbee.path,path);
 
-#ifdef __GNUC__ /* ---- */
-  /* open the serial port as a file descriptor */
-  if ((xbee.ttyfd = open(path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
-    perror("xbee_setup():open()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    return -1;
+  /* call the relevant init function */
+  if ((ret = init_serial(baudrate)) != 0) {
+    return ret;
   }
-
-  /* lock the file */
-  fl.l_type = F_WRLCK | F_RDLCK;
-  fl.l_whence = SEEK_SET;
-  fl.l_start = 0;
-  fl.l_len = 0;
-  fl.l_pid = getpid();
-  if (fcntl(xbee.ttyfd, F_SETLK, &fl) == -1) {
-    perror("xbee_setup():fcntl()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
-    return -1;
-  }
-
-  /* open the serial port as a FILE* */
-  if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
-    perror("xbee_setup():fdopen()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
-    return -1;
-  }
-
-  /* flush the serial port */
-  fflush(xbee.tty);
   
-  /* disable buffering */
-  setvbuf(xbee.tty,NULL,_IONBF,BUFSIZ);
-  
-  /* setup the baud rate and other io attributes */
-  tcgetattr(xbee.ttyfd, &tc);
-  /* input flags */
-  tc.c_iflag &= ~ IGNBRK;           /* enable ignoring break */
-  tc.c_iflag &= ~(IGNPAR | PARMRK); /* disable parity checks */
-  tc.c_iflag &= ~ INPCK;            /* disable parity checking */
-  tc.c_iflag &= ~ ISTRIP;           /* disable stripping 8th bit */
-  tc.c_iflag &= ~(INLCR | ICRNL);   /* disable translating NL <-> CR */
-  tc.c_iflag &= ~ IGNCR;            /* disable ignoring CR */
-  tc.c_iflag &= ~(IXON | IXOFF);    /* disable XON/XOFF flow control */
-  /* output flags */
-  tc.c_oflag &= ~ OPOST;            /* disable output processing */
-  tc.c_oflag &= ~(ONLCR | OCRNL);   /* disable translating NL <-> CR */
-  tc.c_oflag &= ~ OFILL;            /* disable fill characters */
-  /* control flags */
-  tc.c_cflag |=   CREAD;            /* enable reciever */
-  tc.c_cflag &= ~ PARENB;           /* disable parity */
-  tc.c_cflag &= ~ CSTOPB;           /* disable 2 stop bits */
-  tc.c_cflag &= ~ CSIZE;            /* remove size flag... */
-  tc.c_cflag |=   CS8;              /* ...enable 8 bit characters */
-  tc.c_cflag |=   HUPCL;            /* enable lower control lines on close - hang up */
-  /* local flags */
-  tc.c_lflag &= ~ ISIG;             /* disable generating signals */
-  tc.c_lflag &= ~ ICANON;           /* disable canonical mode - line by line */
-  tc.c_lflag &= ~ ECHO;             /* disable echoing characters */
-  tc.c_lflag &= ~ ECHONL;           /* ??? */
-  tc.c_lflag &= ~ NOFLSH;           /* disable flushing on SIGINT */
-  tc.c_lflag &= ~ IEXTEN;           /* disable input processing */
-  /* control characters */
-  memset(tc.c_cc,0,sizeof(tc.c_cc));
-  /* i/o rates */
-  cfsetspeed(&tc, chosenbaud);     /* set i/o baud rate */
-  tcsetattr(xbee.ttyfd, TCSANOW, &tc);
-  tcflow(xbee.ttyfd, TCOON|TCION); /* enable input & output transmission */
-#else /* -------------- */
-  /* open the serial port */
-  xbee.tty = CreateFile(TEXT(path),
-                        GENERIC_READ | GENERIC_WRITE,
-                        0,    /* exclusive access */
-                        NULL, /* default security attributes */
-                        OPEN_EXISTING,
-                        FILE_FLAG_OVERLAPPED,
-                        NULL);
-  if (xbee.tty == INVALID_HANDLE_VALUE) {
-    perror("xbee_setup():CreateFile()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    return -1;
-  }
-
-  GetCommState(xbee.tty, &tc);
-  tc.BaudRate =          baudrate;
-  tc.fBinary =           TRUE;
-  tc.fParity =           FALSE;
-  tc.fOutxCtsFlow =      FALSE;
-  tc.fOutxDsrFlow =      FALSE;
-  tc.fDtrControl =       DTR_CONTROL_DISABLE;
-  tc.fDsrSensitivity =   FALSE;
-  tc.fTXContinueOnXoff = FALSE;
-  tc.fOutX =             FALSE;
-  tc.fInX =              FALSE;
-  tc.fErrorChar =        FALSE;
-  tc.fNull =             FALSE;
-  tc.fRtsControl =       RTS_CONTROL_DISABLE;
-  tc.fAbortOnError =     FALSE;
-  tc.ByteSize =          8;
-  tc.Parity =            NOPARITY;
-  tc.StopBits =          ONESTOPBIT;
-  SetCommState(xbee.tty, &tc);
-  
-  timeouts.ReadIntervalTimeout = MAXDWORD;
-  timeouts.ReadTotalTimeoutMultiplier = 0;
-  timeouts.ReadTotalTimeoutConstant = 0;
-  timeouts.WriteTotalTimeoutMultiplier = 0;
-  timeouts.WriteTotalTimeoutConstant = 0;
-  SetCommTimeouts(xbee.tty, &timeouts);
-  
-  GetCommMask(xbee.tty, &evtMask);
-  evtMask |= EV_RXCHAR;
-  SetCommMask(xbee.tty, evtMask);
-#endif /* ------------- */
-
   /* when xbee_end() is called, if this is not 2 then ATAP will be set to this value */
   xbee.oldAPI = 2;
   xbee.cmdSeq = cmdSeq;
@@ -640,7 +496,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
 #ifdef __GNUC__ /* ---- */
       close(xbee.ttyfd);
 #endif /* ------------- */
-      fclose(xbee.tty);
+      xbee_close(xbee.tty);
       return -1;
     }
   }
@@ -658,7 +514,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
 #ifdef __GNUC__ /* ---- */
     close(xbee.ttyfd);
 #endif /* ------------- */
-    fclose(xbee.tty);
+    xbee_close(xbee.tty);
     return -1;
   }
 
@@ -992,7 +848,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
     fprintf(xbee.log,"\n");
     xbee_log("Length: %d",length);
     for (i=0;i<length;i++) {
-      xbee_logc("%3d | 0x%02X ",i,data[i]);
+      xbee_logc("%3d | 0x%02X ",i,(unsigned char)data[i]);
       if ((data[i] > 32) && (data[i] < 127)) {
         fprintf(xbee.log,"'%c'\n",data[i]);
       } else{
@@ -1828,7 +1684,6 @@ static unsigned char xbee_getbyte(void) {
    xbee_getrawbyte - INTERNAL
    waits for a raw byte of data */
 static unsigned char xbee_getrawbyte(void) {
-  struct timeval to;
   int ret;
   unsigned char c = 0x00;
 
@@ -1837,10 +1692,7 @@ static unsigned char xbee_getrawbyte(void) {
   /* the loop is just incase there actually isnt a byte there to be read... */
   do {
     /* wait for a read to be possible */
-    /* timeout every 1 second to keep alive */
-    memset(&to, 0, sizeof(to));
-    to.tv_usec = 1000 * 1000;
-    if ((ret = xbee_select(&to)) == -1) {
+    if ((ret = xbee_select(NULL)) == -1) {
       perror("libxbee:xbee_getrawbyte()");
       exit(1);
     }

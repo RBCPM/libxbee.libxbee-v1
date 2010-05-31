@@ -97,6 +97,8 @@ struct {
    then 1 so that functions can be used (after setup of course...) */
 volatile int xbee_ready = 0;
 
+static int init_serial(int baudrate);
+
 static void *Xmalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);
 static void Xfree2(void **ptr);
@@ -111,7 +113,7 @@ static int xbee_startAPI(void);
 static int xbee_select(struct timeval *timeout);
 
 static int xbee_sendAT(char *command, char *retBuf, int retBuflen);
-static int xbee_sendATdelay(int preDelay, int postDelay, char *command, char *retBuf, int retBuflen);
+static int xbee_sendATdelay(int guardTime, char *command, char *retBuf, int retBuflen);
 
 static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
 static void xbee_listen_wrapper(t_info *info);
