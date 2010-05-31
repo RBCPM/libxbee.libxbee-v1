@@ -18,180 +18,36 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "globals.h"
-#include "api.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-/* ready flag.
-   needs to be set to -1 so that the listen thread can begin.
-   then 1 so that functions can be used (after setup of course...) */
-volatile int xbee_ready = 0;
+#include <stdarg.h>
+
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
 
 #ifdef __GNUC__ /* ---- */
-/* ################################################################# */
-/* ### Unix Functions ############################################## */
-/* ################################################################# */
-static int xbee_select(struct timeval *timeout) {
-  fd_set fds;
+#include <unistd.h>
+#include <termios.h>
+#include <pthread.h>
+#include <sys/time.h>
+#else /* -------------- */
+#include <Windows.h>
+#include <io.h>
+#include <time.h>
+#endif /* ------------- */
 
-  FD_ZERO(&fds);
-  FD_SET(xbee.ttyfd, &fds);
+#include "xbee.h"
+#include "api.h"
 
-  return select(xbee.ttyfd+1, &fds, NULL, NULL, timeout);
-}
+#ifdef __GNUC__ /* ---- */
+#include "xsys/linux.c"
+#else /* -------------- */
+#include "xsys/win32.c"
+#endif /* ------------- */
 
-#else           /* ---- */
-/* ################################################################# */
-/* ### Win32 Functions ############################################# */
-/* ################################################################# */
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
-  if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {
-    xbee_end();
-  } else if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) {
-    glob_hModule = (HMODULE)hModule;
-  }
-  return TRUE;
-}
-
-/* this function is from this tutorial:
-     http://www.codeguru.com/Cpp/COM-Tech/activex/tutorials/article.php/c5567 */
-BOOL RegWriteKey(HKEY roothk, const char *lpSubKey, LPCTSTR val_name, 
-                 DWORD dwType, void *lpvData,  DWORD dwDataSize) {
-  /*  roothk:either of HKEY_CLASSES_ROOT, HKEY_LOCAL_MACHINE, etc
-      lpSubKey: the key relative to 'roothk'
-      val_name:the key value name where the data will be written
-      dwType:the type of data that will be written ,REG_SZ,REG_BINARY, etc.
-      lpvData:a pointer to the data buffer
-      dwDataSize:the size of the data pointed to by lpvData */
-  HKEY hk;
-  if (ERROR_SUCCESS != RegCreateKey(roothk,lpSubKey,&hk) ) return FALSE;
-  if (ERROR_SUCCESS != RegSetValueEx(hk,val_name,0,dwType,(CONST BYTE *)lpvData,dwDataSize)) return FALSE;
-  if (ERROR_SUCCESS != RegCloseKey(hk))   return FALSE;
-  return TRUE;
-}
-
-STDAPI DllRegisterServer(void) {
-  char key[MAX_PATH];
-  char value[MAX_PATH];
-
-  wsprintf(key,"CLSID\\%s",dllGUID);
-  wsprintf(value,"%s",dlldesc);
-  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
-
-  wsprintf(key,"CLSID\\%s\\InprocServer32",dllGUID);
-  GetModuleFileName(glob_hModule,value,MAX_PATH);
-  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
-
-  wsprintf(key,"CLSID\\%s\\ProgId",dllGUID);
-  lstrcpy(value,dllid);
-  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
-
-  lstrcpy(key,dllid);
-  lstrcpy(value,dlldesc);
-  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)value, lstrlen(value));
-
-  wsprintf(key,"%s\\CLSID",dllid);
-  RegWriteKey(HKEY_CLASSES_ROOT, key, NULL, REG_SZ, (void *)dllGUID, lstrlen(dllGUID));
-
-  return S_OK;
-}
-
-STDAPI DllUnregisterServer(void) {
-  char key[MAX_PATH];
-  char value[MAX_PATH];
-
-  wsprintf(key,"%s\\CLSID",dllid);
-  RegDeleteKey(HKEY_CLASSES_ROOT,key);
-
-  wsprintf(key,"%s",dllid);
-  RegDeleteKey(HKEY_CLASSES_ROOT,key);
-
-  wsprintf(key,"CLSID\\%s\\InprocServer32",dllGUID);
-  RegDeleteKey(HKEY_CLASSES_ROOT,key);
-
-  wsprintf(key,"CLSID\\%s\\ProgId",dllGUID);
-  RegDeleteKey(HKEY_CLASSES_ROOT,key);
-
-  wsprintf(key,"CLSID\\%s",dllGUID);
-  RegDeleteKey(HKEY_CLASSES_ROOT,key);
-
-  return S_OK;
-}
-
-void xbee_free(void *ptr) {
-  if (!ptr) return;
-  free(ptr);
-}
-
-/* These silly little functions are required for VB6
-   - it freaks out when you call a function that uses va_args... */
-xbee_con *xbee_newcon_simple(unsigned char frameID, xbee_types type) {
-  return xbee_newcon(frameID,type);
-}
-xbee_con *xbee_newcon_16bit(unsigned char frameID, xbee_types type, int addr) {
-  return xbee_newcon(frameID,type, addr);
-}
-xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, int addrH) {
-  return xbee_newcon(frameID,type,addrL,addrH);
-}
-
-static int xbee_select(struct timeval *timeout) {
-  int evtMask = 0;
-  COMSTAT status;
-  int ret;
-
-  for (;;) {
-    /* find out how many bytes are in the Rx buffer... */
-    if (ClearCommError(xbee.tty,NULL,&status) && (status.cbInQue > 0)) {
-      /* if there is data... return! */
-      return 1; /*status.cbInQue;*/
-    } else if (timeout && timeout->tv_sec == 0 && timeout->tv_usec == 0) {
-      return 0;
-    }
-
-    /* otherwise wait for an Rx event... */
-    xbee.ttyovrs.hEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
-    if (!WaitCommEvent(xbee.tty,&evtMask,&xbee.ttyovrs)) {
-      if (GetLastError() == ERROR_IO_PENDING) {
-        DWORD timeoutval;
-        if (!timeout) {
-          timeoutval = INFINITE;
-        } else {
-          timeoutval = (timeout->tv_sec * 1000) + (timeout->tv_usec / 1000);
-        }
-        ret = WaitForSingleObject(xbee.ttyovrs.hEvent,timeoutval);
-        if (ret == WAIT_TIMEOUT) return 0;
-      } else {
-        usleep(1000); /* 1 ms */
-      }
-    }
-    CloseHandle(xbee.ttyovrs.hEvent);
-  }
-
-  /* always return -1 for now... */
-  return -1;
-}
-
-int xbee_write(const void *ptr, size_t size) {
-  if (!WriteFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrw) &&
-      (GetLastError() != ERROR_IO_PENDING)) return -1;
-
-  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrw, &xbee.ttyw, TRUE)) return -1;
-  return xbee.ttyw;
-}
-
-int xbee_read(void *ptr, size_t size) {
-  if (!ReadFile(xbee.tty, ptr, size, NULL, &xbee.ttyovrr) &&
-      (GetLastError() != ERROR_IO_PENDING)) return -1;
-  if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return -1;
-
-  return xbee.ttyr;
-}
-
-const char *xbee_svn_version(void) {
-  return "Win32";
-}
-
-#endif          /* ---- */
 
 #ifdef __UMAKEFILE
 /* for embedded compiling */
@@ -513,12 +369,12 @@ int xbee_end(void) {
 
   /* close the serial port */
   Xfree(xbee.path);
-#ifdef __GNUC__
+#ifdef __GNUC__ /* ---- */
   if (xbee.tty) fclose(xbee.tty);
   if (xbee.ttyfd) close(xbee.ttyfd);
-#else
+#else /* -------------- */
   if (xbee.tty) CloseHandle(xbee.tty);
-#endif
+#endif /* ------------- */
 
   /* close log and tty */
   if (xbee.log) {
@@ -552,12 +408,12 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   struct flock fl;
   struct termios tc;
   speed_t chosenbaud;
-#else           /* ---- */
+#else /* -------------- */
   int chosenbaud;
   DCB tc;
   int evtMask;
   COMMTIMEOUTS timeouts;
-#endif          /* ---- */
+#endif /* ------------- */
   t_info info;
 
   memset(&xbee,0,sizeof(xbee));
@@ -578,10 +434,10 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
       /* set to line buffer - ensure lines are written to file when complete */
 #ifdef __GNUC__ /* ---- */
       setvbuf(xbee.log,NULL,_IOLBF,BUFSIZ);
-#else           /* ---- */
+#else /* -------------- */
       /* Win32 is rubbish... so we have to completely disable buffering... */
       setvbuf(xbee.log,NULL,_IONBF,BUFSIZ);
-#endif          /* ---- */
+#endif /* ------------- */
     }
   }
 
@@ -602,7 +458,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     fprintf(stderr,"%s(): Unknown or incompatiable baud rate specified... (%d)\n",__FUNCTION__,baudrate);
     return -1;
   };
-#endif          /* ---- */
+#endif /* ------------- */
 
   /* setup the connection stuff */
   xbee.conlist = NULL;
@@ -718,7 +574,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   cfsetspeed(&tc, chosenbaud);     /* set i/o baud rate */
   tcsetattr(xbee.ttyfd, TCSANOW, &tc);
   tcflow(xbee.ttyfd, TCOON|TCION); /* enable input & output transmission */
-#else
+#else /* -------------- */
   /* open the serial port */
   xbee.tty = CreateFile(TEXT(path),
                         GENERIC_READ | GENERIC_WRITE,
@@ -766,7 +622,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   GetCommMask(xbee.tty, &evtMask);
   evtMask |= EV_RXCHAR;
   SetCommMask(xbee.tty, evtMask);
-#endif          /* ---- */
+#endif /* ------------- */
 
   /* when xbee_end() is called, if this is not 2 then ATAP will be set to this value */
   xbee.oldAPI = 2;
@@ -781,9 +637,9 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
       xbee_mutex_destroy(xbee.pktmutex);
       xbee_mutex_destroy(xbee.sendmutex);
       Xfree(xbee.path);
-#ifdef __GNUC__
+#ifdef __GNUC__ /* ---- */
       close(xbee.ttyfd);
-#endif
+#endif /* ------------- */
       fclose(xbee.tty);
       return -1;
     }
@@ -799,9 +655,9 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
     Xfree(xbee.path);
-#ifdef __GNUC__
+#ifdef __GNUC__ /* ---- */
     close(xbee.ttyfd);
-#endif
+#endif /* ------------- */
     fclose(xbee.tty);
     return -1;
   }
@@ -1466,10 +1322,10 @@ static void xbee_listen_wrapper(t_info *info) {
   /* now allow the parent to continue */
   xbee_ready = -2;
 
-#ifdef _WIN32
+#ifdef _WIN32 /* ---- */
   /* win32 requires this delay... no idea why */
   usleep(1000000);
-#endif
+#endif /* ----------- */
 
   while (xbee.listenrun) {
     info->i = -1;
@@ -1993,13 +1849,13 @@ static unsigned char xbee_getrawbyte(void) {
 
     /* read 1 character */
     xbee_read(&c,1);
-#ifdef _WIN32
+#ifdef _WIN32 /* ---- */
     ret = xbee.ttyr;
     if (ret == 0) {
       usleep(10);
       continue;
     }
-#endif
+#endif /* ----------- */
   } while (0);
   
   return (c & 0xFF);

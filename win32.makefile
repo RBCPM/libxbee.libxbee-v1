@@ -27,7 +27,8 @@ all: .\obj .\lib
 		/LD \
 		/link \
 		/MAP:lib\libxbee.map \
-		"/DEF:win32.def" \
+		/IDLOUT:win32.idl \
+		/DEF:win32.def \
 		"/LIBPATH:${VCPath}\lib" \
 		"/LIBPATH:${SDKPath}\Lib"
 
@@ -35,4 +36,4 @@ all: .\obj .\lib
 	md obj
 
 .\lib:
-	md lib
+	md lib  

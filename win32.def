@@ -2,6 +2,7 @@ LIBRARY libxbee
 
 EXPORTS
   DllMain
+  DllCanUnloadNow     PRIVATE
   DllRegisterServer   PRIVATE
   DllUnregisterServer PRIVATE
   

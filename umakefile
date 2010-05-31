@@ -65,8 +65,8 @@ endif
 ./obj/:
 	mkdir ./obj/
 
-./obj/%.o: %.c %.h xbee.h globals.h
+./obj/%.o: %.c %.h xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
 
-./obj/%.o: %.c xbee.h globals.h
+./obj/%.o: %.c xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@

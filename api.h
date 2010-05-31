@@ -18,10 +18,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined(__GNUC__) && !defined(_WIN32)
-#error "This library is only currently compatible with Linux and Win32"
-#endif
-
 #define TRUE 1
 #define FALSE 0
 
@@ -63,7 +59,7 @@ struct {
 
   FILE *tty;
   int ttyfd;
-#else           /* ---- */
+#else /* -------------- */
   HANDLE conmutex;
   HANDLE pktmutex;
   HANDLE sendmutex;
@@ -76,7 +72,7 @@ struct {
   OVERLAPPED ttyovrw;
   OVERLAPPED ttyovrr;
   OVERLAPPED ttyovrs;
-#endif          /* ---- */
+#endif /* ------------- */
 
   char *path; /* serial port path */
 
@@ -95,6 +91,11 @@ struct {
   char cmdSeq;
   int cmdTime;
 } xbee;
+
+/* ready flag.
+   needs to be set to -1 so that the listen thread can begin.
+   then 1 so that functions can be used (after setup of course...) */
+volatile int xbee_ready = 0;
 
 static void *Xmalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);

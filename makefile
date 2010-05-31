@@ -26,7 +26,7 @@ MANS:=man3/libxbee.3 \
       man3/xbee_pkt.3
 MANPATHS:=$(foreach dir,$(shell ls man -ln | grep ^d | tr -s ' ' | cut -d ' ' -f 9),${MANPATH}/$(dir))
 
-PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h globals.h
+PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h
 
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}
@@ -190,7 +190,7 @@ endif
 ./obj/:
 	mkdir ./obj/
 
-./svn_version.c: api.c api.h globals.h xbee.h
+./svn_version.c: api.c api.h xbee.h
 	echo -n 'const char *xbee_svn_version(void) { return "' > ./svn_version.c
 ifneq ($(strip $(wildcard /usr/bin/svnversion)),)
 	svnversion -n . >> svn_version.c
@@ -200,10 +200,10 @@ endif
 	echo -n '";}' >> svn_version.c
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} svn_version.c -o ./obj/svn_version.o
 
-./obj/%.o: %.c %.h xbee.h globals.h
+./obj/%.o: %.c %.h xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
 
-./obj/%.o: %.c xbee.h globals.h
+./obj/%.o: %.c xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
 
 

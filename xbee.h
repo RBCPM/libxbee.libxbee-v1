@@ -21,6 +21,10 @@
 #ifndef XBEE_H
 #define XBEE_H
 
+#if !defined(__GNUC__) && !defined(_WIN32)
+#error "This library is only currently compatible with Linux and Win32"
+#endif
+
 #include <stdarg.h>
 
 enum xbee_types {
@@ -115,13 +119,13 @@ void xbee_endcon2(xbee_con **con);
 #ifdef __GNUC__ /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
-#else           /* ---- */
+#else /* -------------- */
 int xbee_senddata(xbee_con *con, char *format, ...);
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
 
 /* oh and just 'cos windows has rubbish memory management rules... this too */
 void xbee_free(void *ptr);
-#endif          /* ---- */
+#endif /* ------------- */
 
 int xbee_nsenddata(xbee_con *con, char *data, int length);
 
