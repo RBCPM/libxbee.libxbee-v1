@@ -61,7 +61,7 @@ End Type
 Public Declare Sub xbee_free Lib "libxbee.dll" (ByVal ptr As Long)
 
 Public Declare Function xbee_setup Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
-Public Declare Function xbee_setupAPI Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
+Private Declare Function xbee_setupAPIRaw Lib "libxbee.dll" Alias "xbee_setupAPI" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 
 Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
 Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
@@ -106,7 +106,11 @@ Public Function xbee_svn_version() As String
 End Function
 
 Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
-    xbee_senddata_str con, str, Len(str)
+    xbee_sendstring = xbee_senddata_str(con, str, Len(str))
+End Function
+
+Public Function xbee_setupAPI(ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As String, ByVal cmdTime As Long)
+    xbee_setupAPI = xbee_setupAPIRaw(port, baudRate, Asc(cmdSeq), cmdTime)
 End Function
 
 Public Function xbee_getpacketPtr(ByVal con As Long, ByRef pkt As Long) As Integer
