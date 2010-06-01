@@ -26,7 +26,9 @@ clean:
 	-del .\obj\win32.res
 
 .\lib\libxbee.dll: .\lib .\obj\api.obj .\obj\win32.res
-	${LINK} /nologo /DLL /MAP:lib\libxbee.map /DEF:xsys\win32.def "/LIBPATH:${SDKPath}\Lib" "/LIBPATH:${VCPath}\lib" /OUT:.\lib\libxbee.dll .\obj\api.obj .\obj\win32.res
+	${LINK} /nologo /DLL /MAP:lib\libxbee.map /DEF:xsys\win32.def \
+		"/LIBPATH:${SDKPath}\Lib" "/LIBPATH:${VCPath}\lib" \
+		/OUT:.\lib\libxbee.dll .\obj\api.obj .\obj\win32.res
 
 .\obj\api.obj: .\obj api.c api.h xbee.h
 	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /RTCs /Gz /c /Fo.\obj\api.obj ${SRCS}
