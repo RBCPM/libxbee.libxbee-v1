@@ -72,7 +72,6 @@ new: clean all
 # clean - remove any compiled files and PDFs #
 clean:
 	rm -f ./*~
-	rm -f ./svn_version.c
 	rm -f ./sample/*~
 	rm -f ./obj/*.o
 	rm -f ./lib/libxbee.so*
@@ -175,7 +174,7 @@ main: ./bin/main
 ./bin/:
 	mkdir ./bin/
 
-./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}}  ./svn_version.c ./xbee.h
+./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
 ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
@@ -189,16 +188,6 @@ endif
 
 ./obj/:
 	mkdir ./obj/
-
-./svn_version.c: api.c api.h xbee.h
-	echo -n 'const char *xbee_svn_version(void) { return "' > ./svn_version.c
-ifneq ($(strip $(wildcard /usr/bin/svnversion)),)
-	svnversion -n . >> svn_version.c
-else
-	echo 'Unknown' >> svn_version.c
-endif
-	echo -n '";}' >> svn_version.c
-	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} svn_version.c -o ./obj/svn_version.o
 
 ./obj/%.o: %.c %.h xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@

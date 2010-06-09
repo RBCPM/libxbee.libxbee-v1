@@ -168,8 +168,3 @@ int xbee_read(void *ptr, size_t size) {
   if (!GetOverlappedResult(xbee.tty, &xbee.ttyovrr, &xbee.ttyr, TRUE)) return 0;
   return xbee.ttyr;
 }
-
-const char *xbee_svn_version(void) {
-  /* need to work out a way to get the SVN version into this function... */
-  return "Win32";
-}

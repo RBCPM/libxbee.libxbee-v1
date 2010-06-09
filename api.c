@@ -18,6 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SVN_REV "$Rev$"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -49,12 +51,20 @@
 #endif /* ------------- */
 
 
-#ifdef __UMAKEFILE
-/* for embedded compiling */
 const char *xbee_svn_version(void) {
-  return "Embedded";
-}
+#ifdef __UMAKEFILE
+/* for embedded compiles */
+  return "Embedded-" SVN_REV;
+#elifdef _WIN32
+/* for win32 compiles */
+  return "Win32-" SVN_REV;
+#elifdef __GNUC__
+/* for linux compieles */
+  return "Linux-" SVN_REV;
+#else
+  return "UNKNOWN-" SVN_REV;
 #endif
+}
 
 /* ################################################################# */
 /* ### Memory Handling ############################################# */
