@@ -20,6 +20,16 @@
 
 #define SVN_REV "$Rev$"
 
+#ifdef __GNUC__
+  #define HOST_OS "Linux"
+#elif defined(__UMAKEFILE)
+  #define HOST_OS "Embedded"
+#elif defined(_WIN32)
+  #define HOST_OS "Win32"
+#else
+  #define HOST_OS "UNKNOWN"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -52,18 +62,7 @@
 
 
 const char *xbee_svn_version(void) {
-#ifdef __UMAKEFILE
-/* for embedded compiles */
-  return "Embedded-" SVN_REV;
-#elifdef _WIN32
-/* for win32 compiles */
-  return "Win32-" SVN_REV;
-#elifdef __GNUC__
-/* for linux compieles */
-  return "Linux-" SVN_REV;
-#else
-  return "UNKNOWN-" SVN_REV;
-#endif
+  return HOST_OS " - " SVN_REV;
 }
 
 /* ################################################################# */
