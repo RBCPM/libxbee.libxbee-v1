@@ -18,17 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define SVN_REV "$Rev$"
-
-#ifdef __GNUC__
-  #define HOST_OS "Linux"
-#elif defined(__UMAKEFILE)
-  #define HOST_OS "Embedded"
-#elif defined(_WIN32)
-  #define HOST_OS "Win32"
-#else
-  #define HOST_OS "UNKNOWN"
-#endif
+#define SVN_REV "$Id$"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -18,6 +18,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef __GNUC__
+  #define HOST_OS "Linux"
+#elif defined(_WIN32)
+  #define HOST_OS "Win32"
+#elif defined(__UMAKEFILE)
+  #define HOST_OS "Embedded"
+#else
+  #define HOST_OS "UNKNOWN"
+#endif
+
 #define TRUE 1
 #define FALSE 0
 
