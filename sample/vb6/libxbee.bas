@@ -101,6 +101,12 @@ Public Function PointerToString(lngPtr As Long) As String
    End If
 End Function
 
+Public Sub libxbee_load()
+    ' this function is simply to get VB6 to call a libxbee function
+    ' if you are using any C DLLs that make use of libxbee, then you should call this function first so that VB6 will load libxbee
+    xbee_svn_versionRaw
+End Sub
+
 Public Function xbee_svn_version() As String
     xbee_svn_version = PointerToString(xbee_svn_versionRaw())
 End Function
