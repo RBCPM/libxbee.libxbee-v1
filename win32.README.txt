@@ -20,6 +20,10 @@ Feel free to contact me directly with any queries:
 
 === Compiling & Using ===
 
+To compile you must:
+ 1)  Have Visual C++ 2008 installed (Express or otherwise)
+ 2)  Modify win32.makefile so that the paths are correct
+ 
 Compile using `make -f win32.makefile` from the command prompt
 
 For C/C++ (and probrably others) just include xbee.h and link with libxbee.dll
