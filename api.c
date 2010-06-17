@@ -283,24 +283,24 @@ static int xbee_startAPI(void) {
   /* try the command sequence */
   if (xbee_sendATdelay(xbee.cmdTime, buf, buf, sizeof(buf))) {
     /* if it failed... try just entering 'AT' which should return OK */
-    if (xbee_sendAT("AT\r\n", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
+    if (xbee_sendAT("AT\r", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
   } else if (strncmp(&buf[strlen(buf)-3],"OK\r",3)) {
     /* if data was returned, but it wasn't OK... then something went wrong! */
     return 1;
   }
 
   /* get the current API mode */
-  if (xbee_sendAT("ATAP\r\n", buf, 3)) return 1;
+  if (xbee_sendAT("ATAP\r", buf, 3)) return 1;
   buf[1] = '\0';
   xbee.oldAPI = atoi(buf);
 
   if (xbee.oldAPI != 2) {
     /* if it wasnt set to mode 2 already, then set it to mode 2 */
-    if (xbee_sendAT("ATAP2\r\n", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
+    if (xbee_sendAT("ATAP2\r", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
   }
 
   /* quit from command mode, ready for some packets! :) */
-  if (xbee_sendAT("ATCN\r\n", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
+  if (xbee_sendAT("ATCN\r", buf, 4) || strncmp(buf,"OK\r",3)) return 1;
 
   return 0;
 }

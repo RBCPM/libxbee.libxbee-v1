@@ -1,5 +1,5 @@
 #-- uncomment this to enable debugging
-#DEBUG:=/Zi /DDEBUG
+DEBUG:=/Zi /DDEBUG
 
 #-- you may need to edit these lines if your installation is different
 VCPath:=C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC
