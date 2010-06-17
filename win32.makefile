@@ -31,8 +31,8 @@ clean:
 		/OUT:.\lib\libxbee.dll .\obj\api.obj .\obj\win32.res
 
 .\obj\api.obj: .\obj api.c api.h xbee.h
-	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /RTCs /Gz /c /Fo.\obj\api.obj ${SRCS}
-#	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /Ox /Gz /c /Fo.\obj\api.obj ${SRCS}
+	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /RTCs /Gz /c /Fd.\lib\libxbee.pdb /Fo.\obj\api.obj ${SRCS}
+#	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /Ox /Gz /c /Fd.\lib\libxbee.pdb /Fo.\obj\api.obj ${SRCS}
 
 .\obj\win32.res: .\xsys\win32.rc
 	${RC} "/I${SDKPath}\Include" "/I${VCPath}\include" /n /fo.\obj\win32.res .\xsys\win32.rc 
