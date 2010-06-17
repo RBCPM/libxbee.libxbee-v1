@@ -27,6 +27,11 @@
 #error "This file should only be used on a Win32 system"
 #endif
 
+int ver(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
+  MessageBox(NULL, "The information for this copy of libxbee.dll is:\n"SVN_REV, "libxbee Win32 DLL", MB_OK);
+  return 0;
+}
+
 /* this gets called when the dll is loaded... */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
   if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {

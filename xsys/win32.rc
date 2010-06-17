@@ -32,7 +32,7 @@ BEGIN
             VALUE "OriginalFilename", "libxbee.dll"
             VALUE "PrivateBuild", ""
             VALUE "ProductName", "libxbee - http://code.google.com/p/libxbee/"
-            VALUE "ProductVersion", "$Rev$"
+            VALUE "ProductVersion", "v1.0"
             VALUE "SpecialBuild", ""
         END
     END
