@@ -23,7 +23,6 @@ new: clean all
 clean:
 	-rmdir /Q /S lib
 	-rmdir /Q /S obj
-	-del .\obj\win32.res
 
 .\lib\libxbee.dll: .\lib .\obj\api.obj .\obj\win32.res
 	${LINK} /nologo /DLL /MAP:lib\libxbee.map /DEF:xsys\win32.def \
