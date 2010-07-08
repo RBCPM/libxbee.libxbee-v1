@@ -7,6 +7,7 @@ SDKPath:=C:\Program Files\Microsoft SDKs\Windows\v6.0A
 
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
+SHELL:=cmd
 
 SRCS:=api.c
 
