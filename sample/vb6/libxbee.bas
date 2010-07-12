@@ -101,6 +101,12 @@ Public Function PointerToString(lngPtr As Long) As String
    End If
 End Function
 
+Public Function PointerToPacket(lngPtr As Long) As xbee_pkt
+    Dim p As xbee_pkt
+    CopyMemory p, ByVal ptr, Len(p)
+    PointerToPacket = p
+End Function
+
 Public Sub libxbee_load()
     ' this function is simply to get VB6 to call a libxbee function
     ' if you are using any C DLLs that make use of libxbee, then you should call this function first so that VB6 will load libxbee
@@ -142,7 +148,7 @@ Public Function xbee_getpacket(ByVal con As Long, ByRef pkt As xbee_pkt) As Inte
         Exit Function
     End If
     
-    CopyMemory pkt, ByVal ptr, Len(pkt)
+    pkt = PointerToPacket(ptr)
     xbee_free ptr
     
     xbee_getpacket = 1
