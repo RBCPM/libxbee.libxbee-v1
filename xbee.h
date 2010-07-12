@@ -47,6 +47,7 @@ enum xbee_types {
 };
 typedef enum xbee_types xbee_types;
 
+typedef struct xbee_sample xbee_sample;
 struct xbee_sample {
   /* X  A5 A4 A3 A2 A1 A0 D8    D7 D6 D5 D4 D3 D2 D1 D0  */
   unsigned short IOmask;          /*                  IO */
@@ -55,8 +56,8 @@ struct xbee_sample {
   /* X  X  X  X  X  D  D  D     D  D  D  D  D  D  D  D   */
   unsigned short IOanalog[6];     /*                  IO */
 };
-typedef struct xbee_sample xbee_sample;
 
+typedef struct xbee_pkt xbee_pkt;
 struct xbee_pkt {
   unsigned int sAddr64        : 1; /* yes / no */
   unsigned int dataPkt        : 1; /* if no - AT packet */
@@ -82,13 +83,13 @@ struct xbee_pkt {
   unsigned int datalen;
   xbee_types type;
 
-  struct xbee_pkt *next;
+  xbee_pkt *next;
 
   xbee_sample IOdata[1];  /* this array can be extended by using a this trick:
                              p = calloc(sizeof(xbee_pkt) + (sizeof(xbee_sample) * (samples - 1))) */
 };
-typedef struct xbee_pkt xbee_pkt;
 
+typedef struct xbee_con xbee_con;
 struct xbee_con {
   unsigned int tAddr64       : 1;
   unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
@@ -98,10 +99,9 @@ struct xbee_con {
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
-  void (*callback)(xbee_pkt*);    /* call back function */
-  struct xbee_con *next;
+  void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
+  xbee_con *next;
 };
-typedef struct xbee_con xbee_con;
 
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);

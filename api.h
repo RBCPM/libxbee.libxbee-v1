@@ -70,22 +70,22 @@
     return(-1);					\
   }
 
+typedef struct t_data t_data;
 struct t_data {
   unsigned char data[128];
   unsigned int length;
 };
-typedef struct t_data t_data;
 
+typedef struct t_info t_info;
 struct t_info {
   int i;
 };
-typedef struct t_info t_info;
 
+typedef struct t_callback_info t_callback_info;
 struct t_callback_info {
-  void (*callback)(xbee_pkt*);
+  xbee_con *con;
   xbee_pkt *pkt;
 };
-typedef struct t_callback_info t_callback_info;
 
 struct {
 #ifdef __GNUC__ /* ---- */

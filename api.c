@@ -1603,7 +1603,7 @@ static int xbee_listen(t_info *info) {
       }
       continue;
     }
-    
+
     /* if the connection has a callback function then it is passed the packet
        and the packet is not added to the list */
     if (con && con->callback) {
@@ -1613,9 +1613,9 @@ static int xbee_listen(t_info *info) {
       HANDLE t;
 #endif
       t_callback_info info;
-      info.callback = con->callback;
+      info.con = con;
       info.pkt = p;
-      xbee_log("Using callback function!",info.callback);
+      xbee_log("Using callback function!");
       xbee_thread_create(t,xbee_callbackWrapper,info);
       continue;
     }
@@ -1657,8 +1657,7 @@ static int xbee_listen(t_info *info) {
   return 0;
 }
 static void xbee_callbackWrapper(t_callback_info *info) {
-  info->callback(info->pkt);
-  xbee_log("just returned!");
+  info->con->callback(info->con,info->pkt);
   Xfree(info->pkt);
 }
 

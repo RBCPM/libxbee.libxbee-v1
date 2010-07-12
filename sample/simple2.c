@@ -23,18 +23,28 @@ exit
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* this sample will politely return any recieved data */
+/* this sample will return any recieved data, using a callback function */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <xbee.h>
+
+void callback(xbee_con *con, xbee_pkt *pkt) {
+  /* print the recieved data */
+  printf("Rx: %s\n",pkt->data);
+  /* say thank you */
+  if (xbee_senddata(con,"thank you for saying '%s'\r\n",pkt->data)) {
+    printf("xbee_senddata: Error\n");
+    return;
+  }
+}
 
 int main(int argc, char *argv[]) {
   xbee_con *con;
   xbee_pkt *pkt, *rpkt;
 
   /* setup the xbee */
-  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
+  if (xbee_setuplog("/dev/ttyUSB0",57600,2) == -1) {
     /* oh no... it failed */
     printf("xbee_setup() failed...\n");
     exit(1);
@@ -42,24 +52,13 @@ int main(int argc, char *argv[]) {
 
   /* setup a connection */
   con = xbee_newcon('I',xbee_64bitData, 0x0013A200, 0x40081826);
+  con->callback = callback;
 
   printf("Waiting...\n");
 
-  /* just wait for data, and echo it back! */
-  while (1) {
-    /* while there are packets avaliable... */
-    while ((pkt = xbee_getpacket(con)) != NULL) {
-      /* print the recieved data */
-      printf("Rx: %s\n",pkt->data);
-      /* say thank you */
-      if (xbee_senddata(con,"thank you for saying '%s'\r\n",pkt->data)) {
-	printf("xbee_senddata: Error\n");
-	return 1;
-      }
-      /* free the packet */
-      free(pkt);
-    }
-    usleep(100000);
+  /* do nothing forever! */
+  for (;;) {
+    sleep(86400); /* 24hrs */
   }
 
   /* shouldn't ever get here but... */
