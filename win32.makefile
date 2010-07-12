@@ -38,7 +38,7 @@ clean:
 	${RC} "/I${SDKPath}\Include" "/I${VCPath}\include" /n /fo.\obj\win32.res .\xsys\win32.rc 
 
 .\obj:
-	md obj
+	mkdir obj
 
 .\lib:
-	md lib  
+	mkdir lib  
