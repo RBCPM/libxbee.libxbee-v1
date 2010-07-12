@@ -1,6 +1,6 @@
 /*
   libxbee - a C library to aid the use of Digi's Series 1 XBee modules
-  running in API mode (AP=2).
+            running in API mode (AP=2).
 
   Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
 
@@ -20,27 +20,6 @@
 
 #define SVN_REV "$Id$"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <stdarg.h>
-
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <signal.h>
-
-#ifdef __GNUC__ /* ---- */
-#include <unistd.h>
-#include <termios.h>
-#include <pthread.h>
-#include <sys/time.h>
-#else /* -------------- */
-#include <Windows.h>
-#include <io.h>
-#include <time.h>
-#endif /* ------------- */
-
 #include "xbee.h"
 #include "api.h"
 
@@ -49,7 +28,6 @@
 #else /* -------------- */
 #include "xsys/win32.c"
 #endif /* ------------- */
-
 
 const char *xbee_svn_version(void) {
   return HOST_OS " - " SVN_REV;
@@ -1625,6 +1603,22 @@ static int xbee_listen(t_info *info) {
       }
       continue;
     }
+    
+    /* if the connection has a callback function then it is passed the packet
+       and the packet is not added to the list */
+    if (con && con->callback) {
+#ifdef __GNUC__
+      pthread_t t;
+#else
+      HANDLE t;
+#endif
+      t_callback_info info;
+      info.callback = con->callback;
+      info.pkt = p;
+      xbee_log("Using callback function!",info.callback);
+      xbee_thread_create(t,xbee_callbackWrapper,info);
+      continue;
+    }
 
     /* lock the packet mutex, so we can safely add the packet to the list */
     xbee_mutex_lock(xbee.pktmutex);
@@ -1661,6 +1655,11 @@ static int xbee_listen(t_info *info) {
     p = q = NULL;
   }
   return 0;
+}
+static void xbee_callbackWrapper(t_callback_info *info) {
+  info->callback(info->pkt);
+  xbee_log("just returned!");
+  Xfree(info->pkt);
 }
 
 /* #################################################################

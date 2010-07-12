@@ -1,21 +1,21 @@
 /*
-    libxbee - a C library to aid the use of Digi's Series 1 XBee modules
-              running in API mode (AP=2).
+  libxbee - a C library to aid the use of Digi's Series 1 XBee modules
+            running in API mode (AP=2).
 
-    Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
+  Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef XBEE_H
@@ -46,19 +46,6 @@ enum xbee_types {
   xbee_modemStatus
 };
 typedef enum xbee_types xbee_types;
-
-struct xbee_con {
-  unsigned int tAddr64       : 1;
-  unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
-  unsigned int txDisableACK  : 1;
-  unsigned int txBroadcast   : 1; /* broadcasts to PAN */
-  unsigned int __spare__     : 4;
-  xbee_types type;
-  unsigned char frameID;
-  unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
-  struct xbee_con *next;
-};
-typedef struct xbee_con xbee_con;
 
 struct xbee_sample {
   /* X  A5 A4 A3 A2 A1 A0 D8    D7 D6 D5 D4 D3 D2 D1 D0  */
@@ -101,6 +88,20 @@ struct xbee_pkt {
                              p = calloc(sizeof(xbee_pkt) + (sizeof(xbee_sample) * (samples - 1))) */
 };
 typedef struct xbee_pkt xbee_pkt;
+
+struct xbee_con {
+  unsigned int tAddr64       : 1;
+  unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
+  unsigned int txDisableACK  : 1;
+  unsigned int txBroadcast   : 1; /* broadcasts to PAN */
+  unsigned int __spare__     : 4;
+  xbee_types type;
+  unsigned char frameID;
+  unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
+  void (*callback)(xbee_pkt*);    /* call back function */
+  struct xbee_con *next;
+};
+typedef struct xbee_con xbee_con;
 
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);

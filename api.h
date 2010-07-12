@@ -1,22 +1,43 @@
 /*
-    libxbee - a C library to aid the use of Digi's Series 1 XBee modules
-              running in API mode (AP=2).
+  libxbee - a C library to aid the use of Digi's Series 1 XBee modules
+            running in API mode (AP=2).
 
-    Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
+  Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <stdarg.h>
+
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
+
+#ifdef __GNUC__ /* ---- */
+#include <unistd.h>
+#include <termios.h>
+#include <pthread.h>
+#include <sys/time.h>
+#else /* -------------- */
+#include <Windows.h>
+#include <io.h>
+#include <time.h>
+#endif /* ------------- */
 
 #ifdef __GNUC__
   #define HOST_OS "Linux"
@@ -59,6 +80,12 @@ struct t_info {
   int i;
 };
 typedef struct t_info t_info;
+
+struct t_callback_info {
+  void (*callback)(xbee_pkt*);
+  xbee_pkt *pkt;
+};
+typedef struct t_callback_info t_callback_info;
 
 struct {
 #ifdef __GNUC__ /* ---- */
@@ -134,3 +161,4 @@ static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
 static t_data *xbee_make_pkt(unsigned char *data, int len);
 static void xbee_send_pkt(t_data *pkt);
+static void xbee_callbackWrapper(t_callback_info *info);
