@@ -49,11 +49,8 @@ xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, i
   return xbee_newcon(frameID,type,addrL,addrH);
 }
 
-void xbee_attachCallback(xbee_con *con, void (*func)(xbee_pkt*)) {
-  xbee_pkt *p;
+void xbee_attachCallback(xbee_con *con, void (*func)(xbee_con*,xbee_pkt*)) {
   con->callback = func;
-  xbee_log("Using callback function (0x%08X)!",con->callback);
-  con->callback(p);
 }
 
 static int init_serial(int baudrate) {
