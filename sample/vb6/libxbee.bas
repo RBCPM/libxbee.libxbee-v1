@@ -104,7 +104,7 @@ End Function
 
 Public Function PointerToPacket(lngPtr As Long) As xbee_pkt
     Dim p As xbee_pkt
-    CopyMemory p, ByVal ptr, Len(p)
+    CopyMemory p, ByVal lngPtr, Len(p)
     PointerToPacket = p
 End Function
 
