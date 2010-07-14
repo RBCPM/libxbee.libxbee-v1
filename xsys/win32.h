@@ -49,3 +49,14 @@ HMODULE glob_hModule = NULL;
 #define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
 
 #define xbee_close(a)             CloseHandle((a))
+
+typedef struct win32_callback_info win32_callback_info;
+struct win32_callback_info {
+  xbee_con *con;
+  HWND hWnd;
+  UINT uMsg;
+  win32_callback_info *next;
+};
+
+win32_callback_info *callbackMap = NULL;
+HANDLE callbackmutex;

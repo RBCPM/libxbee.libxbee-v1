@@ -137,6 +137,7 @@ volatile int xbee_ready = 0;
 static int init_serial(int baudrate);
 
 static void *Xmalloc(size_t size);
+static void *Xcalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);
 static void Xfree2(void **ptr);
 #define Xfree(x) Xfree2((void **)&x)

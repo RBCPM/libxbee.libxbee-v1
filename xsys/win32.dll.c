@@ -34,12 +34,13 @@ int ver(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
 
 /* this gets called when the dll is loaded... */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
-  if ((dwReason == DLL_PROCESS_DETACH || dwReason == DLL_THREAD_DETACH) && xbee_ready == 1) {
+  if ((dwReason == DLL_PROCESS_DETACH) && xbee_ready == 1) {
     /* ensure that libxbee has been shut down nicely */
     xbee_end();
-  } else if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) {
+  } else if (glob_hModule == NULL && (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH)) {
     /* keep a handle on the module */
     glob_hModule = (HMODULE)hModule;
+    xbee_mutex_init(callbackmutex);
   }
   return TRUE;
 }

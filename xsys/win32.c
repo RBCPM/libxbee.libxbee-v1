@@ -45,17 +45,110 @@ int xbee_setupDebug(char *path, int baudrate) {
 /* These silly little functions are required for VB6
    - it freaks out when you call a function that uses va_args... */
 xbee_con *xbee_newcon_simple(unsigned char frameID, xbee_types type) {
-  return xbee_newcon(frameID,type);
+  return xbee_newcon(frameID, type);
 }
 xbee_con *xbee_newcon_16bit(unsigned char frameID, xbee_types type, int addr) {
-  return xbee_newcon(frameID,type, addr);
+  return xbee_newcon(frameID, type, addr);
 }
 xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, int addrH) {
-  return xbee_newcon(frameID,type,addrL,addrH);
+  return xbee_newcon(frameID, type, addrL, addrH);
 }
 
-void xbee_attachCallback(xbee_con *con, void (*func)(xbee_con*,xbee_pkt*)) {
-  con->callback = func;
+/* this is mainly for vb6... it will send a message to the given hWnd which can in turn check for a packet */
+void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
+  win32_callback_info *p = callbackMap;
+  
+  /* grab the mutex */
+  xbee_mutex_lock(callbackmutex);
+  
+  /* see if there is an existing callback for this connection */
+  while (p) {
+    if (p->con == con) break;
+    p = p->next;
+  }
+  
+  /* release the mutex (before the SendMessage, as this could take time...) */
+  xbee_mutex_unlock(callbackmutex);
+  
+  /* if there is, continue! */
+  if (p) {
+    xbee_log("Callback message sent!");
+    SendMessage(p->hWnd, p->uMsg, (int)con, (int)pkt);
+    xbee_log("Callback complete!");
+  }
+}
+
+/* very simple C function to provide more functionality to VB6 */
+int xbee_runCallback(int(*func)(xbee_con*,xbee_pkt*), xbee_con *con, xbee_pkt *pkt) {
+  return func(con,pkt);
+}
+
+void xbee_attachCallback(xbee_con *con, HWND hWnd, UINT uMsg) {
+  win32_callback_info *l = NULL, *p = callbackMap;
+  
+  /* grab the mutex */
+  xbee_mutex_lock(callbackmutex);
+  
+  /* see if there is an existing callback for this connection */
+  while (p) {
+    if (p->con == con) break;
+    l = p;
+    p = p->next;
+  }
+  /* if not, then add it */
+  if (!p) {
+    p = Xcalloc(sizeof(win32_callback_info));
+    p->next = NULL;
+    p->con = con;
+    if (!l) {
+      xbee_log("Creating the first callback...");
+      callbackMap = p;
+    } else {
+      xbee_log("Creating another callback...");
+      l->next = p;
+    }
+  } else if (xbee.log) {
+    xbee_log("Updating callback details...");
+  }
+  /* setup / update the parameters */
+  xbee_log("hWnd = [%d]...",hWnd);
+  xbee_log("uMsg = [%d]...",uMsg);
+  p->hWnd = hWnd;
+  p->uMsg = uMsg;
+  
+  /* setup the callback function */
+  con->callback = xbee_callback;
+  
+  /* release the mutex */
+  xbee_mutex_unlock(callbackmutex);
+}
+
+void xbee_detachCallback(xbee_con *con) {
+  win32_callback_info *l = NULL, *p = callbackMap;
+  xbee_mutex_lock(callbackmutex);
+  
+  /* see if there is an existing callback for this connection */
+  while (p) {
+    if (p->con == con) break;
+    l = p;
+    p = p->next;
+  }
+  /* if there is, then remove it! */
+  if (p) {
+    if (!l) {
+      callbackMap = NULL;
+    } else if (l->next) {
+      l->next = l->next->next;
+    } else {
+      l->next = NULL;
+    }
+    Xfree(p);
+  }
+  
+  con->callback = NULL;
+  
+  /* release the mutex */
+  xbee_mutex_unlock(callbackmutex);
 }
 
 static int init_serial(int baudrate) {

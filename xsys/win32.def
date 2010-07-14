@@ -6,15 +6,15 @@ EXPORTS
   DllCanUnloadNow     PRIVATE
   DllRegisterServer   PRIVATE
   DllUnregisterServer PRIVATE
-  
+
   xbee_free
-  
+
   xbee_setup
   xbee_setuplog
   xbee_setupAPI
   xbee_setuplogAPI
   xbee_setupDebug
-  
+
   xbee_end
   xbee_listen_stop
 
@@ -22,8 +22,11 @@ EXPORTS
   xbee_newcon_simple
   xbee_newcon_16bit
   xbee_newcon_64bit
+
   xbee_attachCallback
-  
+  xbee_detachCallback
+  xbee_runCallback
+
   xbee_endcon2
   xbee_flushcon
 

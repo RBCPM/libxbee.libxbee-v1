@@ -959,9 +959,6 @@ xbee_pkt *xbee_getpacketwait(xbee_con *con) {
 }
 xbee_pkt *xbee_getpacket(xbee_con *con) {
   xbee_pkt *l, *p, *q;
-  /*if (xbee.log) {
-    xbee_log("--== Get Packet ==========--");
-    }*/
 
   /* lock the packet mutex */
   xbee_mutex_lock(xbee.pktmutex);
@@ -992,9 +989,6 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   /* if: no packet was found */
   if (!q) {
     xbee_mutex_unlock(xbee.pktmutex);
-    /*if (xbee.log) {
-      xbee_log("No packets avaliable (for connection)...");
-      }*/
     return NULL;
   }
 
