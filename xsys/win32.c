@@ -37,6 +37,11 @@ void xbee_free(void *ptr) {
   free(ptr);
 }
 
+/* enable the debug output to stderr */
+int xbee_setupDebug(char *path, int baudrate) {
+  return xbee_setuplog(path,baudrate,2);
+}
+
 /* These silly little functions are required for VB6
    - it freaks out when you call a function that uses va_args... */
 xbee_con *xbee_newcon_simple(unsigned char frameID, xbee_types type) {
