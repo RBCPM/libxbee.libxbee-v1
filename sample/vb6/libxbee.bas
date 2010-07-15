@@ -60,7 +60,7 @@ End Type
 
 Private OldhWndHandler As Long
 Private ActhWndHandler As Long
-Private Callbacks As Collection
+Private Callbacks As New Collection
 
 Public Declare Sub xbee_free Lib "libxbee.dll" (ByVal ptr As Long)
 
