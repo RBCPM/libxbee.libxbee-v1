@@ -73,7 +73,7 @@ Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As By
 Public Declare Function xbee_newcon_64bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
 
 Private Declare Sub xbee_attachCallbackRaw Lib "libxbee.dll" Alias "xbee_attachCallback" (ByVal con As Long, ByVal hWnd As Long, ByVal uMsg As Long)
-Public Declare Sub xbee_detachCallback Lib "libxbee.dll" (ByVal con As Long)
+Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" (ByVal con As Long)
 Private Declare Function xbee_runCallback Lib "libxbee.dll" (ByVal func As Long, ByVal con As Long, ByVal pkt As Long) As Long
 
 Public Declare Sub xbee_endcon Lib "libxbee.dll" Alias "xbee_endcon2" (ByVal con As Long)
@@ -101,6 +101,7 @@ Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVa
 Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, ByVal Msg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
 Private Const CUSTOM_MSG_MIN = 49152
 Private Const CUSTOM_MSG_MAX = 65535
+Private Const WM_DESTROY = 2
 Private Const GWL_WNDPROC = -4
 
 Public Function PointerToString(lngPtr As Long) As String
@@ -137,36 +138,31 @@ Public Function xbee_setupAPI(ByVal port As String, ByVal baudRate As Long, ByVa
 End Function
 
 Public Sub xbee_attachCallback(ByVal con As Long, ByVal func As Long)
-    Dim t As Long
+    Dim t(0 To 1) As Long
+    Dim c As String
     If ActhWndHandler = 0 Then
         Debug.Print "Callbacks not enabled!"
         Exit Sub
     End If
-    t = RegisterWindowMessage(CStr(con))
-    xbee_attachCallbackRaw con, ActhWndHandler, t
+    c = CStr(con)
+    t(0) = con
+    t(1) = func
     On Error Resume Next
-    Err.Clear
-    Callbacks.Add func, CStr(con)
-    If Err.Number <> 0 Then
-        Callbacks.Item(con) = CStr(func)
-    End If
+    Callbacks.Remove c
+    Callbacks.Add t, c
+    On Error GoTo 0
+    xbee_attachCallbackRaw con, ActhWndHandler, RegisterWindowMessage(c)
 End Sub
 
-Private Function windowMsgHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
-    If (uMsg >= CUSTOM_MSG_MIN) And (uMsg <= CUSTOM_MSG_MAX) Then
-        Dim t As Long
-        On Error Resume Next
-        Err.Clear
-        t = Callbacks.Item(CStr(wParam))
-        If Err.Number = 0 Then
-            windowMsgHandler = xbee_runCallback(t, wParam, lParam)
-            Exit Function
-        End If
-        On Error GoTo 0
+Public Sub xbee_detachCallback(ByVal con As Long)
+    If ActhWndHandler = 0 Then
+        Debug.Print "Callbacks not enabled!"
+        Exit Sub
     End If
-    
-    windowMsgHandler = CallWindowProc(OldhWndHandler, hWnd, uMsg, wParam, lParam)
-End Function
+    On Error Resume Next
+    xbee_detachCallbackRaw con
+    Callbacks.Remove CStr(con)
+End Sub
 
 Public Sub xbee_enableCallbacks(ByVal hWnd As Long)
     If ActhWndHandler <> 0 Then
@@ -175,19 +171,41 @@ Public Sub xbee_enableCallbacks(ByVal hWnd As Long)
     End If
     ActhWndHandler = hWnd
     OldhWndHandler = SetWindowLong(hWnd, GWL_WNDPROC, AddressOf libxbee.windowMsgHandler)
-    Set Callbacks = Nothing
-    Set Callbacks = New Collection
 End Sub
 
 Public Sub xbee_disableCallbacks()
+    Dim id As Variant
     If ActhWndHandler = 0 Then
         Debug.Print "Callbacks not enabled!"
         Exit Sub
     End If
+    For Each id In Callbacks
+        xbee_detachCallback id(0)
+    Next
     SetWindowLong ActhWndHandler, GWL_WNDPROC, OldhWndHandler
     ActhWndHandler = 0
     OldhWndHandler = 0
 End Sub
+
+Private Function windowMsgHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
+    If (uMsg >= CUSTOM_MSG_MIN) And (uMsg <= CUSTOM_MSG_MAX) Then
+        Dim t As Long
+        On Error Resume Next
+        Err.Clear
+        t = Callbacks.Item(CStr(wParam))(1)
+        If Err.Number = 0 Then
+            On Error GoTo 0
+            windowMsgHandler = xbee_runCallback(t, wParam, lParam)
+            Exit Function
+        End If
+        On Error GoTo 0
+    End If
+    windowMsgHandler = CallWindowProc(OldhWndHandler, hWnd, uMsg, wParam, lParam)
+    If uMsg = WM_DESTROY And ActhWndHandler <> 0 Then
+        ' Disable the MessageHandler if the form "unload" event is detected
+        xbee_disableCallbacks
+    End If
+End Function
 
 Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
     xbee_sendstring = xbee_senddata_str(con, str, Len(str))

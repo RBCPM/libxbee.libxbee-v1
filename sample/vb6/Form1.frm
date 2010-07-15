@@ -35,10 +35,6 @@ Private Sub Form_Load()
     Me.Show
     DoEvents
     
-    ' Enable callbacks, this only needs doing ONCE
-    ' The window handle provided must remain in memory (dont unload the form)
-    xbee_enableCallbacks Me.hWnd
-    
     ' Connect to the XBee on COM1 with a baud rate of 57600
     ' The XBee should be in API mode 2 (ATAP2)
     If xbee_setup("COM1", 57600) <> 0 Then
@@ -46,19 +42,20 @@ Private Sub Form_Load()
         End
     End If
     
+    ' Enable callbacks, this only needs to be done ONCE
+    ' The window handle provided must remain in memory (dont unload the form - callbacks will automatically be disabled)
+    xbee_enableCallbacks Me.hWnd
+    
     ' Create a Remote AT connection to a node using 64-bit addressing
     myCon = xbee_newcon_64bit(&H30, xbee_64bitRemoteAT, &H13A200, &H404B75DE)
     myDataCon = xbee_newcon_64bit(&H31, xbee_64bitData, &H13A200, &H404B75DE)
     
+    ' Setup callbacks
+    xbee_attachCallback myCon, AddressOf Module1.callback1
+    xbee_attachCallback myDataCon, AddressOf Module1.callback2
+    
     ' Send the AT command NI (Node Identifier)
     tb.Text = "Sending 'ATNI'..."
     xbee_sendstring myCon, "NI"
-    
-    xbee_attachCallback myCon, AddressOf Module1.callback1
-    xbee_attachCallback myDataCon, AddressOf Module1.callback2
-End Sub
-
-Private Sub Form_Unload(Cancel As Integer)
-    xbee_disableCallbacks
 End Sub
 
