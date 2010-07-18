@@ -1673,6 +1673,7 @@ static void xbee_callbackWrapper(t_callback_info *info) {
   xbee_mutex_lock(info->con->callbackmutex);
   info->con->callback(info->con,info->pkt);
   xbee_mutex_unlock(info->con->callbackmutex);
+  xbee_log("Callback complete!");
   Xfree(info->pkt);
 }
 
