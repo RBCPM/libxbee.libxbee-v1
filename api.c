@@ -1183,6 +1183,7 @@ static void xbee_listen_wrapper(t_info *info) {
 static int xbee_listen(t_info *info) {
   unsigned char c, t, d[1024];
   unsigned int l, i, chksum, o;
+  struct timeval tv;
   int j;
   xbee_pkt *p, *q;
   xbee_con *con;
@@ -1195,10 +1196,11 @@ static int xbee_listen(t_info *info) {
     /* wait for a valid start byte */
     if (xbee_getrawbyte() != 0x7E) continue;
     if (!xbee.listenrun) return 0;
-    
+
     if (xbee.log) {
       xbee_log("--== RX Packet ===========--");
-      xbee_log("Got a packet!...");
+      gettimeofday(&tv,NULL);
+      xbee_log("Got a packet @ %ld.%06ld",tv.tv_sec,tv.tv_usec);
     }
 
     /* get the length */
