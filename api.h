@@ -39,6 +39,8 @@
 #include <time.h>
 #endif /* ------------- */
 
+#include "xbee.h"
+
 #ifdef __GNUC__
   #define HOST_OS "Linux"
 #elif defined(_WIN32)
@@ -89,6 +91,7 @@ struct t_callback_info {
 
 struct {
 #ifdef __GNUC__ /* ---- */
+  pthread_mutex_t logmutex;
   pthread_mutex_t conmutex;
   pthread_mutex_t pktmutex;
   pthread_mutex_t sendmutex;
@@ -97,6 +100,7 @@ struct {
   FILE *tty;
   int ttyfd;
 #else /* -------------- */
+  HANDLE logmutex;
   HANDLE conmutex;
   HANDLE pktmutex;
   HANDLE sendmutex;
@@ -134,21 +138,20 @@ struct {
    then 1 so that functions can be used (after setup of course...) */
 volatile int xbee_ready = 0;
 
-static int init_serial(int baudrate);
-
 static void *Xmalloc(size_t size);
 static void *Xcalloc(size_t size);
 static void *Xrealloc(void *ptr, size_t size);
 static void Xfree2(void **ptr);
 #define Xfree(x) Xfree2((void **)&x)
 
-static void xbee_logf(const char *logformat, const char *function, char *format, ...);
-#define xbee_log(...) xbee_logf("%s(): %s\n",__FUNCTION__,__VA_ARGS__)
-#define xbee_logc(...) xbee_logf("%s(): %s",__FUNCTION__,__VA_ARGS__)
+static void xbee_logf(const char *logformat, int unlock, const char *file, const int line, const char *function, char *format, ...);
+#define xbee_log(...) xbee_logf("[%s:%d] %s(): %s\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define xbee_logc(...) xbee_logf("[%s:%d] %s(): %s",0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define xbee_logcf()                 \
+  fprintf(xbee.log,"\n");            \
+  xbee_mutex_unlock(xbee.logmutex);  \
 
 static int xbee_startAPI(void);
-
-static int xbee_select(struct timeval *timeout);
 
 static int xbee_sendAT(char *command, char *retBuf, int retBuflen);
 static int xbee_sendATdelay(int guardTime, char *command, char *retBuf, int retBuflen);
@@ -163,3 +166,7 @@ static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 static t_data *xbee_make_pkt(unsigned char *data, int len);
 static void xbee_send_pkt(t_data *pkt);
 static void xbee_callbackWrapper(t_callback_info *info);
+
+/* these functions can be found in the xsys files */
+static int init_serial(int baudrate);
+static int xbee_select(struct timeval *timeout);

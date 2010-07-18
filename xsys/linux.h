@@ -18,14 +18,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* ################################################################# */
-/* ### Linux Code ################################################## */
-/* ################################################################# */
-
 /*  this file contains code that is used by Linux ONLY */
 #ifndef __GNUC__
 #error "This file should only be used on a Linux system"
 #endif
+
+/* ################################################################# */
+/* ### Linux Code ################################################## */
+/* ################################################################# */
 
 #define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)&(c))
 #define xbee_thread_kill(a,b)     pthread_kill((a),(b))

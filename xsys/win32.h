@@ -18,14 +18,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* ################################################################# */
-/* ### Win32 Code ################################################## */
-/* ################################################################# */
-
 /*  this file contains code that is used by Win32 ONLY */
 #ifndef _WIN32
 #error "This file should only be used on a Win32 system"
 #endif
+
+/* ################################################################# */
+/* ### Win32 Code ################################################## */
+/* ################################################################# */
 
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "User32.lib")

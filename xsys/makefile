@@ -1,3 +1,4 @@
+# This makefile is only to make pdfs
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
 PDFS:=linux.c linux.h \
@@ -20,10 +21,10 @@ all: pdfs
 	@echo "*** Done! ***"
 
 # new - clean and do everything again #
-new: clean all
+new: cleanpdfs all
 
 
-# clean - remove any compiled files and PDFs #
+# cleanpdfs - remove any compiled files and PDFs #
 cleanpdfs:
 	rm -f ./pdf/*.pdf
 

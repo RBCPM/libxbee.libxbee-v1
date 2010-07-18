@@ -25,6 +25,10 @@
 #error "This library is only currently compatible with Linux and Win32"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 
 enum xbee_types {
@@ -100,6 +104,11 @@ struct xbee_con {
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
   void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
+#ifdef __GNUC__ /* ---- */
+  pthread_mutex_t callbackmutex;
+#else /* -------------- */
+  HANDLE callbackmutex;
+#endif /* ------------- */
   xbee_con *next;
 };
 
@@ -142,5 +151,9 @@ double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 const char *xbee_svn_version(void);
 
 void xbee_listen_stop(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
