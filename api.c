@@ -431,15 +431,18 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* setup the mutexes */
   if (xbee_mutex_init(xbee.conmutex)) {
     perror("xbee_setup():xbee_mutex_init(conmutex)");
+    if (xbee.log) fclose(xbee.log);
     return -1;
   }
   if (xbee_mutex_init(xbee.pktmutex)) {
     perror("xbee_setup():xbee_mutex_init(pktmutex)");
+    if (xbee.log) fclose(xbee.log);
     xbee_mutex_destroy(xbee.conmutex);
     return -1;
   }
   if (xbee_mutex_init(xbee.sendmutex)) {
     perror("xbee_setup():xbee_mutex_init(sendmutex)");
+    if (xbee.log) fclose(xbee.log);
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     return -1;
@@ -448,6 +451,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* take a copy of the XBee device path */
   if ((xbee.path = Xmalloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
     perror("xbee_setup():Xmalloc(path)");
+    if (xbee.log) fclose(xbee.log);
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
@@ -458,6 +462,12 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
 
   /* call the relevant init function */
   if ((ret = init_serial(baudrate)) != 0) {
+    xbee_log("Something failed while opening the serial port...");
+    if (xbee.log) fclose(xbee.log);
+    xbee_mutex_destroy(xbee.conmutex);
+    xbee_mutex_destroy(xbee.pktmutex);
+    xbee_mutex_destroy(xbee.sendmutex);
+    Xfree(xbee.path);
     return ret;
   }
   
@@ -469,6 +479,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     if (xbee_startAPI()) {
       if (xbee.log) {
         xbee_log("Couldn't communicate with XBee...");
+        fclose(xbee.log);
       }
       xbee_mutex_destroy(xbee.conmutex);
       xbee_mutex_destroy(xbee.pktmutex);
@@ -488,6 +499,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   /* can start xbee_listen thread now */
   if (xbee_thread_create(xbee.listent,xbee_listen_wrapper,info)) { 
     perror("xbee_setup():xbee_thread_create()");
+    if (xbee.log) fclose(xbee.log);
     xbee_mutex_destroy(xbee.conmutex);
     xbee_mutex_destroy(xbee.pktmutex);
     xbee_mutex_destroy(xbee.sendmutex);
@@ -499,9 +511,9 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     return -1;
   }
 
-  usleep(100);
+  usleep(500);
   while (xbee_ready != -2) {
-    usleep(100);
+    usleep(500);
     if (xbee.log) {
       xbee_log("Waiting for xbee_listen() to be ready...");
     }
