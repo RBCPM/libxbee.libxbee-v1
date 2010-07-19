@@ -37,7 +37,7 @@ Private Sub Form_Load()
     
     ' Connect to the XBee on COM1 with a baud rate of 57600
     ' The XBee should be in API mode 2 (ATAP2)
-    If xbee_setup("COM1", 57600) <> 0 Then
+    If xbee_setupDebug("COM8", 57600, "xbee.log") <> 0 Then
         MsgBox "Error while setting up the local XBee module", vbCritical, "xbee_setup()"
         End
     End If

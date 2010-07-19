@@ -157,9 +157,21 @@ void xbee_free(void *ptr) {
   free(ptr);
 }
 
-/* enable the debug output to stderr */
-int xbee_setupDebug(char *path, int baudrate) {
-  return xbee_setuplog(path,baudrate,2);
+/* enable the debug output to a custom file or fallback to stderr */
+int xbee_setupDebugAPI(char *path, int baudrate, char *logfile, char cmdSeq, int cmdTime) {
+  int fd, ret;
+  if ((fd = _open(logfile,_O_WRONLY | _O_CREAT | _O_TRUNC)) == -1) {
+    ret = xbee_setuplogAPI(path,baudrate,2,cmdSeq,cmdTime);
+  } else {
+    ret = xbee_setuplogAPI(path,baudrate,fd,cmdSeq,cmdTime);
+  }
+  if (fd == -1) {
+    xbee_log("Error opening logfile '%s' (errno=%d)... using stderr instead...",logfile,errno);
+  }
+  return ret;
+}
+int xbee_setupDebug(char *path, int baudrate, char *logfile) {
+  return xbee_setupDebugAPI(path,baudrate,logfile,0,0);
 }
 
 /* These silly little functions are required for VB6

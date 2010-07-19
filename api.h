@@ -73,6 +73,25 @@
     return(-1);					\
   }
 
+/* various connection types */
+#define XBEE_LOCAL_AT     0x88
+#define XBEE_LOCAL_ATREQ  0x08
+#define XBEE_LOCAL_ATQUE  0x09
+
+#define XBEE_REMOTE_AT    0x97
+#define XBEE_REMOTE_ATREQ 0x17
+
+#define XBEE_MODEM_STATUS 0x8A
+
+#define XBEE_TX_STATUS    0x89
+#define XBEE_64BIT_DATATX 0x00
+#define XBEE_64BIT_DATA   0x80
+#define XBEE_16BIT_DATATX 0x01
+#define XBEE_16BIT_DATA   0x81
+
+#define XBEE_64BIT_IO     0x82
+#define XBEE_16BIT_IO     0x83
+
 typedef struct t_data t_data;
 struct t_data {
   unsigned char data[128];

@@ -65,7 +65,8 @@ Private Callbacks As New Collection
 Public Declare Sub xbee_free Lib "libxbee.dll" (ByVal ptr As Long)
 
 Public Declare Function xbee_setup Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
-Public Declare Function xbee_setupDebug Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long) As Long
+Public Declare Function xbee_setupDebug Lib "libxbee.dll" (ByVal port As String, ByVal baudRate As Long, ByVal logfile As String) As Long
+Private Declare Function xbee_setupDebugAPIRaw Lib "libxbee.dll" Alias "xbee_setupDebugAPI" (ByVal port As String, ByVal baudRate As Long, ByVal logfile As String, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 Private Declare Function xbee_setupAPIRaw Lib "libxbee.dll" Alias "xbee_setupAPI" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 
 Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
@@ -135,6 +136,10 @@ End Function
 
 Public Function xbee_setupAPI(ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As String, ByVal cmdTime As Long)
     xbee_setupAPI = xbee_setupAPIRaw(port, baudRate, Asc(cmdSeq), cmdTime)
+End Function
+
+Public Function xbee_setupDebugAPI(ByVal port As String, ByVal baudRate As Long, ByVal logfile As String, ByVal cmdSeq As String, ByVal cmdTime As Long)
+    xbee_setupDebugAPI = xbee_setupDebugAPIRaw(port, baudRate, logfile, Asc(cmdSeq), cmdTime)
 End Function
 
 Public Sub xbee_attachCallback(ByVal con As Long, ByVal func As Long)

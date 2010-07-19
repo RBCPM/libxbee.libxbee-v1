@@ -25,7 +25,7 @@
 #ifdef __GNUC__ /* ---- */
 #include "xsys/linux.c"
 #else /* -------------- */
-#include "xsys/win32.c"
+#include "xsys\win32.c"
 #endif /* ------------- */
 
 const char *xbee_svn_version(void) {
@@ -293,7 +293,7 @@ int xbee_end(void) {
   xbee_pkt *pkt, *npkt;
 
   ISREADY;
-  if (xbee.log) fprintf(xbee.log,"libxbee: Stopping...\n");
+  if (xbee.log) xbee_log("libxbee: Stopping...\n");
 
   /* if the api mode was not 2 to begin with then put it back */
   if (xbee.oldAPI == 2) {
@@ -454,6 +454,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     return -1;
   }
   strcpy(xbee.path,path);
+  xbee_log("Opening serial port '%s'...",xbee.path);
 
   /* call the relevant init function */
   if ((ret = init_serial(baudrate)) != 0) {
@@ -853,7 +854,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
     if (length < 2) return -1;
 
     /* use the command? */
-    buf[0] = ((!con->atQueue)?0x08:0x09);
+    buf[0] = ((!con->atQueue)?XBEE_LOCAL_ATREQ:XBEE_LOCAL_ATQUE);
     buf[1] = con->frameID;
 
     /* copy in the data */
@@ -873,7 +874,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
   } else if ((con->type == xbee_16bitRemoteAT) ||
              (con->type == xbee_64bitRemoteAT)) {
     if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
-    buf[0] = 0x17;
+    buf[0] = XBEE_REMOTE_ATREQ;
     buf[1] = con->frameID;
 
     /* copy in the relevant address */
@@ -908,14 +909,14 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
 
     /* if: 16bit Data */
     if (con->type == xbee_16bitData) {
-      buf[0] = 0x01;
+      buf[0] = XBEE_16BIT_DATATX;
       offset = 5;
       /* copy in the address */
       memcpy(&buf[2],con->tAddr,2);
 
       /* if: 64bit Data */
     } else { /* 64bit Data */
-      buf[0] = 0x00;
+      buf[0] = XBEE_64BIT_DATATX;
       offset = 11;
       /* copy in the address */
       memcpy(&buf[2],con->tAddr,8);
@@ -945,7 +946,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
              (con->type == xbee_16bitIO)) {
     /* not currently implemented... is it even allowed? */
     if (xbee.log) {
-      fprintf(xbee.log,"******* TODO ********\n");
+      xbee_log("******* TODO ********\n");
     }
   }
 
@@ -1246,8 +1247,10 @@ static int xbee_listen(t_info *info) {
         xbee_logc("%3d | 0x%02X | ",i,c);
         if ((c > 32) && (c < 127)) fprintf(xbee.log,"'%c'",c); else fprintf(xbee.log," _ ");
 
-        if ((t == 0x80 && i == (8 + 2)) || /* 64-bit Data packet */
-            (t == 0x81 && i == (2 + 2))) { /* 16-bit Data packet */
+        if ((t == XBEE_64BIT_DATA && i == 10) ||
+            (t == XBEE_16BIT_DATA && i == 4) ||
+            (t == XBEE_LOCAL_AT   && i == 4) ||
+            (t == XBEE_REMOTE_AT  && i == 14)) {
           /* mark the beginning of the 'data' bytes */
           fprintf(xbee.log,"   <-- data starts");
         }
@@ -1282,7 +1285,7 @@ static int xbee_listen(t_info *info) {
 
     /* ########################################## */
     /* if: modem status */
-    if (t == 0x8A) {
+    if (t == XBEE_MODEM_STATUS) {
       if (xbee.log) {
         xbee_log("Packet type: Modem Status (0x8A)");
         xbee_logc("Event: ");
@@ -1313,7 +1316,7 @@ static int xbee_listen(t_info *info) {
 
       /* ########################################## */
       /* if: local AT response */
-    } else if (t == 0x88) {
+    } else if (t == XBEE_LOCAL_AT) {
       if (xbee.log) {
         xbee_log("Packet type: Local AT Response (0x88)");
         xbee_log("FrameID: 0x%02X",d[0]);
@@ -1347,7 +1350,7 @@ static int xbee_listen(t_info *info) {
 
       /* ########################################## */
       /* if: remote AT response */
-    } else if (t == 0x97) {
+    } else if (t == XBEE_REMOTE_AT) {
       if (xbee.log) {
         xbee_log("Packet type: Remote AT Response (0x97)");
         xbee_log("FrameID: 0x%02X",d[0]);
@@ -1414,7 +1417,7 @@ static int xbee_listen(t_info *info) {
 
       /* ########################################## */
       /* if: TX status */
-    } else if (t == 0x89) {
+    } else if (t == XBEE_TX_STATUS) {
       if (xbee.log) {
         xbee_log("Packet type: TX Status Report (0x89)");
         xbee_log("FrameID: 0x%02X",d[0]);
@@ -1444,17 +1447,17 @@ static int xbee_listen(t_info *info) {
 
       /* ########################################## */
       /* if: 16 / 64bit data recieve */
-    } else if ((t == 0x80) ||
-               (t == 0x81)) {
+    } else if ((t == XBEE_64BIT_DATA) ||
+               (t == XBEE_16BIT_DATA)) {
       int offset;
-      if (t == 0x80) { /* 64bit */
+      if (t == XBEE_64BIT_DATA) { /* 64bit */
         offset = 8;
       } else { /* 16bit */
         offset = 2;
       }
       if (xbee.log) {
-        xbee_log("Packet type: %d-bit RX Data (0x%02X)",((t == 0x80)?64:16),t);
-        xbee_logc("%d-bit Address: ",((t == 0x80)?64:16));
+        xbee_log("Packet type: %d-bit RX Data (0x%02X)",((t == XBEE_64BIT_DATA)?64:16),t);
+        xbee_logc("%d-bit Address: ",((t == XBEE_64BIT_DATA)?64:16));
         for (j=0;j<offset;j++) {
           fprintf(xbee.log,(j?":%02X":"%02X"),d[j]);
         }
@@ -1469,7 +1472,7 @@ static int xbee_listen(t_info *info) {
       p->remoteATPkt = FALSE;
       p->IOPkt = FALSE;
 
-      if (t == 0x80) { /* 64bit */
+      if (t == XBEE_64BIT_DATA) { /* 64bit */
         p->type = xbee_64bitData;
 
         p->sAddr64 = TRUE;
@@ -1504,10 +1507,10 @@ static int xbee_listen(t_info *info) {
 
       /* ########################################## */
       /* if: 16 / 64bit I/O recieve */
-    } else if ((t == 0x82) ||
-               (t == 0x83)) {
+    } else if ((t == XBEE_64BIT_IO) ||
+               (t == XBEE_16BIT_IO)) {
       int offset;
-      if (t == 0x82) { /* 64bit */
+      if (t == XBEE_64BIT_IO) { /* 64bit */
         p->type = xbee_64bitIO;
 
         p->sAddr64 = TRUE;
@@ -1538,8 +1541,8 @@ static int xbee_listen(t_info *info) {
         p = Xrealloc(p, sizeof(xbee_pkt) + (sizeof(xbee_sample) * (p->samples - 1)));
       }
       if (xbee.log) {
-        xbee_log("Packet type: %d-bit RX I/O Data (0x%02X)\n",((t == 0x82)?64:16),t);
-        xbee_logc("%d-bit Address: ",((t == 0x82)?64:16));
+        xbee_log("Packet type: %d-bit RX I/O Data (0x%02X)\n",((t == XBEE_64BIT_IO)?64:16),t);
+        xbee_logc("%d-bit Address: ",((t == XBEE_64BIT_IO)?64:16));
         for (j = 0; j < offset; j++) {
           fprintf(xbee.log,(j?":%02X":"%02X"),d[j]);
         }
