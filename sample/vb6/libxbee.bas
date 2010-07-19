@@ -69,6 +69,8 @@ Public Declare Function xbee_setupDebug Lib "libxbee.dll" (ByVal port As String,
 Private Declare Function xbee_setupDebugAPIRaw Lib "libxbee.dll" Alias "xbee_setupDebugAPI" (ByVal port As String, ByVal baudRate As Long, ByVal logfile As String, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 Private Declare Function xbee_setupAPIRaw Lib "libxbee.dll" Alias "xbee_setupAPI" (ByVal port As String, ByVal baudRate As Long, ByVal cmdSeq As Byte, ByVal cmdTime As Long) As Long
 
+Public Declare Function xbee_end Lib "libxbee.dll" () As Long
+
 Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
 Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
 Public Declare Function xbee_newcon_64bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
