@@ -118,10 +118,10 @@ Public Function PointerToString(lngPtr As Long) As String
    End If
 End Function
 
-Public Function PointerToPacket(lngPtr As Long) As xbee_pkt
+Public Function xbee_pointerToPacket(lngPtr As Long) As xbee_pkt
     Dim p As xbee_pkt
     CopyMemory p, ByVal lngPtr, Len(p)
-    PointerToPacket = p
+    xbee_pointerToPacket = p
 End Function
 
 Public Sub libxbee_load()
@@ -239,7 +239,7 @@ Public Function xbee_getpacket(ByVal con As Long, ByRef pkt As xbee_pkt) As Inte
         Exit Function
     End If
     
-    pkt = PointerToPacket(ptr)
+    pkt = xbee_pointerToPacket(ptr)
     xbee_free ptr
     
     xbee_getpacket = 1
