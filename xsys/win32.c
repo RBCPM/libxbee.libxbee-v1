@@ -206,7 +206,8 @@ void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
   if (p) {
     xbee_log("Callback message sent!");
     SendMessage(p->hWnd, p->uMsg, (int)con, (int)pkt);
-    xbee_log("Callback complete!");
+  } else {
+    xbee_log("Callback message NOT sent... Unmapped callback! (con=0x%08X)",con);
   }
 }
 
@@ -233,14 +234,14 @@ void xbee_attachCallback(xbee_con *con, HWND hWnd, UINT uMsg) {
     p->next = NULL;
     p->con = con;
     if (!l) {
-      xbee_log("Creating the first callback...");
+      xbee_log("Mapping the first callback...");
       callbackMap = p;
     } else {
-      xbee_log("Creating another callback...");
+      xbee_log("Mapping another callback...");
       l->next = p;
     }
   } else if (xbee.log) {
-    xbee_log("Updating callback details...");
+    xbee_log("Updating callback map...");
   }
   /* setup / update the parameters */
   xbee_log("hWnd = [%d]...",hWnd);
@@ -274,6 +275,9 @@ void xbee_detachCallback(xbee_con *con) {
     } else {
       l->next = NULL;
     }
+    xbee_log("Unmapping callback...");
+    xbee_log("hWnd = [%d]...",p->hWnd);
+    xbee_log("uMsg = [%d]...",p->uMsg);
     Xfree(p);
   }
   

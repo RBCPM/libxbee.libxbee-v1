@@ -175,7 +175,7 @@ Public Sub xbee_enableCallbacks(ByVal hWnd As Long)
         Exit Sub
     End If
     ActhWndHandler = hWnd
-    OldhWndHandler = SetWindowLong(hWnd, GWL_WNDPROC, AddressOf libxbee.windowMsgHandler)
+    OldhWndHandler = SetWindowLong(hWnd, GWL_WNDPROC, AddressOf libxbee.xbee_messageHandler)
 End Sub
 
 Public Sub xbee_disableCallbacks()
@@ -192,7 +192,7 @@ Public Sub xbee_disableCallbacks()
     OldhWndHandler = 0
 End Sub
 
-Private Function windowMsgHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
+Private Function xbee_messageHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
     If (uMsg >= CUSTOM_MSG_MIN) And (uMsg <= CUSTOM_MSG_MAX) Then
         Dim t As Long
         On Error Resume Next
@@ -200,12 +200,12 @@ Private Function windowMsgHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByVal 
         t = Callbacks.Item(CStr(wParam))(1)
         If Err.Number = 0 Then
             On Error GoTo 0
-            windowMsgHandler = xbee_runCallback(t, wParam, lParam)
+            xbee_messageHandler = xbee_runCallback(t, wParam, lParam)
             Exit Function
         End If
         On Error GoTo 0
     End If
-    windowMsgHandler = CallWindowProc(OldhWndHandler, hWnd, uMsg, wParam, lParam)
+    xbee_messageHandler = CallWindowProc(OldhWndHandler, hWnd, uMsg, wParam, lParam)
     If uMsg = WM_DESTROY And ActhWndHandler <> 0 Then
         ' Disable the MessageHandler if the form "unload" event is detected
         xbee_disableCallbacks
