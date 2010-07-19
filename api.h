@@ -37,6 +37,7 @@
 #include <Windows.h>
 #include <io.h>
 #include <time.h>
+#include <sys/timeb.h>
 #endif /* ------------- */
 
 #include "xbee.h"
