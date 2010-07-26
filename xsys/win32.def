@@ -14,6 +14,7 @@ EXPORTS
   xbee_setupAPI
   xbee_setuplogAPI
   xbee_setupDebug
+  xbee_setupDebugAPI
 
   xbee_end
   xbee_listen_stop
