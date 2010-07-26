@@ -40,12 +40,13 @@ HMODULE glob_hModule = NULL;
 /* this uses miliseconds not microseconds... */
 #define usleep(a)                 Sleep((a)/1000)
 
-#define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)&(c),0,NULL)) == NULL)
+#define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)(c),0,NULL)) == NULL)
 #define xbee_thread_kill(a,b)     TerminateThread((a),(b))
 
 #define xbee_mutex_init(a)        (((a) = CreateSemaphore(NULL, 1, 1, NULL)) == NULL)
 #define xbee_mutex_destroy(a)     CloseHandle((a))
 #define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
+#define xbee_mutex_trylock(a)     WaitForSingleObject((a),0)
 #define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
 
 #define xbee_close(a)             CloseHandle((a))

@@ -99,15 +99,19 @@ struct xbee_con {
   unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
   unsigned int txDisableACK  : 1;
   unsigned int txBroadcast   : 1; /* broadcasts to PAN */
-  unsigned int __spare__     : 4;
+  unsigned int destroySelf   : 1; /* if set, the callback thread will destroy the connection after all of the packets have been processed */
+  unsigned int __spare__     : 3;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
   void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
+  void *callbackList;
 #ifdef __GNUC__ /* ---- */
   pthread_mutex_t callbackmutex;
+  pthread_mutex_t callbackListmutex;
 #else /* -------------- */
   HANDLE callbackmutex;
+  HANDLE callbackListmutex;
 #endif /* ------------- */
   xbee_con *next;
 };
@@ -123,8 +127,8 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 
 void xbee_flushcon(xbee_con *con);
 
-#define xbee_endcon(x) xbee_endcon2((xbee_con **)&x)
-void xbee_endcon2(xbee_con **con);
+void xbee_endcon2(xbee_con **con, int skipUnlink);
+#define xbee_endcon(x) xbee_endcon2(&(x),0)
 
 #ifdef __GNUC__ /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));

@@ -27,12 +27,13 @@
 /* ### Linux Code ################################################## */
 /* ################################################################# */
 
-#define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)&(c))
+#define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)(c))
 #define xbee_thread_kill(a,b)     pthread_kill((a),(b))
 
 #define xbee_mutex_init(a)        pthread_mutex_init(&(a),NULL)
 #define xbee_mutex_destroy(a)     pthread_mutex_destroy(&(a))
 #define xbee_mutex_lock(a)        pthread_mutex_lock(&(a))
+#define xbee_mutex_trylock(a)     pthread_mutex_trylock(&(a))
 #define xbee_mutex_unlock(a)      pthread_mutex_unlock(&(a))
 
 #define xbee_write(a,b)           fwrite((a),1,(b),xbee.tty)

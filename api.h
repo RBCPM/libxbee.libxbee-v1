@@ -42,12 +42,12 @@
 
 #include "xbee.h"
 
-#ifdef __GNUC__
+#ifdef __UMAKEFILE
+  #define HOST_OS "Embedded"
+#elif defined(__GNUC__)
   #define HOST_OS "Linux"
 #elif defined(_WIN32)
   #define HOST_OS "Win32"
-#elif defined(__UMAKEFILE)
-  #define HOST_OS "Embedded"
 #else
   #define HOST_OS "UNKNOWN"
 #endif
@@ -103,10 +103,10 @@ struct t_info {
   int i;
 };
 
-typedef struct t_callback_info t_callback_info;
-struct t_callback_info {
-  xbee_con *con;
+typedef struct t_callback_list t_callback_list;
+struct t_callback_list {
   xbee_pkt *pkt;
+  t_callback_list *next;
 };
 
 struct {
@@ -185,7 +185,7 @@ static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
 static t_data *xbee_make_pkt(unsigned char *data, int len);
 static void xbee_send_pkt(t_data *pkt);
-static void xbee_callbackWrapper(t_callback_info *info);
+static void xbee_callbackWrapper(xbee_con *con);
 
 /* these functions can be found in the xsys files */
 static int init_serial(int baudrate);

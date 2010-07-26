@@ -497,7 +497,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   xbee_ready = -1;
 
   /* can start xbee_listen thread now */
-  if (xbee_thread_create(xbee.listent,xbee_listen_wrapper,info)) { 
+  if (xbee_thread_create(xbee.listent,xbee_listen_wrapper,&info)) {
     perror("xbee_setup():xbee_thread_create()");
     if (xbee.log) fclose(xbee.log);
     xbee_mutex_destroy(xbee.conmutex);
@@ -746,38 +746,47 @@ void xbee_flushcon(xbee_con *con) {
    xbee_endcon
    close the unwanted connection
    free wrapper function (uses the Xfree macro and sets the pointer to NULL after freeing it) */
-void xbee_endcon2(xbee_con **con) {
+void xbee_endcon2(xbee_con **con, int skipUnlink) {
   xbee_con *t, *u;
 
-  /* lock the connection mutex */
-  xbee_mutex_lock(xbee.conmutex);
+  if (!skipUnlink) {
+    /* lock the connection mutex */
+    xbee_mutex_lock(xbee.conmutex);
 
-  u = t = xbee.conlist;
-  while (t && t != *con) {
-    u = t;
-    t = t->next;
-  }
-  if (!t) {
-    /* invalid connection given... */
-    if (xbee.log) {
-      xbee_log("Attempted to close invalid connection...");
+    u = t = xbee.conlist;
+    while (t && t != *con) {
+      u = t;
+      t = t->next;
     }
+    if (!t) {
+      /* invalid connection given... */
+      if (xbee.log) {
+        xbee_log("Attempted to close invalid connection...");
+      }
+      /* unlock the connection mutex */
+      xbee_mutex_unlock(xbee.conmutex);
+      return;
+    }
+    /* extract this connection from the list */
+    u->next = t->next;
+
     /* unlock the connection mutex */
     xbee_mutex_unlock(xbee.conmutex);
+  }
+
+  /* check if a callback thread is running... */
+  if (t->callback && xbee_mutex_trylock(t->callbackmutex)) {
+    /* if it is running... tell it to destroy the connection on completion */
+    xbee_log("Attempted to close a connection with active callbacks... connection will be destroied when callbacks have completeted...");
+    t->destroySelf = 1;
     return;
   }
-  /* extract this connection from the list */
-  u->next = (*con)->next;
-  if (*con == xbee.conlist) xbee.conlist = NULL;
-
-  /* unlock the connection mutex */
-  xbee_mutex_unlock(xbee.conmutex);
 
   /* remove all packets for this connection */
-  xbee_flushcon(*con);
-  
+  xbee_flushcon(t);
+
   /* destroy the callback mutex */
-  xbee_mutex_destroy((*con)->callbackmutex);
+  xbee_mutex_destroy(t->callbackmutex);
 
   /* free the connection! */
   Xfree(*con);
@@ -1638,14 +1647,38 @@ static int xbee_listen(t_info *info) {
 #else
       HANDLE t;
 #endif
-      t_callback_info info;
-      info.con = con;
-      info.pkt = p;
+      t_callback_list *l, *q;
+
+      xbee_mutex_lock(con->callbackListmutex);
+      l = con->callbackList;
+      q = NULL;
+      while (l) {
+        q = l;
+        l = l->next;
+      }
+      l = Xcalloc(sizeof(t_callback_list));
+      l->pkt = p;
+      if (!con->callbackList) {
+        con->callbackList = l;
+      } else {
+        q->next = l;
+      }
+      xbee_mutex_unlock(con->callbackListmutex);
+
       xbee_log("Using callback function!");
-      xbee_log("  callback function @ 0x%08X",info.con->callback);
-      xbee_log("  con @ 0x%08X",info.con);
-      xbee_log("  pkt @ 0x%08X",info.pkt);
-      xbee_thread_create(t,xbee_callbackWrapper,info);
+      xbee_log("  info block @ 0x%08X",l);
+      xbee_log("  function   @ 0x%08X",con->callback);
+      xbee_log("  connection @ 0x%08X",con);
+      xbee_log("  packet     @ 0x%08X",p);
+
+      /* if the callback thread not still running, then start a new one! */
+      if (!xbee_mutex_trylock(con->callbackmutex)) {
+        xbee_log("Starting new callback thread!");
+        xbee_thread_create(t,xbee_callbackWrapper,con);
+        xbee_log("  connection @ 0x%08X",con);
+      } else {
+        xbee_log("Using existing new callback thread");
+      }
       continue;
     }
 
@@ -1685,13 +1718,37 @@ static int xbee_listen(t_info *info) {
   }
   return 0;
 }
-static void xbee_callbackWrapper(t_callback_info *info) {
-  xbee_log("Waiting for callback mutex...");
-  xbee_mutex_lock(info->con->callbackmutex);
-  info->con->callback(info->con,info->pkt);
-  xbee_mutex_unlock(info->con->callbackmutex);
-  xbee_log("Callback complete!");
-  Xfree(info->pkt);
+static void xbee_callbackWrapper(xbee_con *con) {
+  xbee_pkt *pkt;
+  t_callback_list *temp;
+  /* dont forget! the callback mutex is already locked... by the parent thread :) */
+
+  xbee_mutex_lock(con->callbackListmutex);
+  while (con->callbackList) {
+    temp = con->callbackList;
+    /* get the packet */
+    pkt = temp->pkt;
+    /* shift the list along 1 */
+    con->callbackList = temp->next;
+    Xfree(temp);
+    xbee_mutex_unlock(con->callbackListmutex);
+
+    xbee_log("Starting callback function...");
+    con->callback(con,pkt);
+    xbee_log("Callback complete!");
+    Xfree(pkt);
+
+    xbee_mutex_lock(con->callbackListmutex);
+  }
+  xbee_mutex_unlock(con->callbackListmutex);
+
+  xbee_log("Callback thread ending...");
+  /* releasing the thread mutex is the last thing we do! */
+  xbee_mutex_unlock(con->callbackmutex);
+
+  if (con->destroySelf) {
+    xbee_endcon2(&con,1);
+  }
 }
 
 /* #################################################################
