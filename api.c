@@ -1675,7 +1675,6 @@ static int xbee_listen(t_info *info) {
       if (!xbee_mutex_trylock(con->callbackmutex)) {
         xbee_log("Starting new callback thread!");
         xbee_thread_create(t,xbee_callbackWrapper,con);
-        xbee_log("  connection @ 0x%08X",con);
       } else {
         xbee_log("Using existing new callback thread");
       }
