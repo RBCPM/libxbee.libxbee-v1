@@ -217,10 +217,13 @@ int xbee_runCallback(int(*func)(xbee_con*,xbee_pkt*), xbee_con *con, xbee_pkt *p
 }
 
 void xbee_attachCallback(xbee_con *con, HWND hWnd, UINT uMsg) {
-  win32_callback_info *l = NULL, *p = callbackMap;
+  win32_callback_info *l, *p;
   
   /* grab the mutex */
   xbee_mutex_lock(callbackmutex);
+  
+  l = NULL;
+  p = callbackMap;
   
   /* see if there is an existing callback for this connection */
   while (p) {
