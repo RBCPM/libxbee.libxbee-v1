@@ -186,7 +186,7 @@ xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, i
   return xbee_newcon(frameID, type, addrL, addrH);
 }
 
-/* this is mainly for vb6... it will send a message to the given hWnd which can in turn check for a packet */
+/* for vb6... it will send a message to the given hWnd which can in turn check for a packet */
 void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
   win32_callback_info *p = callbackMap;
   

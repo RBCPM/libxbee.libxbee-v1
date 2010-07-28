@@ -128,7 +128,8 @@ double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref) {
 /* ### XBee Functions ############################################## */
 /* ################################################################# */
 
-static void xbee_logf(const char *logformat, int unlock, const char *file, const int line, const char *function, char *format, ...) {
+static void xbee_logf(const char *logformat, int unlock, const char *file,
+                      const int line, const char *function, char *format, ...) {
   char buf[128];
   va_list ap;
   FILE *log;
@@ -777,7 +778,8 @@ void xbee_endcon2(xbee_con **con, int skipUnlink) {
   /* check if a callback thread is running... */
   if (t->callback && xbee_mutex_trylock(t->callbackmutex)) {
     /* if it is running... tell it to destroy the connection on completion */
-    xbee_log("Attempted to close a connection with active callbacks... connection will be destroied when callbacks have completeted...");
+    xbee_log("Attempted to close a connection with active callbacks... "
+             "Connection will be destroied when callbacks have completeted...");
     t->destroySelf = 1;
     return;
   }

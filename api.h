@@ -164,7 +164,8 @@ static void *Xrealloc(void *ptr, size_t size);
 static void Xfree2(void **ptr);
 #define Xfree(x) Xfree2((void **)&x)
 
-static void xbee_logf(const char *logformat, int unlock, const char *file, const int line, const char *function, char *format, ...);
+static void xbee_logf(const char *logformat, int unlock, const char *file,
+                      const int line, const char *function, char *format, ...);
 #define xbee_log(...) xbee_logf("[%s:%d] %s(): %s\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
 #define xbee_logc(...) xbee_logf("[%s:%d] %s(): %s",0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
 #define xbee_logcf()                 \
