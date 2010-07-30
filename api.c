@@ -17,8 +17,8 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#define SVN_REV "$Id$"
+const char *SVN_REV = "$Id$";
+char svn_rev[128] = "\0";
 
 #include "api.h"
 
@@ -29,7 +29,19 @@
 #endif /* ------------- */
 
 const char *xbee_svn_version(void) {
-  return HOST_OS " - " SVN_REV;
+  if (svn_rev[0] == '\0') {
+    char *t;
+    sprintf(svn_rev,"r%s",&SVN_REV[11]);
+    t = strrchr(svn_rev,' ');
+    if (t) {
+      t[0] = '\0';
+    }
+  }
+  return svn_rev;
+}
+
+const char *xbee_build_info(void) {
+  return "Built on " __DATE__ " @ " __TIME__ " for " HOST_OS;
 }
 
 /* ################################################################# */
@@ -362,7 +374,7 @@ int xbee_end(void) {
 
   /* close log and tty */
   if (xbee.log) {
-    xbee_log("libxbee: Stopped! (%s)",xbee_svn_version());
+    xbee_log("libxbee: Stopped!");
     fflush(xbee.log);
     xbee_close(xbee.log);
   }
@@ -418,7 +430,11 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     }
   }
 
-  if (xbee.log) xbee_log("libxbee: Starting (%s)...",xbee_svn_version());
+  if (xbee.log) xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  if (xbee.log) xbee_log("libxbee: Starting...");
+  if (xbee.log) xbee_log("libxbee: SVN Info: %s",xbee_svn_version());
+  if (xbee.log) xbee_log("libxbee: Build Info: %s",xbee_build_info());
+  if (xbee.log) xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
   /* setup the connection stuff */
   xbee.conlist = NULL;
@@ -459,7 +475,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     return -1;
   }
   strcpy(xbee.path,path);
-  xbee_log("Opening serial port '%s'...",xbee.path);
+  if (xbee.log) xbee_log("Opening serial port '%s'...",xbee.path);
 
   /* call the relevant init function */
   if ((ret = init_serial(baudrate)) != 0) {

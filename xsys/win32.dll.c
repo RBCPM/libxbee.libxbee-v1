@@ -28,7 +28,9 @@
 #endif
 
 int ver(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
-  MessageBox(NULL, "The information for this copy of libxbee.dll is:\n"SVN_REV, "libxbee Win32 DLL", MB_OK);
+  char t[256];
+  sprintf(t,"libxbee.dll\n%s\n%s",xbee_svn_version(),xbee_build_info());
+  MessageBox(NULL, t, "libxbee Win32 DLL", MB_OK);
   return 0;
 }
 

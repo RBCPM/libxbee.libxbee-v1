@@ -154,6 +154,7 @@ int xbee_hasanalog(xbee_pkt *pkt, int sample, int input);
 double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 
 const char *xbee_svn_version(void);
+const char *xbee_build_info(void);
 
 void xbee_listen_stop(void);
 

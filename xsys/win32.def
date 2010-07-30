@@ -45,3 +45,4 @@ EXPORTS
   xbee_getdigital
 
   xbee_svn_version
+  xbee_build_info
