@@ -43,11 +43,22 @@ HMODULE glob_hModule = NULL;
 #define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)(c),0,NULL)) == NULL)
 #define xbee_thread_kill(a,b)     TerminateThread((a),(b))
 
-#define xbee_mutex_init(a)        (((a) = CreateSemaphore(NULL, 1, 1, NULL)) == NULL)
-#define xbee_mutex_destroy(a)     CloseHandle((a))
-#define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
-#define xbee_mutex_trylock(a)     WaitForSingleObject((a),0)
-#define xbee_mutex_unlock(a)      ReleaseSemaphore((a),1,NULL)
+#define xbee_mutex_init(a)        (!InitializeCriticalSectionAndSpinCount(&(a),0))
+#define xbee_mutex_destroy(a)     DeleteCriticalSection(&(a))
+#define xbee_mutex_lock(a)        EnterCriticalSection(&(a))
+#define xbee_mutex_trylock(a)     (!TryEnterCriticalSection(&(a)))
+#define xbee_mutex_unlock(a)      LeaveCriticalSection(&(a))
+
+#define xbee_sem_init(a)          (((a) = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL)
+#define xbee_sem_destroy(a)       CloseHandle((a))
+#define xbee_sem_wait(a)          WaitForSingleObject((a),INFINITE)
+#define xbee_sem_post(a)          SetEvent((a))
+
+#define xbee_cond_init(a)         InitializeConditionVariable(&(a))
+#define xbee_cond_destroy(a)      
+#define xbee_cond_wait(a,b)       SleepConditionVariableCS(&(a),&(b),INFINITE)
+#define xbee_cond_signal(a)       WakeConditionVariable(&(a))
+#define xbee_cond_broadcast(a)    WakeAllConditionVariable(&(a))
 
 #define xbee_close(a)             CloseHandle((a))
 
@@ -60,4 +71,4 @@ struct win32_callback_info {
 };
 
 win32_callback_info *callbackMap = NULL;
-HANDLE callbackmutex;
+xbee_mutex_t callbackmutex;

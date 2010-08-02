@@ -17,7 +17,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #ifndef XBEE_H
 #define XBEE_H
 
@@ -30,6 +29,21 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+
+#ifdef __GNUC__ /* ---- */
+#include <semaphore.h>
+typedef pthread_mutex_t    xbee_mutex_t;
+typedef pthread_cond_t     xbee_cond_t;
+typedef pthread_t          xbee_thread_t;
+typedef sem_t              xbee_sem_t;
+typedef FILE*              xbee_file_t;
+#else /* -------------- */
+typedef CRITICAL_SECTION   xbee_mutex_t;
+typedef CONDITION_VARIABLE xbee_cond_t;
+typedef HANDLE             xbee_thread_t;
+typedef HANDLE             xbee_sem_t;
+typedef HANDLE             xbee_file_t;
+#endif /* ------------- */
 
 enum xbee_types {
   xbee_unknown,
@@ -101,19 +115,18 @@ struct xbee_con {
   unsigned int txBroadcast   : 1; /* broadcasts to PAN */
   unsigned int destroySelf   : 1; /* if set, the callback thread will destroy the connection
                                      after all of the packets have been processed */
-  unsigned int __spare__     : 3;
+  unsigned int waitforACK    : 1; /* waits for the ACK or NAK after transmission */
+  unsigned int __spare__     : 2;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
   void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
   void *callbackList;
-#ifdef __GNUC__ /* ---- */
-  pthread_mutex_t callbackmutex;
-  pthread_mutex_t callbackListmutex;
-#else /* -------------- */
-  HANDLE callbackmutex;
-  HANDLE callbackListmutex;
-#endif /* ------------- */
+  xbee_mutex_t callbackmutex;
+  xbee_mutex_t callbackListmutex;
+  xbee_mutex_t Txmutex;
+  xbee_sem_t waitforACKsem;
+  unsigned char ACKstatus; /* 0 = nothing, 1 = waiting, 2 = ACK recieved, 3 = NAK recieved */
   xbee_con *next;
 };
 

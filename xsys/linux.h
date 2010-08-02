@@ -36,6 +36,17 @@
 #define xbee_mutex_trylock(a)     pthread_mutex_trylock(&(a))
 #define xbee_mutex_unlock(a)      pthread_mutex_unlock(&(a))
 
+#define xbee_sem_init(a)          sem_init(&(a),0,0)
+#define xbee_sem_destroy(a)       sem_destroy(&(a))
+#define xbee_sem_wait(a)          sem_wait(&(a))
+#define xbee_sem_post(a)          sem_post(&(a))
+
+#define xbee_cond_init(a)         pthread_cond_init(&(a),NULL)
+#define xbee_cond_destroy(a)      pthread_cond_destroy(&(a))
+#define xbee_cond_wait(a,b)       pthread_cond_wait(&(a),&(b))
+#define xbee_cond_signal(a)       pthread_cond_signal(&(a))
+#define xbee_cond_broadcast(a)    pthread_cond_broadcast(&(a))
+
 #define xbee_write(a,b)           fwrite((a),1,(b),xbee.tty)
 #define xbee_read(a,b)            fread((a),1,(b),xbee.tty)
 #define xbee_close(a)             fclose((a))

@@ -110,23 +110,10 @@ struct t_callback_list {
 };
 
 struct {
+  xbee_file_t tty;
 #ifdef __GNUC__ /* ---- */
-  pthread_mutex_t logmutex;
-  pthread_mutex_t conmutex;
-  pthread_mutex_t pktmutex;
-  pthread_mutex_t sendmutex;
-  pthread_t listent;
-
-  FILE *tty;
   int ttyfd;
 #else /* -------------- */
-  HANDLE logmutex;
-  HANDLE conmutex;
-  HANDLE pktmutex;
-  HANDLE sendmutex;
-  HANDLE listent;
-
-  HANDLE tty;
   int ttyr;
   int ttyw;
 
@@ -137,15 +124,21 @@ struct {
 
   char *path; /* serial port path */
 
+  xbee_mutex_t logmutex;
   FILE *log;
   int logfd;
 
+  xbee_mutex_t conmutex;
   xbee_con *conlist;
 
+  xbee_mutex_t pktmutex;
   xbee_pkt *pktlist;
   xbee_pkt *pktlast;
   int pktcount;
+  
+  xbee_mutex_t sendmutex;
 
+  xbee_thread_t listent;
   int listenrun;
 
   int oldAPI;
@@ -185,9 +178,15 @@ static unsigned char xbee_getrawbyte(void);
 static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
 
 static t_data *xbee_make_pkt(unsigned char *data, int len);
-static void xbee_send_pkt(t_data *pkt);
+static int xbee_send_pkt(t_data *pkt, xbee_con *con);
 static void xbee_callbackWrapper(xbee_con *con);
 
 /* these functions can be found in the xsys files */
 static int init_serial(int baudrate);
 static int xbee_select(struct timeval *timeout);
+
+#ifdef __GNUC__ /* ---- */
+#include "xsys/linux.c"
+#else /* -------------- */
+#include "xsys\win32.c"
+#endif /* ------------- */
