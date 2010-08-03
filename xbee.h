@@ -145,6 +145,7 @@ void xbee_flushcon(xbee_con *con);
 void xbee_endcon2(xbee_con **con, int skipUnlink);
 #define xbee_endcon(x) xbee_endcon2(&(x),0)
 
+int xbee_nsenddata(xbee_con *con, char *data, int length);
 #ifdef __GNUC__ /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
@@ -155,8 +156,6 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
 /* oh and just 'cos windows has rubbish memory management rules... this too */
 void xbee_free(void *ptr);
 #endif /* ------------- */
-
-int xbee_nsenddata(xbee_con *con, char *data, int length);
 
 xbee_pkt *xbee_getpacketwait(xbee_con *con);
 xbee_pkt *xbee_getpacket(xbee_con *con);
