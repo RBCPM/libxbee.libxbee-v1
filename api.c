@@ -138,17 +138,12 @@ static void xbee_logf(const char *logformat, int unlock, const char *file,
                       const int line, const char *function, char *format, ...) {
   char buf[128];
   va_list ap;
-  FILE *log;
+  if (!xbee.log) return;
   va_start(ap,format);
   vsnprintf(buf,127,format,ap);
   va_end(ap);
-  if (xbee.log) {
-    log = xbee.log;
-  } else {
-    log = stderr;
-  }
   xbee_mutex_lock(xbee.logmutex);
-  fprintf(log,logformat,file,line,function,buf);
+  fprintf(xbee.log,logformat,file,line,function,buf);
   if (unlock) xbee_mutex_unlock(xbee.logmutex);
 }
 
@@ -424,11 +419,13 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
     }
   }
 
-  if (xbee.log) xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-  if (xbee.log) xbee_log("libxbee: Starting...");
-  if (xbee.log) xbee_log("libxbee: SVN Info: %s",xbee_svn_version());
-  if (xbee.log) xbee_log("libxbee: Build Info: %s",xbee_build_info());
-  if (xbee.log) xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  if (xbee.log) {
+    xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    xbee_log("libxbee: Starting...");
+    xbee_log("libxbee: SVN Info: %s",xbee_svn_version());
+    xbee_log("libxbee: Build Info: %s",xbee_build_info());
+    xbee_log("libxbee: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  }
 
   /* setup the connection stuff */
   xbee.conlist = NULL;
