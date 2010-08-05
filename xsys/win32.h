@@ -41,7 +41,8 @@ HMODULE glob_hModule = NULL;
 #define usleep(a)                 Sleep((a)/1000)
 
 #define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)(c),0,NULL)) == NULL)
-#define xbee_thread_kill(a,b)     TerminateThread((a),(b))
+#define xbee_thread_cancel(a,b)   TerminateThread((a),(b))
+#define xbee_thread_join(a)       WaitForSingleObject((a),INFINITE)
 
 #define xbee_mutex_init(a)        (!InitializeCriticalSectionAndSpinCount(&(a),0))
 #define xbee_mutex_destroy(a)     DeleteCriticalSection(&(a))

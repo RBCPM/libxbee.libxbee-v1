@@ -320,7 +320,8 @@ int xbee_end(void) {
 
   /* stop listening for data... either after timeout or next char read which ever is first */
   xbee.listenrun = 0;
-  xbee_thread_kill(xbee.listent,0);
+  xbee_thread_cancel(xbee.listent,0);
+  xbee_thread_join(xbee.listent);
   /* xbee_* functions may no longer run... */
   xbee_ready = 0;
 
