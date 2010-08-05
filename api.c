@@ -146,6 +146,12 @@ static void xbee_logf(const char *logformat, int unlock, const char *file,
   fprintf(xbee.log,logformat,file,line,function,buf);
   if (unlock) xbee_mutex_unlock(xbee.logmutex);
 }
+void xbee_logit(char *str) {
+  if (!xbee.log) return;
+  xbee_mutex_lock(xbee.logmutex);
+  fprintf(xbee.log,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,str);
+  xbee_mutex_unlock(xbee.logmutex);
+}
 
 /* #################################################################
    xbee_sendAT - INTERNAL
@@ -994,11 +1000,11 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
    retrieves the next packet destined for the given connection
    once the packet has been retrieved, it is removed for the list! */
 xbee_pkt *xbee_getpacketwait(xbee_con *con) {
-  xbee_pkt *p;
-  int i;
+  xbee_pkt *p = NULL;
+  int i = 20;
 
   /* 50ms * 20 = 1 second */
-  for (i = 0; i < 20; i++) {
+  for (; i; i--) {
     p = xbee_getpacket(con);
     if (p) break;
     usleep(50000); /* 50ms */
@@ -1037,7 +1043,13 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 
   /* if: no packet was found */
   if (!q) {
-    xbee_mutex_unlock(xbee.pktmutex);
+    xbee_mutex_unlock(xbee.pktmutex);    
+    if (xbee.log) {
+      struct timeval tv;
+      xbee_log("--== Get Packet ==========--");
+      gettimeofday(&tv,NULL);
+      xbee_log("Didn't get a packet @ %ld.%06ld",tv.tv_sec,tv.tv_usec);
+    }
     return NULL;
   }
 
@@ -1061,8 +1073,10 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
   q->next = NULL;
 
   if (xbee.log) {
+    struct timeval tv;
     xbee_log("--== Get Packet ==========--");
-    xbee_log("Got a packet");
+    gettimeofday(&tv,NULL);
+    xbee_log("Got a packet @ %ld.%06ld",tv.tv_sec,tv.tv_usec);
     xbee_log("Packets left: %d",xbee.pktcount);
   }
 
@@ -1220,7 +1234,6 @@ static void xbee_listen_wrapper(t_info *info) {
 static int xbee_listen(t_info *info) {
   unsigned char c, t, d[1024];
   unsigned int l, i, chksum, o;
-  struct timeval tv;
   int j;
   xbee_pkt *p, *q;
   xbee_con *con;
@@ -1238,6 +1251,7 @@ static int xbee_listen(t_info *info) {
     if (!xbee.listenrun) return 0;
 
     if (xbee.log) {
+      struct timeval tv;
       xbee_log("--== RX Packet ===========--");
       gettimeofday(&tv,NULL);
       xbee_log("Got a packet @ %ld.%06ld",tv.tv_sec,tv.tv_usec);

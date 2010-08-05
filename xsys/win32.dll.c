@@ -39,10 +39,15 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
   if ((dwReason == DLL_PROCESS_DETACH) && xbee_ready == 1) {
     /* ensure that libxbee has been shut down nicely */
     xbee_end();
-  } else if (glob_hModule == NULL && (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH)) {
-    /* keep a handle on the module */
-    glob_hModule = (HMODULE)hModule;
-    xbee_mutex_init(callbackmutex);
+  } else if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) {
+    if (!glob_hModule) {
+      /* keep a handle on the module */
+      glob_hModule = (HMODULE)hModule;
+    }
+    if (!callbackmutexInitialized) {
+      callbackmutexInitialized = 1;
+      xbee_mutex_init(callbackmutex);
+    }
   }
   return TRUE;
 }

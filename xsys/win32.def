@@ -49,3 +49,4 @@ EXPORTS
 
   xbee_svn_version
   xbee_build_info
+  xbee_logit

@@ -159,8 +159,9 @@ static void Xfree2(void **ptr);
 
 static void xbee_logf(const char *logformat, int unlock, const char *file,
                       const int line, const char *function, char *format, ...);
-#define xbee_log(...) xbee_logf("[%s:%d] %s(): %s\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
-#define xbee_logc(...) xbee_logf("[%s:%d] %s(): %s",0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define LOG_FORMAT "[%s:%d] %s(): %s"
+#define xbee_log(...) xbee_logf(LOG_FORMAT"\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define xbee_logc(...) xbee_logf(LOG_FORMAT,0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
 #define xbee_logcf()                 \
   fprintf(xbee.log,"\n");            \
   xbee_mutex_unlock(xbee.logmutex);  \

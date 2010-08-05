@@ -73,3 +73,4 @@ struct win32_callback_info {
 
 win32_callback_info *callbackMap = NULL;
 xbee_mutex_t callbackmutex;
+char callbackmutexInitialized = 0;

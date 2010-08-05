@@ -131,6 +131,8 @@ struct xbee_con {
   xbee_con *next;
 };
 
+void xbee_logit(char *str);
+
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);
 int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
