@@ -157,6 +157,10 @@ void xbee_free(void *ptr) {
   free(ptr);
 }
 
+/* ################################################################# */
+/* ### Helper Functions (Mainly for VB6 use) ####################### */
+/* ################################################################# */
+
 /* enable the debug output to a custom file or fallback to stderr */
 int xbee_setupDebugAPI(char *path, int baudrate, char *logfile, char cmdSeq, int cmdTime) {
   int fd, ret;
@@ -186,6 +190,13 @@ xbee_con *xbee_newcon_64bit(unsigned char frameID, xbee_types type, int addrL, i
   return xbee_newcon(frameID, type, addrL, addrH);
 }
 
+void xbee_enableACKwait(xbee_con *con) {
+  con->waitforACK = 1;
+}
+void xbee_disableACKwait(xbee_con *con) {
+  con->waitforACK = 0;
+}
+
 /* for vb6... it will send a message to the given hWnd which can in turn check for a packet */
 void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
   win32_callback_info *p = callbackMap;
@@ -204,10 +215,10 @@ void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
   
   /* if there is, continue! */
   if (p) {
-    xbee_log("Callback message sent!");
+    if (xbee.log) xbee_log("Callback message sent!");
     SendMessage(p->hWnd, p->uMsg, (int)con, (int)pkt);
   } else {
-    xbee_log("Callback message NOT sent... Unmapped callback! (con=0x%08X)",con);
+    if (xbee.log) xbee_log("Callback message NOT sent... Unmapped callback! (con=0x%08X)",con);
   }
 }
 
@@ -237,18 +248,21 @@ void xbee_attachCallback(xbee_con *con, HWND hWnd, UINT uMsg) {
     p->next = NULL;
     p->con = con;
     if (!l) {
-      xbee_log("Mapping the first callback...");
+      if (xbee.log) xbee_log("Mapping the first callback...");
       callbackMap = p;
     } else {
-      xbee_log("Mapping another callback...");
+      if (xbee.log) xbee_log("Mapping another callback...");
       l->next = p;
     }
   } else if (xbee.log) {
-    xbee_log("Updating callback map...");
+    if (xbee.log) xbee_log("Updating callback map...");
   }
   /* setup / update the parameters */
-  xbee_log("hWnd = [%d]...",hWnd);
-  xbee_log("uMsg = [%d]...",uMsg);
+  if (xbee.log) {
+    xbee_log("  connection @ 0x%08X",con);
+    xbee_log("  hWnd       = 0x%08X",hWnd);
+    xbee_log("  uMsg       = 0x%08X",uMsg);
+  }
   p->hWnd = hWnd;
   p->uMsg = uMsg;
   
@@ -278,9 +292,12 @@ void xbee_detachCallback(xbee_con *con) {
     } else {
       l->next = NULL;
     }
-    xbee_log("Unmapping callback...");
-    xbee_log("hWnd = [%d]...",p->hWnd);
-    xbee_log("uMsg = [%d]...",p->uMsg);
+    if (xbee.log) {
+      xbee_log("Unmapping callback...");
+      xbee_log("  connection @ 0x%08X",con);
+      xbee_log("  hWnd       = 0x%08X",p->hWnd);
+      xbee_log("  uMsg       = 0x%08X",p->uMsg);
+    }
     Xfree(p);
   }
   

@@ -23,6 +23,9 @@ EXPORTS
   xbee_newcon_simple
   xbee_newcon_16bit
   xbee_newcon_64bit
+  
+  xbee_enableACKwait
+  xbee_disableACKwait
 
   xbee_attachCallback
   xbee_detachCallback
