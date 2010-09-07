@@ -74,6 +74,8 @@ Public Declare Function xbee_end Lib "libxbee.dll" () As Long
 Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
 Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
 Public Declare Function xbee_newcon_64bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
+Public Declare Sub xbee_enableACKwait Lib "libxbee.dll" (ByVal von As Long)
+Public Declare Sub xbee_disableACKwait Lib "libxbee.dll" (ByVal von As Long)
 
 Private Declare Sub xbee_attachCallbackRaw Lib "libxbee.dll" Alias "xbee_attachCallback" (ByVal con As Long, ByVal hWnd As Long, ByVal uMsg As Long)
 Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" (ByVal con As Long)

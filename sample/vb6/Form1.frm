@@ -49,6 +49,8 @@ Private Sub Form_Load()
     
     ' Create a Remote AT connection to a node using 64-bit addressing
     myCon = xbee_newcon_64bit(&H30, xbee_64bitRemoteAT, &H13A200, &H404B75DE)
+    xbee_enableACKwait myCon
+    
     myDataCon = xbee_newcon_64bit(&H31, xbee_64bitData, &H13A200, &H404B75DE)
     
     ' Setup callbacks
