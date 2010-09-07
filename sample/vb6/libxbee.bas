@@ -94,6 +94,7 @@ Public Declare Function xbee_hasdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt
 Public Declare Function xbee_getdigital Lib "libxbee.dll" (ByRef pkt As xbee_pkt, ByVal sample As Long, ByVal inputPin As Long) As Long
 
 Private Declare Function xbee_svn_versionRaw Lib "libxbee.dll" Alias "xbee_svn_version" () As Long
+Public Declare Sub xbee_logit Lib "libxbee.dll" (ByVal text As String)
 
 '###########################################################################################################################################################################
 

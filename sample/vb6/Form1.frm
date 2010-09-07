@@ -41,6 +41,7 @@ Private Sub Form_Load()
         MsgBox "Error while setting up the local XBee module", vbCritical, "xbee_setup()"
         End
     End If
+    xbee_logit "Hello!"
     
     ' Enable callbacks, this only needs to be done ONCE
     ' The window handle provided must remain in memory (dont unload the form - callbacks will automatically be disabled)
@@ -55,7 +56,7 @@ Private Sub Form_Load()
     xbee_attachCallback myDataCon, AddressOf Module1.callback2
     
     ' Send the AT command NI (Node Identifier)
-    tb.Text = "Sending 'ATNI'..."
+    tb.text = "Sending 'ATNI'..."
     xbee_sendstring myCon, "NI"
 End Sub
 
