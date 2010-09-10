@@ -22,6 +22,16 @@ char svn_rev[128] = "\0";
 
 #include "api.h"
 
+void ISREADY(void) {
+  if (!xbee_ready) {
+    if (stderr) fprintf(stderr,"libxbee: Run xbee_setup() first!...\n");
+#ifdef _WIN32
+    MessageBox(0,"Run xbee_setup() first!...","libxbee",MB_OK);
+#endif
+    exit(1);
+  }
+}
+
 const char *xbee_svn_version(void) {
   if (svn_rev[0] == '\0') {
     char *t;
@@ -300,7 +310,7 @@ int xbee_end(void) {
   xbee_con *con, *ncon;
   xbee_pkt *pkt, *npkt;
 
-  ISREADY;
+  ISREADY();
   if (xbee.log) xbee_log("libxbee: Stopping...");
 
   /* if the api mode was not 2 to begin with then put it back */
@@ -553,7 +563,7 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   int t;
   int i;
 
-  ISREADY;
+  ISREADY();
 
   if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
   else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
@@ -822,7 +832,7 @@ int xbee_senddata(xbee_con *con, char *format, ...) {
   int ret;
   va_list ap;
 
-  ISREADY;
+  ISREADY();
 
   /* xbee_vsenddata() wants a va_list... */
   va_start(ap, format);
@@ -836,7 +846,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   unsigned char data[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
   int length;
 
-  ISREADY;
+  ISREADY();
 
   /* make up the data and keep the length, its possible there are nulls in there */
   length = vsnprintf((char *)data,128,format,ap);
@@ -855,7 +865,7 @@ int xbee_nsenddata(xbee_con *con, char *data, int length) {
   int i;
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
 
-  ISREADY;
+  ISREADY();
 
   if (!con) return -1;
   if (con->type == xbee_unknown) return -1;
@@ -1830,7 +1840,7 @@ static void xbee_callbackWrapper(xbee_con *con) {
 static unsigned char xbee_getbyte(void) {
   unsigned char c;
 
-  ISREADY;
+  ISREADY();
 
   /* take a byte */
   c = xbee_getrawbyte();
@@ -1847,7 +1857,7 @@ static unsigned char xbee_getrawbyte(void) {
   int ret;
   unsigned char c = 0x00;
 
-  ISREADY;
+  ISREADY();
 
   /* the loop is just incase there actually isnt a byte there to be read... */
   do {
@@ -1878,7 +1888,7 @@ static unsigned char xbee_getrawbyte(void) {
    sends a complete packet of data */
 static int xbee_send_pkt(t_data *pkt, xbee_con *con) {
   int retval = 0;
-  ISREADY;
+  ISREADY();
 
   /* lock connection mutex */
   xbee_mutex_lock(con->Txmutex);
@@ -1942,7 +1952,7 @@ static t_data *xbee_make_pkt(unsigned char *data, int length) {
   unsigned int l, i, o, t, x, m;
   char d = 0;
 
-  ISREADY;
+  ISREADY();
 
   /* check the data given isnt too long
      100 bytes maximum payload + 12 bytes header information */

@@ -55,12 +55,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define ISREADY					  \
-  if (!xbee_ready) {				  \
-    if (stderr) fprintf(stderr,"libxbee: Run xbee_setup() first!...\n"); \
-    exit(1);					  \
-  }
-
 #define M8(x) (x & 0xFF)
 #define FDO(x,y,z)				\
   if (((x) = fdopen((y),(z))) == NULL) {	\
