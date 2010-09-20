@@ -131,14 +131,14 @@ struct xbee_con {
   xbee_con *next;
 };
 
-void xbee_logit(char *str);
-
 int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);
 int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
 int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
 
 int xbee_end(void);
+
+void xbee_logit(char *str);
 
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
 
@@ -159,8 +159,8 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
 void xbee_free(void *ptr);
 #endif /* ------------- */
 
-xbee_pkt *xbee_getpacketwait(xbee_con *con);
 xbee_pkt *xbee_getpacket(xbee_con *con);
+xbee_pkt *xbee_getpacketwait(xbee_con *con);
 
 int xbee_hasdigital(xbee_pkt *pkt, int sample, int input);
 int xbee_getdigital(xbee_pkt *pkt, int sample, int input);

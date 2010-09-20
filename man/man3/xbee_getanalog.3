@@ -28,11 +28,11 @@ xbee_hasanalog, xbee_getanalog
 .SH DESCRIPTION
 The
 .BR xbee_hasanalog ()
-function will check the packet for the presence of a sample on the specified input.
+function will check the packet for the presence of an analog sample on the specified input.
 .sp
 The
 .BR xbee_getanalog ()
-function will read the packet and return the sample value for the specified input.
+function will read the packet and return the sample value for the specified analog input.
 .sp
 They both take 3 arguments, with the same purposes.
 .sp
@@ -52,7 +52,7 @@ specifies which input you are interested in testing.
 .BR xbee_getanalog ()
 also takes a fourth argument that allows you to provide a
 .I Vref
-value. This allows the function to convert the raw ADC value into voltage.
+value. This allows the function to convert the raw ADC value into a voltage for you.
 .SH "RETURN VALUE"
 The
 .BR xbee_hasanalog ()
@@ -63,7 +63,7 @@ if the provided packet has sample data for the specified input, otherwise
 .sp
 The
 .BR xbee_getanalog ()
-function will return the raw ADC value if the provided packet has sample data for the specified input and Vref was given as zero.
+function will return the raw ADC value (0 - 1023) if the provided packet has sample data for the specified input and Vref was given as zero.
 If Vref was non-zero, then the return value will be the voltage read.
 A
 .B -1

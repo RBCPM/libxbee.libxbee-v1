@@ -40,7 +40,7 @@ You must setup a connection in order to recieve packets.
 .sp
 The argument
 .I frameID
-allows similar functionality to that of TCP/IP port numbers. This is 1 character that
+allows similar functionality to that of TCP/IP port numbers. This is 1 character (or 8-bit integer) that
 identifies where the data is coming from or going to.
 .s
 The
@@ -51,10 +51,10 @@ specifies the type of connection you would like. The following types are avaliab
 communicates AT commands with the local XBee
 .TP
 .B xbee_txStatus
-recieves transmit status information
+recieves transmit status information from the local XBee
 .TP
 .B xbee_modemStatus
-recieves modem status information
+recieves modem status information from the local XBee
 .TP
 .B xbee_16bitRemoteAT
 communicates AT commands with a remote node (using 16-bit addressing)
@@ -94,12 +94,17 @@ function is very basic. It removes any packets that have been collected in the b
 .sp
 The
 .BR xbee_endcon ()
-function is used to end a connection. This will stop keeping packets for that connection, and remove any packets from the buffer.
+function is used to end a connection. This will stop collecting packets for the given connection, and remove any packets from the buffer.
 .SH "RETURN VALUE"
 A pointer to the connection is returned. A connection can only be made once, using the same
+.I type
+,
 .I frameID
 and address (if needed). The second call using the same parameters will return the same
 connection.
+.sp
+For information on using callback functions for packet handling please see
+.BR xbee_con (3)
 .SH EXAMPLE
 To create a local AT connection:
 .in +4n
@@ -133,4 +138,5 @@ Attie Grande <attie@attie.co.uk>
 .BR libxbee (3),
 .BR xbee_setup (3),
 .BR xbee_getpacket (3),
+.BR xbee_con (3),
 .BR xbee_senddata (3)

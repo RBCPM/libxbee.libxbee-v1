@@ -53,8 +53,11 @@ If an error occured a
 .B NULL
 is also returned (though unlikely).
 .sp
-For more info on the structure of the packet, please see
+For more information on the structure of the packet, please see
 .BR xbee_pkt (3)
+.sp
+For information on using callback functions with connections instead, please see
+.BR xbee_con (3)
 .SH EXAMPLE
 To recieve a packet from a previously made connection:
 .in +4n
@@ -75,6 +78,7 @@ Attie Grande <attie@attie.co.uk>
 .BR xbee_newcon (3),
 .BR xbee_senddata (3),
 .BR xbee_pkt (3),
+.BR xbee_con (3),
 .BR xbee_hasDigital (3),
 .BR xbee_getDigital (3),
 .BR xbee_hasAnalog (3),

@@ -22,8 +22,7 @@ xbee_pkt
 .B #include <xbee.h>
 .ad b
 .SH DESCRIPTION
-This is the packet structure. Probrably the only structure from me you will want to touch,
-and you will need to in order to get anything useful out of libxbee...
+This is the packet structure. If you want to get more advanced information from connections (such as RSSI) then this is where it lives.
 .sp
 .in +4n
 .nf
@@ -58,7 +57,7 @@ This is the 2 character identifier for the AT command response you just recieved
 Of course if you didnt setup an AT connection, you should never see, or try to see data here.
 .TP
 .BR Addr64 " and " Addr16
-These contain the address that you recieved the packet from. You should really know this
+These contain the address of the XBee that you recieved the packet from. You should really know this
 because you setup the connection. However remote AT packets will contain both 16 and 64 bit
 addresses.
 .TP
@@ -68,68 +67,9 @@ This is the data you just recieved. Either the AT reponse, or the data from the 
 .B datalen
 Would you be suprised if I told you this is how much data there is?... Dont try and
 .BR printf ()
-without checking for a null terminated string (bla bla...).
-.TP
-.BR IOmask
-This is a bitmask telling you what I/O data this packet contains. See below for more.
-.TP
-.BR IOdata
-This is a bitmask telling you the state of each enabled digital input is. Don't try to read a bit
-it the DI wasn't enabled.
-.TP
-.BR IOanalog
-This is an array containing raw ADC values. The XBee generates values between 0x0000 and 0x03FF (0-1023).
-When the input is at or above Vref, the value will be 0x03FF.
-.PP
-.sp
-.SH IOmask
-This tells you which inputs are active, and have values set.
-Use (pkt->IOmask & 0x0040) to check if DI6 is enabled etc...
-.in +8n
-.nf
-.BR 0x4000 " - Analog Input 5"
-.BR 0x2000 " - Analog Input 4"
-.BR 0x1000 " - Analog Input 3"
-.BR 0x0800 " - Analog Input 2"
-.BR 0x0400 " - Analog Input 1"
-.BR 0x0200 " - Analog Input 0"
-.BR 0x0100 " - Digital Input 8"
-.BR 0x0080 " - Digital Input 7"
-.BR 0x0040 " - Digital Input 6"
-.BR 0x0020 " - Digital Input 5"
-.BR 0x0010 " - Digital Input 4"
-.BR 0x0008 " - Digital Input 3"
-.BR 0x0004 " - Digital Input 2"
-.BR 0x0002 " - Digital Input 1"
-.BR 0x0001 " - Digital Input 0"
-.fi
-.in
-.SH IOdata
-This tells you the values for active inputs.
-Use (pkt->IOdata & 0x0040) to retrieve the value of DI6, assuming it is enabled (check the IOmask)...
-.in +8n
-.nf
-.BR 0x0100 " - Digital Input 8"
-.BR 0x0080 " - Digital Input 7"
-.BR 0x0040 " - Digital Input 6"
-.BR 0x0020 " - Digital Input 5"
-.BR 0x0010 " - Digital Input 4"
-.BR 0x0008 " - Digital Input 3"
-.BR 0x0004 " - Digital Input 2"
-.BR 0x0002 " - Digital Input 1"
-.BR 0x0001 " - Digital Input 0"
-.fi
-.in
-.SH IOanalog
-You can read the 6 ADC outputs from this array, assuming it is enabled (check the IOmask)...
-.in +8n
-.nf
-.BR pkt->IOanalog[5] " - Analog Input 5"
-.BR pkt->IOanalog[4] " - Analog Input 4"
-.BR pkt->IOanalog[3] " - Analog Input 3"
-.BR pkt->IOanalog[2] " - Analog Input 2"
-.BR pkt->IOanalog[1] " - Analog Input 1"
-.BR pkt->IOanalog[0] " - Analog Input 0"
+the
+.B data
+as it isn't null terminated. Use this for processing instead.
 .fi
 .in
 .SH AUTHOR

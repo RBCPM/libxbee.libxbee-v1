@@ -10,20 +10,25 @@ MANPATH:=/usr/share/man
 SHELL:=/bin/bash
 SRCS:=api.c
 MANS:=man3/libxbee.3 \
-      man3/xbee_setup.3 \
-      man3/xbee_setuplog.3 \
-      man3/xbee_newcon.3 \
-      man3/xbee_flushcon.3 \
+      man3/xbee_con.3 \
+      man3/xbee_end.3 \
       man3/xbee_endcon.3 \
-      man3/xbee_getpacket.3 \
-      man3/xbee_senddata.3 \
-      man3/xbee_nsenddata.3 \
-      man3/xbee_vsenddata.3 \
-      man3/xbee_getdigital.3 \
-      man3/xbee_hasdigital.3 \
+      man3/xbee_flushcon.3 \
       man3/xbee_getanalog.3 \
+      man3/xbee_getdigital.3 \
+      man3/xbee_getpacket.3 \
       man3/xbee_hasanalog.3 \
-      man3/xbee_pkt.3
+      man3/xbee_hasdigital.3 \
+      man3/xbee_logit.3 \
+      man3/xbee_newcon.3 \
+      man3/xbee_nsenddata.3 \
+      man3/xbee_pkt.3 \
+      man3/xbee_senddata.3 \
+      man3/xbee_setup.3 \
+      man3/xbee_setupAPI.3 \
+      man3/xbee_setuplog.3 \
+      man3/xbee_setuplogAPI.3 \
+      man3/xbee_vsenddata.3
 MANPATHS:=$(foreach dir,$(shell ls man -ln | grep ^d | tr -s ' ' | cut -d ' ' -f 9),${MANPATH}/$(dir))
 
 PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h
