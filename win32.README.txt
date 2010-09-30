@@ -22,7 +22,7 @@ Feel free to contact me directly with any queries:
 
 To compile you must:
  1)  Have Visual C++ 2008 (v9.0) installed (Express or otherwise)
- 2)  Have make installed - see GunWin
+ 2)  Have make installed - see GnuWin
  3)  Modify win32.makefile so that the paths at the top are correct
  
 Compile using `make -f win32.makefile` from the command prompt
