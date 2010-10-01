@@ -7,4 +7,6 @@ If you cannot install the library for any reason, follow these instructions:
 The compile line can be found at the top of the source files, surrounded by #ifdef
 and #endif. These allow us to run the source file as a shell script. Simply type
 `sh simple.c` to compile the simple sample.
-If you do not have the library installed, you must edit the compile line.
+If you do not have the library installed, you must edit the compile line, or type
+it by hand.
+  gcc <sample_file>.c ../obj/api.o -o <sample_file> -lpthread -lrt
