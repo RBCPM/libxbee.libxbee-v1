@@ -30,3 +30,10 @@ To install simply type:
 
 For more information, or if you can't install it, please see the wiki:
   http://code.google.com/p/libxbee/wiki/install_libxbee
+
+
+=== Usage ===
+If you are compiling the object file directly into your executable instead
+of making use of the shared library, you must include the following link
+flags:
+  -lpthread -lrt

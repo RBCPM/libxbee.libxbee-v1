@@ -35,7 +35,7 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h
 
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}
-CLINKS:=-lm ./lib/libxbee.so.1.0.1 -lpthread ${DEBUG}
+CLINKS:=./lib/libxbee.so.1.0.1 -lpthread -lrt ${DEBUG}
 DEFINES:=
 
 ifeq ($(strip $(wildcard ${MANPATH}/man3/libxbee.3.bz2)),)
