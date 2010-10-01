@@ -35,7 +35,7 @@ PDFS:=${SRCS} ${SRCS:.c=.h} makefile main.c xbee.h
 
 CC:=gcc
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}
-CLINKS:=./lib/libxbee.so.1.0.1 -lpthread -lrt ${DEBUG}
+CLINKS:=-lpthread -lrt ${DEBUG}
 DEFINES:=
 
 ifeq ($(strip $(wildcard ${MANPATH}/man3/libxbee.3.bz2)),)
@@ -61,13 +61,13 @@ PDFS:=${sort ${PDFS}}
 
 
 # all - do everything (default) #
-all: main
+all: ./lib/libxbee.so.1.0.1 main
 	@echo "*** Done! ***"
 
 
 # run - remake main and then run #
 run: main
-	LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH ./bin/main
+	./bin/main
 
 
 # new - clean and do everything again #
@@ -173,14 +173,14 @@ uninstall_man/%:
 # main - compile & link objects #
 main: ./bin/main
 
-./bin/main: ./lib/libxbee.so.1.0.1 ./bin/ ./main.c
-	${CC} ${CLINKS} ./main.c -o ./bin/main ${DEBUG}
+./bin/main: ./obj/api.o ./bin/ ./main.c
+	${CC} ${CLINKS} ./main.c ./obj/api.o -o ./bin/main ${DEBUG}
 
 ./bin/:
 	mkdir ./bin/
 
-./lib/libxbee.so.1.0.1: ./lib/ ./obj/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
-	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
+./lib/libxbee.so.1.0.1: ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
+	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o
 ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
 endif
@@ -194,10 +194,10 @@ endif
 ./obj/:
 	mkdir ./obj/
 
-./obj/%.o: %.c %.h xbee.h
+./obj/%.o: ./obj/ %.c %.h xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
 
-./obj/%.o: %.c xbee.h
+./obj/%.o: ./obj/ %.c xbee.h
 	${CC} ${CFLAGS} ${DEFINES} ${DEBUG} $*.c -o $@
 
 
