@@ -40,8 +40,6 @@
 #include <sys/timeb.h>
 #endif /* ------------- */
 
-#include "xbee.h"
-
 #ifdef __UMAKEFILE
   #define HOST_OS "Embedded"
 #elif defined(__GNUC__)
@@ -86,24 +84,12 @@
 #define XBEE_64BIT_IO     0x82
 #define XBEE_16BIT_IO     0x83
 
-typedef struct t_data t_data;
-struct t_data {
-  unsigned char data[128];
-  unsigned int length;
-};
+typedef struct xbee_hnd * xbee_hnd;
 
-typedef struct t_info t_info;
-struct t_info {
-  int i;
-};
+#define __LIBXBEE_API_H
+#include "xbee.h"
 
-typedef struct t_callback_list t_callback_list;
-struct t_callback_list {
-  xbee_pkt *pkt;
-  t_callback_list *next;
-};
-
-struct {
+struct xbee_hnd {
   xbee_file_t tty;
 #ifdef __GNUC__ /* ---- */
   int ttyfd;
@@ -138,12 +124,38 @@ struct {
   int oldAPI;
   char cmdSeq;
   int cmdTime;
-} xbee;
 
-/* ready flag.
-   needs to be set to -1 so that the listen thread can begin.
-   then 1 so that functions can be used (after setup of course...) */
-volatile int xbee_ready = 0;
+  /* ready flag.
+     needs to be set to -1 so that the listen thread can begin. */
+  volatile int xbee_ready;
+};
+xbee_hnd default_xbee = NULL;
+xbee_hnd *xbee_instances = NULL;
+int xbee_instancesC = 0;
+
+typedef struct t_data t_data;
+struct t_data {
+  unsigned char data[128];
+  unsigned int length;
+};
+
+typedef struct t_LTinfo t_LTinfo;
+struct t_LTinfo {
+  int i;
+  xbee_hnd xbee;
+};
+
+typedef struct t_CBinfo t_CBinfo;
+struct t_CBinfo {
+  xbee_hnd xbee;
+  xbee_con *con;
+};
+
+typedef struct t_callback_list t_callback_list;
+struct t_callback_list {
+  xbee_pkt *pkt;
+  t_callback_list *next;
+};
 
 static void *Xmalloc(size_t size);
 static void *Xcalloc(size_t size);
@@ -151,34 +163,34 @@ static void *Xrealloc(void *ptr, size_t size);
 static void Xfree2(void **ptr);
 #define Xfree(x) Xfree2((void **)&x)
 
-static void xbee_logf(const char *logformat, int unlock, const char *file,
+static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const char *file,
                       const int line, const char *function, char *format, ...);
 #define LOG_FORMAT "[%s:%d] %s(): %s"
-#define xbee_log(...) xbee_logf(LOG_FORMAT"\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
-#define xbee_logc(...) xbee_logf(LOG_FORMAT,0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
-#define xbee_logcf()                 \
-  fprintf(xbee.log,"\n");            \
-  xbee_mutex_unlock(xbee.logmutex);  \
+#define xbee_log(...) xbee_logf(xbee,LOG_FORMAT"\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define xbee_logc(...) xbee_logf(xbee,LOG_FORMAT,0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
+#define xbee_logcf(xbee)               \
+  fprintf((xbee)->log,"\n");           \
+  xbee_mutex_unlock((xbee)->logmutex); \
 
-static int xbee_startAPI(void);
+static int xbee_startAPI(xbee_hnd xbee);
 
-static int xbee_sendAT(char *command, char *retBuf, int retBuflen);
-static int xbee_sendATdelay(int guardTime, char *command, char *retBuf, int retBuflen);
+static int xbee_sendAT(xbee_hnd xbee, char *command, char *retBuf, int retBuflen);
+static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *retBuf, int retBuflen);
 
-static int xbee_parse_io(xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
-static void xbee_listen_wrapper(t_info *info);
-static int xbee_listen(t_info *info);
-static unsigned char xbee_getbyte(void);
-static unsigned char xbee_getrawbyte(void);
-static int xbee_matchpktcon(xbee_pkt *pkt, xbee_con *con);
+static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
+static void xbee_listen_wrapper(t_LTinfo *info);
+static int xbee_listen(xbee_hnd xbee, t_LTinfo *info);
+static unsigned char xbee_getbyte(xbee_hnd xbee);
+static unsigned char xbee_getrawbyte(xbee_hnd xbee);
+static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con);
 
-static t_data *xbee_make_pkt(unsigned char *data, int len);
-static int xbee_send_pkt(t_data *pkt, xbee_con *con);
-static void xbee_callbackWrapper(xbee_con *con);
+static t_data *xbee_make_pkt(xbee_hnd xbee, unsigned char *data, int len);
+static int xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con);
+static void xbee_callbackWrapper(t_CBinfo *info);
 
 /* these functions can be found in the xsys files */
-static int init_serial(int baudrate);
-static int xbee_select(struct timeval *timeout);
+static int init_serial(xbee_hnd xbee, int baudrate);
+static int xbee_select(xbee_hnd xbee, struct timeval *timeout);
 
 #ifdef __GNUC__ /* ---- */
 #include "xsys/linux.c"

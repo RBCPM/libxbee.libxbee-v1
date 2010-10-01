@@ -28,6 +28,10 @@
 extern "C" {
 #endif
 
+#ifndef __LIBXBEE_API_H
+typedef void *xbee_hnd;
+#endif
+
 #include <stdarg.h>
 
 #ifdef __GNUC__ /* ---- */
@@ -127,7 +131,7 @@ struct xbee_con {
   xbee_mutex_t callbackListmutex;
   xbee_mutex_t Txmutex;
   xbee_sem_t waitforACKsem;
-  unsigned char ACKstatus; /* 0 = nothing, 1 = waiting, 2 = ACK recieved, 3 = NAK recieved */
+  volatile unsigned char ACKstatus; /* 255 = waiting, 0 = success, 1 = no ack, 2 = cca fail, 3 = purged */
   xbee_con *next;
 };
 
@@ -135,32 +139,50 @@ int xbee_setup(char *path, int baudrate);
 int xbee_setuplog(char *path, int baudrate, int logfd);
 int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
 int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
+xbee_hnd _xbee_setup(char *path, int baudrate);
+xbee_hnd _xbee_setuplog(char *path, int baudrate, int logfd);
+xbee_hnd _xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
+xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
 
 int xbee_end(void);
+int _xbee_end(xbee_hnd xbee);
 
 void xbee_logit(char *str);
+void _xbee_logit(xbee_hnd xbee, char *str);
 
 xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
+xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
+xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
 
 void xbee_flushcon(xbee_con *con);
+void _xbee_flushcon(xbee_hnd xbee, xbee_con *con);
 
 void xbee_endcon2(xbee_con **con, int skipUnlink);
+void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int skipUnlink);
 #define xbee_endcon(x) xbee_endcon2(&(x),0)
+#define _xbee_endcon(xbee,x) _xbee_endcon2((xbee),&(x),0)
 
 int xbee_nsenddata(xbee_con *con, char *data, int length);
+int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length);
 #ifdef __GNUC__ /* ---- */
 int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
+int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...) __attribute__ ((format (printf,3,4)));
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
+int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,3,0)));
 #else /* -------------- */
 int xbee_senddata(xbee_con *con, char *format, ...);
+int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...);
 int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap);
 
 /* oh and just 'cos windows has rubbish memory management rules... this too */
 void xbee_free(void *ptr);
 #endif /* ------------- */
 
 xbee_pkt *xbee_getpacket(xbee_con *con);
+xbee_pkt *_xbee_getpacket(xbee_hnd xbee, xbee_con *con);
 xbee_pkt *xbee_getpacketwait(xbee_con *con);
+xbee_pkt *_xbee_getpacketwait(xbee_hnd xbee, xbee_con *con);
 
 int xbee_hasdigital(xbee_pkt *pkt, int sample, int input);
 int xbee_getdigital(xbee_pkt *pkt, int sample, int input);
@@ -171,7 +193,7 @@ double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 const char *xbee_svn_version(void);
 const char *xbee_build_info(void);
 
-void xbee_listen_stop(void);
+void xbee_listen_stop(xbee_hnd xbee);
 
 #ifdef __cplusplus
 }

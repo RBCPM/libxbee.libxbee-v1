@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, sighandler);
 
   /* setup libxbee */
-  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
+  if (xbee_setupAPI("/dev/ttyUSB0",57600,'+',250) == -1) {
     return 1;
   }
 

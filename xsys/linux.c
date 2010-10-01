@@ -1,21 +1,21 @@
 /*
-    libxbee - a C library to aid the use of Digi's Series 1 XBee modules
-              running in API mode (AP=2).
+  libxbee - a C library to aid the use of Digi's Series 1 XBee modules
+            running in API mode (AP=2).
 
-    Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
+  Copyright (C) 2009  Attie Grande (attie@attie.co.uk)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* ################################################################# */
@@ -29,7 +29,7 @@
 
 #include "linux.h"
 
-int init_serial(int baudrate) {
+int init_serial(xbee_hnd xbee, int baudrate) {
   struct flock fl;
   struct termios tc;
   speed_t chosenbaud;
@@ -50,12 +50,12 @@ int init_serial(int baudrate) {
   };
 
   /* open the serial port as a file descriptor */
-  if ((xbee.ttyfd = open(xbee.path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
+  if ((xbee->ttyfd = open(xbee->path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
     perror("xbee_setup():open()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
+    xbee_mutex_destroy(xbee->conmutex);
+    xbee_mutex_destroy(xbee->pktmutex);
+    xbee_mutex_destroy(xbee->sendmutex);
+    Xfree(xbee->path);
     return -1;
   }
 
@@ -65,35 +65,35 @@ int init_serial(int baudrate) {
   fl.l_start = 0;
   fl.l_len = 0;
   fl.l_pid = getpid();
-  if (fcntl(xbee.ttyfd, F_SETLK, &fl) == -1) {
+  if (fcntl(xbee->ttyfd, F_SETLK, &fl) == -1) {
     perror("xbee_setup():fcntl()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
+    xbee_mutex_destroy(xbee->conmutex);
+    xbee_mutex_destroy(xbee->pktmutex);
+    xbee_mutex_destroy(xbee->sendmutex);
+    Xfree(xbee->path);
+    close(xbee->ttyfd);
     return -1;
   }
 
   /* open the serial port as a FILE* */
-  if ((xbee.tty = fdopen(xbee.ttyfd,"r+")) == NULL) {
+  if ((xbee->tty = fdopen(xbee->ttyfd,"r+")) == NULL) {
     perror("xbee_setup():fdopen()");
-    xbee_mutex_destroy(xbee.conmutex);
-    xbee_mutex_destroy(xbee.pktmutex);
-    xbee_mutex_destroy(xbee.sendmutex);
-    Xfree(xbee.path);
-    close(xbee.ttyfd);
+    xbee_mutex_destroy(xbee->conmutex);
+    xbee_mutex_destroy(xbee->pktmutex);
+    xbee_mutex_destroy(xbee->sendmutex);
+    Xfree(xbee->path);
+    close(xbee->ttyfd);
     return -1;
   }
 
   /* flush the serial port */
-  fflush(xbee.tty);
+  fflush(xbee->tty);
 
   /* disable buffering */
-  setvbuf(xbee.tty,NULL,_IONBF,BUFSIZ);
+  setvbuf(xbee->tty,NULL,_IONBF,BUFSIZ);
 
   /* setup the baud rate and other io attributes */
-  tcgetattr(xbee.ttyfd, &tc);
+  tcgetattr(xbee->ttyfd, &tc);
   /* input flags */
   tc.c_iflag &= ~ IGNBRK;           /* enable ignoring break */
   tc.c_iflag &= ~(IGNPAR | PARMRK); /* disable parity checks */
@@ -124,17 +124,25 @@ int init_serial(int baudrate) {
   memset(tc.c_cc,0,sizeof(tc.c_cc));
   /* i/o rates */
   cfsetspeed(&tc, chosenbaud);     /* set i/o baud rate */
-  tcsetattr(xbee.ttyfd, TCSANOW, &tc);
-  tcflow(xbee.ttyfd, TCOON|TCION); /* enable input & output transmission */
+  tcsetattr(xbee->ttyfd, TCSANOW, &tc);
+  tcflow(xbee->ttyfd, TCOON|TCION); /* enable input & output transmission */
 
   return 0;
 }
 
-static int xbee_select(struct timeval *timeout) {
+static int xbee_select(xbee_hnd xbee, struct timeval *timeout) {
   fd_set fds;
 
   FD_ZERO(&fds);
-  FD_SET(xbee.ttyfd, &fds);
+  FD_SET(xbee->ttyfd, &fds);
 
-  return select(xbee.ttyfd+1, &fds, NULL, NULL, timeout);
+  return select(xbee->ttyfd+1, &fds, NULL, NULL, timeout);
+}
+
+#define xbee_sem_wait(a) xbee_sem_wait2(&(a))
+static inline int xbee_sem_wait2(xbee_sem_t *sem) {
+  struct timespec to;
+  clock_gettime(CLOCK_REALTIME,&to);
+  to.tv_sec++;
+  return sem_timedwait(sem,&to);
 }
