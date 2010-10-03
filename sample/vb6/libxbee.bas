@@ -74,8 +74,9 @@ Public Declare Function xbee_end Lib "libxbee.dll" () As Long
 Public Declare Function xbee_newcon_simple Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long) As Long 'xbee_con *
 Public Declare Function xbee_newcon_16bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr16bit As Long) As Long  'xbee_con *
 Public Declare Function xbee_newcon_64bit Lib "libxbee.dll" (ByVal frameID As Byte, ByVal conType As Long, ByVal addr64bitLow As Long, ByVal addr64bitHigh As Long) As Long  'xbee_con *
-Public Declare Sub xbee_enableACKwait Lib "libxbee.dll" (ByVal von As Long)
-Public Declare Sub xbee_disableACKwait Lib "libxbee.dll" (ByVal von As Long)
+Public Declare Sub xbee_enableACKwait Lib "libxbee.dll" (ByVal con As Long)
+Public Declare Sub xbee_disableACKwait Lib "libxbee.dll" (ByVal con As Long)
+Public Declare Sub xbee_enableDestroySelf Lib "libxbee.dll" (ByVal con As Long)
 
 Private Declare Sub xbee_attachCallbackRaw Lib "libxbee.dll" Alias "xbee_attachCallback" (ByVal con As Long, ByVal hWnd As Long, ByVal uMsg As Long)
 Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" (ByVal con As Long)
@@ -107,7 +108,8 @@ Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVa
 Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, ByVal Msg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
 Private Const CUSTOM_MSG_MIN = 49152
 Private Const CUSTOM_MSG_MAX = 65535
-Private Const WM_DESTROY = 2
+Private Const WM_DESTROY = &H2
+Private Const WM_CLOSE = &H12
 Private Const GWL_WNDPROC = -4
 
 Public Function PointerToString(lngPtr As Long) As String
@@ -121,6 +123,19 @@ Public Function PointerToString(lngPtr As Long) As String
          PointerToString = Replace(strTemp, Chr(0), "")
       End If
    End If
+End Function
+
+Public Function ArrayToString(data() As Byte, Optional lb As Integer = -1, Optional ub As Integer = -1) As String
+    Dim tmp As String
+    Dim i
+    If lb = -1 Then lb = LBound(data)
+    If ub = -1 Then ub = UBound(data)
+    tmp = ""
+    For i = lb To ub
+        If (data(i) = 0) Then Exit For
+        tmp = tmp & Chr(data(i))
+    Next
+    ArrayToString = tmp
 End Function
 
 Public Function xbee_pointerToPacket(lngPtr As Long) As xbee_pkt
