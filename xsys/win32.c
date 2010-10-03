@@ -157,6 +157,19 @@ void xbee_free(void *ptr) {
   free(ptr);
 }
 
+/* win32 equivalent of unix gettimeofday() */
+int gettimeofday(struct timeval *tv, struct timezone *tz) {
+  if (tv) {
+    struct _timeb timeb;
+
+    _ftime(&timeb);
+    tv->tv_sec = timeb.time;
+    tv->tv_usec = timeb.millitm * 1000;
+  }
+  /* ignore tz for now */
+  return 0;
+}
+
 /* ################################################################# */
 /* ### Helper Functions (Mainly for VB6 use) ####################### */
 /* ################################################################# */
@@ -196,6 +209,10 @@ void xbee_enableACKwait(xbee_con *con) {
 }
 void xbee_disableACKwait(xbee_con *con) {
   con->waitforACK = 0;
+}
+
+void xbee_enableDestroySelf(xbee_con *con) {
+  con->destroySelf = 1;
 }
 
 /* for vb6... it will send a message to the given hWnd which can in turn check for a packet */
@@ -305,17 +322,4 @@ void xbee_detachCallback(xbee_con *con) {
   
   /* release the mutex */
   xbee_mutex_unlock(callbackmutex);
-}
-
-/* win32 equivalent of unix gettimeofday() */
-int gettimeofday(struct timeval *tv, struct timezone *tz) {
-  if (tv) {
-    struct _timeb timeb;
-
-    _ftime(&timeb);
-    tv->tv_sec = timeb.time;
-    tv->tv_usec = timeb.millitm * 1000;
-  }
-  /* ignore tz for now */
-  return 0;
 }

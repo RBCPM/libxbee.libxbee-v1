@@ -148,6 +148,7 @@ static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const ch
                       const int line, const char *function, char *format, ...) {
   char buf[128];
   va_list ap;
+  if (!xbee) return;
   if (!xbee->log) return;
   va_start(ap,format);
   vsnprintf(buf,127,format,ap);
@@ -160,7 +161,7 @@ void xbee_logit(char *str) {
   _xbee_logit(default_xbee, str);
 }
 void _xbee_logit(xbee_hnd xbee, char *str) {
-  ISREADY(xbee);
+  if (!xbee) return;
   if (!xbee->log) return;
   xbee_mutex_lock(xbee->logmutex);
   fprintf(xbee->log,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,str);
@@ -948,6 +949,8 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   if (!con) return -1;
   if (con->type == xbee_unknown) return -1;
   if (length > 127) return -1;
+  
+  xbee_log("<+>connection @ 0x%08X",con);
 
   if (xbee->log) {
     xbee_log("--== TX Packet ============--");
@@ -1194,19 +1197,30 @@ static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con) {
        ((con->type == xbee_16bitRemoteAT) ||
         (con->type == xbee_64bitRemoteAT)))) {
 
-    /* if: the packet is modem status OR
-       the packet is tx status or AT data and the frame IDs match OR
-       the addresses match */
+    
+    /* if: is a modem status (there can only be 1 modem status connection) */
     if (pkt->type == xbee_modemStatus) return 1;
 
+    /* if: the packet is a txStatus or localAT and the frameIDs match */
     if ((pkt->type == xbee_txStatus) ||
-        (pkt->type == xbee_localAT) ||
-        (pkt->type == xbee_remoteAT)) {
+        (pkt->type == xbee_localAT)) {
       if (pkt->frameID == con->frameID) {
         return 1;
       }
+    /* if: the packet was sent as a 16bit remoteAT, and the 16bit addresss match */
+    } else if ((pkt->type == xbee_remoteAT) &&
+               (con->type == xbee_16bitRemoteAT) &&
+               !memcmp(pkt->Addr16,con->tAddr,2)) {
+      return 1;
+    /* if: the packet was sent as a 64bit remoteAT, and the 64bit addresss match */
+    } else if ((pkt->type == xbee_remoteAT) &&
+               (con->type == xbee_64bitRemoteAT) &&
+               !memcmp(pkt->Addr64,con->tAddr,8)) {
+      return 1;
+    /* if: the packet is 64bit addressed, and the addresses match */
     } else if (pkt->sAddr64 && !memcmp(pkt->Addr64,con->tAddr,8)) {
       return 1;
+    /* if: the packet is 16bit addressed, and the addresses match */
     } else if (!pkt->sAddr64 && !memcmp(pkt->Addr16,con->tAddr,2)) {
       return 1;
     }
@@ -1835,7 +1849,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_log("Starting new callback thread!");
         xbee_thread_create(t,xbee_callbackWrapper,&info);
       } else {
-        xbee_log("Using existing callback thread");
+        xbee_log("Using existing callback thread... callback has been scheduled.");
       }
       continue;
     }
@@ -1889,9 +1903,9 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
     /* shift the list along 1 */
     temp = con->callbackList;
     con->callbackList = temp->next;
+    xbee_mutex_unlock(con->callbackListmutex);
     /* get the packet */
     pkt = temp->pkt;
-    xbee_mutex_unlock(con->callbackListmutex);
 
     xbee_log("Starting callback function...");
     xbee_log("  info block @ 0x%08X",temp);
