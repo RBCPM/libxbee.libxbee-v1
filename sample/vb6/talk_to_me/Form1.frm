@@ -1,14 +1,16 @@
 VERSION 5.00
 Begin VB.Form Form1 
+   BorderStyle     =   1  'Fixed Single
    Caption         =   "Talk to Me"
    ClientHeight    =   7875
-   ClientLeft      =   120
-   ClientTop       =   450
+   ClientLeft      =   45
+   ClientTop       =   375
    ClientWidth     =   7515
    LinkTopic       =   "Form1"
+   MaxButton       =   0   'False
    ScaleHeight     =   7875
    ScaleWidth      =   7515
-   StartUpPosition =   3  'Windows Default
+   StartUpPosition =   1  'CenterOwner
    Begin VB.Timer tmr_timeout 
       Enabled         =   0   'False
       Interval        =   5000
@@ -31,6 +33,24 @@ Begin VB.Form Form1
       TabIndex        =   1
       Top             =   6420
       Width           =   7215
+      Begin VB.CommandButton write_settings 
+         Caption         =   "Write Settings"
+         Enabled         =   0   'False
+         BeginProperty Font 
+            Name            =   "Courier New"
+            Size            =   9
+            Charset         =   0
+            Weight          =   400
+            Underline       =   0   'False
+            Italic          =   0   'False
+            Strikethrough   =   0   'False
+         EndProperty
+         Height          =   375
+         Left            =   1920
+         TabIndex        =   50
+         Top             =   780
+         Width           =   1935
+      End
       Begin VB.CommandButton set_default 
          Caption         =   "Set Default"
          Enabled         =   0   'False
@@ -961,6 +981,13 @@ Begin VB.Form Form1
          Width           =   2355
       End
    End
+   Begin VB.Menu mnu_nodelist 
+      Caption         =   "mnu_nodelist"
+      Visible         =   0   'False
+      Begin VB.Menu set_ni 
+         Caption         =   "Set Node Identifier"
+      End
+   End
 End
 Attribute VB_Name = "Form1"
 Attribute VB_GlobalNameSpace = False
@@ -1011,10 +1038,7 @@ Private Sub nodelist_Click()
             str2 = Split(nodelist.text, "  ")
             remoteCon = xbee_newcon_64bit(Asc("2"), xbee_64bitRemoteAT, CLng("&H" & Right(str2(1), 8)), CLng("&H" & Right(str2(2), 8)))
         End If
-        talk_to_me.Enabled = False
-        set_dest.Enabled = False
-        reset_node.Enabled = False
-        set_default.Enabled = False
+        setButtons False
         nodelist.Enabled = False
         tmp = Split(nodelist.List(nodelist.ListIndex), "  ")
         ni = tmp(5)
@@ -1032,44 +1056,50 @@ Private Sub nodelist_Click()
     End If
 End Sub
 
+Private Sub nodelist_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
+    If Button = 2 Then
+        PopupMenu mnu_nodelist
+    End If
+End Sub
+
 Private Sub reset_node_Click()
     If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
     nodelist.Enabled = False
-    talk_to_me.Enabled = False
-    set_dest.Enabled = False
-    reset_node.Enabled = False
+    setButtons False
     reset_node.Tag = "yes"
-    set_default.Enabled = False
 End Sub
 
 Private Sub set_default_Click()
     If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
     nodelist.Enabled = False
-    talk_to_me.Enabled = False
-    set_dest.Enabled = False
-    reset_node.Enabled = False
-    set_default.Enabled = True
+    setButtons False
     set_default.Tag = "yes"
 End Sub
 
 Private Sub set_dest_Click()
     If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
     nodelist.Tag = nodelist.ListIndex
-    talk_to_me.Enabled = False
+    setButtons False
     set_dest.Tag = "yes"
-    set_dest.Enabled = False
-    reset_node.Enabled = False
-    set_default.Enabled = False
+End Sub
+
+Private Sub set_ni_Click()
+    Dim newni As String
+    Dim oldni As String
+    oldni = Split(nodelist.text, "  ")(5)
+    newni = InputBox("New node identifier:", "Set Node Identifier", oldni)
+    If newni = oldni Then Exit Sub
+    nodelist.Enabled = False
+    setButtons False
+    set_ni.Tag = newni
 End Sub
 
 Private Sub talk_to_me_Click()
     If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
     nodelist.Enabled = False
+    setButtons False
     talk_to_me.Tag = "yes"
-    talk_to_me.Enabled = False
-    set_dest.Enabled = False
-    reset_node.Enabled = False
-    set_default.Enabled = False
 End Sub
 
 Private Sub tmr_refresh_Timer()
@@ -1086,6 +1116,7 @@ Private Sub tmr_refresh_Timer()
     End If
     
     If nodelist.Enabled = False Then
+        xbee_attachCallback remoteCon, AddressOf remoteCB
         If talk_to_me.Tag = "yes" Then
             str2 = Split(Form1.nodelist.text, "  ")
             xbee_attachCallback remoteCon, AddressOf setupCB_TTM
@@ -1108,22 +1139,27 @@ Private Sub tmr_refresh_Timer()
             xbeesend remoteCon, str
         ElseIf reset_node.Tag = "yes" Then
             xbee_sendstring remoteCon, "FR"
-            talk_to_me.Enabled = True
-            set_dest.Enabled = True
-            reset_node.Enabled = True
+            setButtons True
             reset_node.Tag = ""
-            set_default.Enabled = True
+            tmr_refresh.Enabled = True
+        ElseIf write_settings.Tag = "yes" Then
+            xbee_sendstring remoteCon, "WR"
+            setButtons True
+            write_settings.Tag = ""
             tmr_refresh.Enabled = True
         ElseIf set_default.Tag = "yes" Then
             setupCB_Default_Start
+        ElseIf set_ni.Tag <> "" Then
+            xbeesend remoteCon, "NI" & set_ni.Tag
+            set_ni.Tag = ""
         Else
-            xbee_attachCallback remoteCon, AddressOf remoteCB
             xbeesend remoteCon, "AP"
         End If
         Exit Sub
     End If
     ' initiate network scan
-    xbeesend atcon, "ND"
+    xbee_attachCallback atcon, AddressOf localCB
+    xbeesend atcon, "MY"
 End Sub
 
 Private Sub tmr_timeout_Timer()
@@ -1135,13 +1171,17 @@ Private Sub tmr_timeout_Timer()
     con = CStr(str2(0))
     str = str2(1)
     If MsgBox("Request timed out... Retry?", vbYesNo + vbQuestion, "Retry?") = vbNo Then
-        talk_to_me.Enabled = True
-        set_dest.Enabled = True
-        reset_node.Enabled = True
-        set_default.Enabled = True
+        setButtons True
         nodelist.Enabled = True
         tmr_refresh.Enabled = True
         Exit Sub
     End If
     xbeesend con, str
+End Sub
+
+Private Sub write_settings_Click()
+    If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
+    nodelist.Enabled = False
+    setButtons False
+    write_settings.Tag = "yes"
 End Sub

@@ -2,6 +2,19 @@ Attribute VB_Name = "Module1"
 Public atcon As Long
 Public remoteCon As Long
 
+Public Sub setButtons(ByVal state As Boolean)
+    Form1.talk_to_me.Tag = ""
+    Form1.talk_to_me.Enabled = state
+    Form1.set_dest.Tag = ""
+    Form1.set_dest.Enabled = state
+    Form1.reset_node.Tag = ""
+    Form1.reset_node.Enabled = state
+    Form1.set_default.Tag = ""
+    Form1.set_default.Enabled = state
+    Form1.write_settings.Tag = ""
+    Form1.write_settings.Enabled = state
+End Sub
+
 Public Function xbeesend(ByVal con As Long, ByVal str As String) As Long
     Form1.tmr_timeout.Enabled = False
     Form1.tmr_timeout.Tag = CStr(con) & Chr(1) & str
@@ -20,34 +33,40 @@ Public Function setupCB_Default(ByVal con As Long, ByRef pkt As xbee_pkt) As Lon
     ' default values (in order of setting):
     ' CH = 10
     ' local CH = 10
+    ' MY = FF
+    ' T3 = 1
     ' BD = 6
     ' AP = 0
-    ' T3 = 1
+    ' RO = 1
     ' D0 = 5 (turn on rest of system)
     ' D1 = 2 (battery reading)
     ' D2 = 0
-    ' D3 = 4 (reset)
+    ' D3 = 5 (reset)
     ' D4 = 4 (battery reading power)
     ' D5 = 0
     ' D6 = 0
     ' D7 = 0
     ' D8 = 0
     ' IA = 0xFFFF (accept inputs from anyone)
-    ' WR
+    ' IU = 0
     Debug.Print ArrayToString(pkt.atCmd)
     If con = atcon Then
         xbee_attachCallback con, AddressOf localCB
-        xbeesend remoteCon, "T3" & Chr(1)
+        xbeesend remoteCon, "MY" & Chr(255) & Chr(255)
         Exit Function
     End If
     Select Case ArrayToString(pkt.atCmd)
         Case "CH"
             xbeesend atcon, "CH" & Chr(16)
+        Case "MY"
+            xbeesend con, "T3" & Chr(1)
         Case "T3"
             xbeesend con, "BD" & Chr(0) & Chr(0) & Chr(0) & Chr(6)
         Case "BD"
             xbeesend con, "AP" & Chr(0)
         Case "AP"
+            xbeesend con, "RO" & Chr(1)
+        Case "RO"
             xbeesend con, "D0" & Chr(5)
         Case "D0"
             xbeesend con, "D1" & Chr(2)
@@ -68,7 +87,11 @@ Public Function setupCB_Default(ByVal con As Long, ByRef pkt As xbee_pkt) As Lon
         Case "D8"
             xbeesend con, "IA" & Chr(0) & Chr(0) & Chr(0) & Chr(0) & Chr(0) & Chr(0) & Chr(255) & Chr(255)
         Case "IA"
-            xbeesend con, "WR"
+            xbeesend con, "IU" & Chr(0)
+        Case "IU"
+            Form1.set_default.Tag = ""
+            Form1.tmr_refresh.Enabled = True
+            Form1.tmr_timeout.Enabled = False
     End Select
 End Function
 
@@ -112,6 +135,7 @@ End Function
 Public Function remoteCB(ByVal con As Long, ByRef pkt As xbee_pkt) As Long
     Dim t As String
     Dim i As Long
+    Debug.Print "<+>", ArrayToString(pkt.atCmd)
     Form1.tmr_timeout.Enabled = False
     Select Case ArrayToString(pkt.atCmd)
         Case "AP"
@@ -219,22 +243,18 @@ Public Function remoteCB(ByVal con As Long, ByRef pkt As xbee_pkt) As Long
             If con = atcon Then
                 xbee_attachCallback con, AddressOf localCB
             End If
-            Form1.talk_to_me.Enabled = True
-            Form1.set_dest.Enabled = True
-            Form1.reset_node.Enabled = True
-            Form1.set_default.Enabled = True
+            setButtons True
             Form1.nodelist.Enabled = True
             Form1.tmr_refresh.Enabled = True
-        Case Default
+            Form1.tmr_timeout.Enabled = False
+        Case Else
             If con = atcon Then
                 xbee_attachCallback con, AddressOf localCB
             End If
-            Form1.talk_to_me.Enabled = True
-            Form1.set_dest.Enabled = True
-            Form1.reset_node.Enabled = True
-            Form1.set_default.Enabled = True
+            setButtons True
             Form1.nodelist.Enabled = True
             Form1.tmr_refresh.Enabled = True
+            Form1.tmr_timeout.Enabled = False
     End Select
 End Function
 
