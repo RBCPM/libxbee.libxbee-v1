@@ -412,7 +412,7 @@ int _xbee_end(xbee_hnd xbee) {
     i = 0;
     xbeet = default_xbee;
     while (xbeet) {
-      if (xbeet->log = xbee->log) i++;
+      if (xbeet->log == xbee->log) i++;
       xbeet = xbeet->next;
     }
     xbee_log("%d others are using this log file... leaving it open", i);
