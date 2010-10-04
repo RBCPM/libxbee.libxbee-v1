@@ -12,7 +12,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,0
+ FILEVERSION 1,2,0,0
  FILEFLAGSMASK 0x00L
  FILEFLAGS 0x00L
  FILEOS 0x40004L
@@ -27,12 +27,12 @@ BEGIN
             VALUE "CompanyName", "attie.co.uk"
             VALUE "FileDescription", "Provides a simple interface for XBee radios"
             VALUE "InternalName", "libxbee"
-            VALUE "LegalCopyright", "Copyright (C) 2009-2010 Attie Grande"
+            VALUE "LegalCopyright", "Copyright (C) 2009 onwards Attie Grande"
             VALUE "LegalTrademarks", ""
             VALUE "OriginalFilename", "libxbee.dll"
             VALUE "PrivateBuild", ""
             VALUE "ProductName", "libxbee - http://code.google.com/p/libxbee/"
-            VALUE "ProductVersion", "v1.1"
+            VALUE "ProductVersion", "v1.2"
             VALUE "SpecialBuild", ""
         END
     END
