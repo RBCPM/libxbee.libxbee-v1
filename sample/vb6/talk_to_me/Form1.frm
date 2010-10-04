@@ -84,7 +84,7 @@ Begin VB.Form Form1
          Height          =   375
          Left            =   4020
          TabIndex        =   47
-         Top             =   300
+         Top             =   780
          Width           =   1575
       End
       Begin VB.CommandButton set_dest 
@@ -122,6 +122,24 @@ Begin VB.Form Form1
          TabIndex        =   45
          Top             =   300
          Width           =   1575
+      End
+      Begin VB.CommandButton set_ni 
+         Caption         =   "Set Node Identifier"
+         Enabled         =   0   'False
+         BeginProperty Font 
+            Name            =   "Courier New"
+            Size            =   9
+            Charset         =   0
+            Weight          =   400
+            Underline       =   0   'False
+            Italic          =   0   'False
+            Strikethrough   =   0   'False
+         EndProperty
+         Height          =   375
+         Left            =   4020
+         TabIndex        =   51
+         Top             =   300
+         Width           =   2355
       End
    End
    Begin VB.Frame Frame1 
@@ -915,7 +933,7 @@ Begin VB.Form Form1
          EndProperty
          Height          =   195
          Index           =   4
-         Left            =   4320
+         Left            =   4440
          TabIndex        =   29
          Top             =   300
          Width           =   135
@@ -934,7 +952,7 @@ Begin VB.Form Form1
          EndProperty
          Height          =   195
          Index           =   5
-         Left            =   4680
+         Left            =   4740
          TabIndex        =   28
          Top             =   300
          Width           =   915
@@ -955,7 +973,7 @@ Begin VB.Form Form1
          ForeColor       =   &H00C0C0C0&
          Height          =   195
          Index           =   2
-         Left            =   1080
+         Left            =   1020
          TabIndex        =   48
          Top             =   300
          Width           =   2355
@@ -975,17 +993,10 @@ Begin VB.Form Form1
          EndProperty
          Height          =   195
          Index           =   1
-         Left            =   1080
+         Left            =   1020
          TabIndex        =   31
          Top             =   300
          Width           =   2355
-      End
-   End
-   Begin VB.Menu mnu_nodelist 
-      Caption         =   "mnu_nodelist"
-      Visible         =   0   'False
-      Begin VB.Menu set_ni 
-         Caption         =   "Set Node Identifier"
       End
    End
 End
@@ -1053,13 +1064,6 @@ Private Sub nodelist_Click()
         ia = "-"
         hv = "-"
         vr = "-"
-    End If
-End Sub
-
-Private Sub nodelist_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    If nodelist.ListCount = 0 Or nodelist.ListIndex = -1 Then Exit Sub
-    If Button = 2 Then
-        PopupMenu mnu_nodelist
     End If
 End Sub
 

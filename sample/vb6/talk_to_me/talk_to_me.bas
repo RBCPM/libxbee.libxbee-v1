@@ -13,6 +13,8 @@ Public Sub setButtons(ByVal state As Boolean)
     Form1.set_default.Enabled = state
     Form1.write_settings.Tag = ""
     Form1.write_settings.Enabled = state
+    Form1.set_ni.Tag = ""
+    Form1.set_ni.Enabled = state
 End Sub
 
 Public Function xbeesend(ByVal con As Long, ByVal str As String) As Long
@@ -320,7 +322,7 @@ Public Function localCB(ByVal con As Long, ByRef pkt As xbee_pkt) As Long
             ' issue next command
             xbeesend con, "NI"
         Case "NI"
-            nodeinfo = Form1.nodelist.List(0) & "  -**dB  *  "
+            nodeinfo = Form1.nodelist.List(0) & "  -***dB  *  "
             tmp = ArrayToString(pkt.data)
             nodeinfo = nodeinfo & tmp
             Form1.nodelist.List(0) = nodeinfo
@@ -394,8 +396,12 @@ Public Function localCB(ByVal con As Long, ByRef pkt As xbee_pkt) As Long
     
     nodeinfo = nodeinfo & "  "
     
-    ' extract the signal strength
-    nodeinfo = nodeinfo & "-" & pkt.data(10) & "dB"
+    ' extract the rssi (signal strength)
+    tmp = "-" & CStr(pkt.data(10))
+    If Len(tmp) < 3 Then tmp = " " & tmp
+    If Len(tmp) < 4 Then tmp = " " & tmp
+    tmp = tmp & "dB"
+    nodeinfo = nodeinfo & tmp
     
     nodeinfo = nodeinfo & "  "
     ' add a number of scans
