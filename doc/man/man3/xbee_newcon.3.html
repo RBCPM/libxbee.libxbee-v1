@@ -42,7 +42,7 @@ You must setup a connection in order to recieve packets.
 The argument
 <I>frameID</I>
 
-allows similar functionality to that of TCP/IP port numbers. This is 1 character that
+allows similar functionality to that of TCP/IP port numbers. This is 1 character (or 8-bit integer) that
 identifies where the data is coming from or going to.
 
 The
@@ -57,11 +57,11 @@ communicates AT commands with the local XBee
 <DT><B>xbee_txStatus</B>
 
 <DD>
-recieves transmit status information
+recieves transmit status information from the local XBee
 <DT><B>xbee_modemStatus</B>
 
 <DD>
-recieves modem status information
+recieves modem status information from the local XBee
 <DT><B>xbee_16bitRemoteAT</B>
 
 <DD>
@@ -114,15 +114,22 @@ function is very basic. It removes any packets that have been collected in the b
 The
 <B>xbee_endcon</B>()
 
-function is used to end a connection. This will stop keeping packets for that connection, and remove any packets from the buffer.
+function is used to end a connection. This will stop collecting packets for the given connection, and remove any packets from the buffer.
 <A NAME="lbAE">&nbsp;</A>
 <H2>RETURN VALUE</H2>
 
 A pointer to the connection is returned. A connection can only be made once, using the same
+<I>type</I>
+
+,
 <I>frameID</I>
 
 and address (if needed). The second call using the same parameters will return the same
 connection.
+<P>
+For information on using callback functions for packet handling please see
+<B><A HREF="../man3/xbee_con.3.html">xbee_con</A></B>(3)
+
 <A NAME="lbAF">&nbsp;</A>
 <H2>EXAMPLE</H2>
 
@@ -168,6 +175,8 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 
 <B><A HREF="../man3/xbee_getpacket.3.html">xbee_getpacket</A></B>(3),
 
+<B><A HREF="../man3/xbee_con.3.html">xbee_con</A></B>(3),
+
 <B><A HREF="../man3/xbee_senddata.3.html">xbee_senddata</A></B>(3)
 
 <P>
@@ -187,6 +196,6 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 21:37:34 GMT, May 25, 2010
+Time: 10:55:59 GMT, October 04, 2010
 </BODY>
 </HTML>

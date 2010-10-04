@@ -144,8 +144,7 @@ ${MANPATH}/%.bz2: ./man/%
 	mkdir ./doc/
 
 html: ./doc/ ./man/
-	rm -rdf ./doc/*
-	cd ./doc/; mkdir `find ../man/ -type d -not -path *.svn* | cut -b 2-`;
+	cd ./doc/; mkdir -p `find ../man/ -type d -not -path *.svn* | cut -b 2-`;
 	find ./man/ -type f -not -path *.svn* | cut -d / -f 3- | sort > .html_todo
 	for item in `cat .html_todo`; do man2html -r ./man/$$item | tail -n +3 > ./doc/man/$$item.html; done 2> /dev/null
 	rm .html_todo

@@ -17,8 +17,7 @@ xbee_pkt
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
-This is the packet structure. Probrably the only structure from me you will want to touch,
-and you will need to in order to get anything useful out of libxbee...
+This is the packet structure. If you want to get more advanced information from connections (such as RSSI) then this is where it lives.
 <P>
 
 <PRE>
@@ -57,7 +56,7 @@ Of course if you didnt setup an AT connection, you should never see, or try to s
 <DT><B>Addr64</B> and <B>Addr16</B>
 
 <DD>
-These contain the address that you recieved the packet from. You should really know this
+These contain the address of the XBee that you recieved the packet from. You should really know this
 because you setup the connection. However remote AT packets will contain both 16 and 64 bit
 addresses.
 <DT><B>data</B>
@@ -70,89 +69,18 @@ This is the data you just recieved. Either the AT reponse, or the data from the 
 Would you be suprised if I told you this is how much data there is?... Dont try and
 <B>printf</B>()
 
-without checking for a null terminated string (bla bla...).
-<DT><B>IOmask</B>
+the
+<B>data</B>
 
-<DD>
-This is a bitmask telling you what I/O data this packet contains. See below for more.
-<DT><B>IOdata</B>
+as it isn't null terminated. Use this for processing instead.
 
-<DD>
-This is a bitmask telling you the state of each enabled digital input is. Don't try to read a bit
-it the DI wasn't enabled.
-<DT><B>IOanalog</B>
 
-<DD>
-This is an array containing raw ADC values. The XBee generates values between 0x0000 and 0x03FF (0-1023).
-When the input is at or above Vref, the value will be 0x03FF.
 </DL>
-<P>
-
-<P>
 <A NAME="lbAE">&nbsp;</A>
-<H2>IOmask</H2>
-
-This tells you which inputs are active, and have values set.
-Use (pkt-&gt;IOmask &amp; 0x0040) to check if DI6 is enabled etc...
-
-<PRE>
-<B>0x4000</B> - Analog Input 5
-<B>0x2000</B> - Analog Input 4
-<B>0x1000</B> - Analog Input 3
-<B>0x0800</B> - Analog Input 2
-<B>0x0400</B> - Analog Input 1
-<B>0x0200</B> - Analog Input 0
-<B>0x0100</B> - Digital Input 8
-<B>0x0080</B> - Digital Input 7
-<B>0x0040</B> - Digital Input 6
-<B>0x0020</B> - Digital Input 5
-<B>0x0010</B> - Digital Input 4
-<B>0x0008</B> - Digital Input 3
-<B>0x0004</B> - Digital Input 2
-<B>0x0002</B> - Digital Input 1
-<B>0x0001</B> - Digital Input 0
-</PRE>
-
-
-<A NAME="lbAF">&nbsp;</A>
-<H2>IOdata</H2>
-
-This tells you the values for active inputs.
-Use (pkt-&gt;IOdata &amp; 0x0040) to retrieve the value of DI6, assuming it is enabled (check the IOmask)...
-
-<PRE>
-<B>0x0100</B> - Digital Input 8
-<B>0x0080</B> - Digital Input 7
-<B>0x0040</B> - Digital Input 6
-<B>0x0020</B> - Digital Input 5
-<B>0x0010</B> - Digital Input 4
-<B>0x0008</B> - Digital Input 3
-<B>0x0004</B> - Digital Input 2
-<B>0x0002</B> - Digital Input 1
-<B>0x0001</B> - Digital Input 0
-</PRE>
-
-
-<A NAME="lbAG">&nbsp;</A>
-<H2>IOanalog</H2>
-
-You can read the 6 ADC outputs from this array, assuming it is enabled (check the IOmask)...
-
-<PRE>
-<B>pkt-&gt;IOanalog[5]</B> - Analog Input 5
-<B>pkt-&gt;IOanalog[4]</B> - Analog Input 4
-<B>pkt-&gt;IOanalog[3]</B> - Analog Input 3
-<B>pkt-&gt;IOanalog[2]</B> - Analog Input 2
-<B>pkt-&gt;IOanalog[1]</B> - Analog Input 1
-<B>pkt-&gt;IOanalog[0]</B> - Analog Input 0
-</PRE>
-
-
-<A NAME="lbAH">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt; 
-<A NAME="lbAI">&nbsp;</A>
+<A NAME="lbAF">&nbsp;</A>
 <H2>SEE ALSO</H2>
 
 <B><A HREF="../man3/libxbee.3.html">libxbee</A></B>(3),
@@ -167,16 +95,13 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 <DT><A HREF="#lbAB">NAME</A><DD>
 <DT><A HREF="#lbAC">SYNOPSIS</A><DD>
 <DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">IOmask</A><DD>
-<DT><A HREF="#lbAF">IOdata</A><DD>
-<DT><A HREF="#lbAG">IOanalog</A><DD>
-<DT><A HREF="#lbAH">AUTHOR</A><DD>
-<DT><A HREF="#lbAI">SEE ALSO</A><DD>
+<DT><A HREF="#lbAE">AUTHOR</A><DD>
+<DT><A HREF="#lbAF">SEE ALSO</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 21:37:34 GMT, May 25, 2010
+Time: 10:55:59 GMT, October 04, 2010
 </BODY>
 </HTML>
