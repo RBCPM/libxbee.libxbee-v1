@@ -7,6 +7,7 @@ MANPATH:=/usr/share/man
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
+VERSION:=1.2.0
 SHELL:=/bin/bash
 SRCS:=api.c
 MANS:=man3/libxbee.3 \
@@ -61,7 +62,7 @@ PDFS:=${sort ${PDFS}}
 
 
 # all - do everything (default) #
-all: ./lib/libxbee.so.1.0.1 main
+all: ./lib/libxbee.so.$(VERSION) main
 	@echo "*** Done! ***"
 
 
@@ -87,7 +88,7 @@ cleanpdfs:
 
 
 # install - installs library #
-install: ./lib/libxbee.so.1.0.1
+install: ./lib/libxbee.so.$(VERSION)
 	@echo
 	@echo
 ifneq ($(shell echo $$USER),root)
@@ -105,15 +106,15 @@ ifeq (${FIRSTTIME},TRUE)
 	@echo "#######################################################################################"
 endif
 
-install_su: /usr/lib/libxbee.so.1.0.1 /usr/include/xbee.h install_man
+install_su: /usr/lib/libxbee.so.$(VERSION) /usr/include/xbee.h install_man
 
-/usr/lib/libxbee.so.1.0.1: ./lib/libxbee.so.1.0.1
-	cp ./lib/libxbee.so.1.0.1 /usr/lib/libxbee.so.1.0.1 -f
-	@chmod 755 /usr/lib/libxbee.so.1.0.1
-	@chown root:root /usr/lib/libxbee.so.1.0.1
-	cp /usr/lib/libxbee.so.1.0.1 /usr/lib/libxbee.so.1 -sf
+/usr/lib/libxbee.so.$(VERSION): ./lib/libxbee.so.$(VERSION)
+	cp ./lib/libxbee.so.$(VERSION) /usr/lib/libxbee.so.$(VERSION) -f
+	@chmod 755 /usr/lib/libxbee.so.$(VERSION)
+	@chown root:root /usr/lib/libxbee.so.$(VERSION)
+	ln ./libxbee.so.$(VERSION) /usr/lib/libxbee.so.1 -sf
 	@chown root:root /usr/lib/libxbee.so.1
-	cp /usr/lib/libxbee.so.1.0.1 /usr/lib/libxbee.so -sf
+	ln ./libxbee.so.$(VERSION) /usr/lib/libxbee.so -sf
 	@chown root:root /usr/lib/libxbee.so
 
 /usr/include/xbee.h: ./xbee.h
@@ -162,7 +163,7 @@ endif
 	@echo
 
 uninstall_su: ${addprefix uninstall_man/,${MANS}}
-	rm /usr/lib/libxbee.so.1.0.1 -f
+	rm /usr/lib/libxbee.so.$(VERSION) -f
 	rm /usr/lib/libxbee.so.1 -f
 	rm /usr/lib/libxbee.so -f	
 	rm /usr/include/xbee.h -f
@@ -179,13 +180,13 @@ main: ./bin/main
 ./bin/:
 	mkdir ./bin/
 
-./lib/libxbee.so.1.0.1: ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
-	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o
+./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
+	gcc -shared -Wl,-soname,libxbee.so.1 $(CLINKS) -o ./lib/libxbee.so.$(VERSION) ./obj/*.o
 ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
+	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
 endif
 ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -sf
+	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
 endif
 
 ./lib/:
