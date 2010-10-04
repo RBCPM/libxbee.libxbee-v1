@@ -1106,6 +1106,7 @@ Private Sub tmr_refresh_Timer()
     Dim str As String
     Dim str2() As String
     tmr_refresh.Enabled = False
+    If atcon = 0 Then Exit Sub
     
     If (dieNow) Then
         xbee_end

@@ -317,14 +317,35 @@ int _xbee_end(xbee_hnd xbee) {
   int ret = 1;
   xbee_con *con, *ncon;
   xbee_pkt *pkt, *npkt;
+  xbee_hnd xbeet;
   int i;
 
   ISREADY(xbee);
   xbee_log("Stopping libxbee instance...");
 
+  /* remove the instance from memory... */
+  xbee_log("Unlinking instance from memory...");
+  xbee_mutex_lock(xbee_hnd_mutex);
+  xbeet = default_xbee;
+  if (default_xbee == xbee) {
+    default_xbee = default_xbee->next;
+    if (!default_xbee) {
+      xbee_mutex_destroy(xbee_hnd_mutex);
+    }
+  } else {
+    while (xbeet) {
+      if (xbeet->next == xbee) {
+        xbeet->next = xbee->next;
+        break;
+      }
+      xbeet = xbeet->next;
+    }
+  }
+  xbee_mutex_unlock(xbee_hnd_mutex);
+  
   /* if the api mode was not 2 to begin with then put it back */
   if (xbee->oldAPI == 2) {
-    xbee_log("XBee was already in API mode 2");
+    xbee_log("XBee was already in API mode 2, no need to reset");
     ret = 0;
   } else {
     int to = 5;
@@ -388,29 +409,20 @@ int _xbee_end(xbee_hnd xbee) {
 
   /* close log and tty */
   if (xbee->log) {
-    for (i = 0; i < xbee_instancesC; i++) {
-      if (xbee_instances[i]->log == xbee->log) break;
+    i = 0;
+    xbeet = default_xbee;
+    while (xbeet) {
+      if (xbeet->log = xbee->log) i++;
+      xbeet = xbeet->next;
     }
+    xbee_log("%d others are using this log file... leaving it open", i);
     xbee_log("libxbee instance stopped!");
     fflush(xbee->log);
-    if (i == xbee_instancesC) xbee_close(xbee->log);
+    if (i == 0) xbee_close(xbee->log);
   }
   xbee_mutex_destroy(xbee->logmutex);
 
-  /* remove the instance from memory... */
-  for (i = 0; i < xbee_instancesC; i++) {
-    if (xbee_instances[i] == xbee) break;
-  }
   Xfree(xbee);
-  xbee_instancesC--;
-  if (!xbee_instancesC) {
-    Xfree(xbee_instances);
-  } else {
-    for (; i < xbee_instancesC; i++) {
-      xbee_instances[i] = xbee_instances[i+1];
-    }
-    xbee_instances = Xrealloc(xbee_instances,sizeof(xbee_hnd) * xbee_instancesC);
-  }
 
   return ret;
 }
@@ -448,10 +460,9 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   int ret;
   xbee_hnd xbee;
 
-  xbee_instancesC++;
-  xbee_instances = Xrealloc(xbee_instances,sizeof(xbee_hnd) * xbee_instancesC);
-  xbee = xbee_instances[xbee_instancesC-1] = Xcalloc(sizeof(struct xbee_hnd));
-
+  /* create a new instance */
+  xbee = Xcalloc(sizeof(struct xbee_hnd));
+  
 #ifdef DEBUG
   /* logfd or stderr */
   xbee->logfd = ((logfd)?logfd:2);
@@ -495,12 +506,14 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   if (xbee_mutex_init(xbee->conmutex)) {
     perror("xbee_setup():xbee_mutex_init(conmutex)");
     if (xbee->log) xbee_close(xbee->log);
+    Xfree(xbee);
     return NULL;
   }
   if (xbee_mutex_init(xbee->pktmutex)) {
     perror("xbee_setup():xbee_mutex_init(pktmutex)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
+    Xfree(xbee);
     return NULL;
   }
   if (xbee_mutex_init(xbee->sendmutex)) {
@@ -508,6 +521,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
+    Xfree(xbee);
     return NULL;
   }
 
@@ -518,6 +532,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);
+    Xfree(xbee);
     return NULL;
   }
   strcpy(xbee->path,path);
@@ -531,6 +546,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);
     Xfree(xbee->path);
+    Xfree(xbee);
     return NULL;
   }
 
@@ -552,6 +568,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
       close(xbee->ttyfd);
 #endif /* ------------- */
       xbee_close(xbee->tty);
+    Xfree(xbee);
       return NULL;
     }
   }
@@ -572,6 +589,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
     close(xbee->ttyfd);
 #endif /* ------------- */
     xbee_close(xbee->tty);
+    Xfree(xbee);
     return NULL;
   }
 
@@ -583,7 +601,24 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
 
   /* allow other functions to be used! */
   xbee->xbee_ready = 1;
-
+  
+  xbee_log("Linking xbee instance...");
+  if (!default_xbee) {
+    xbee_mutex_init(xbee_hnd_mutex);
+    xbee_mutex_lock(xbee_hnd_mutex);
+    default_xbee = xbee;
+    xbee_mutex_unlock(xbee_hnd_mutex);
+  } else {
+    xbee_hnd xbeet;
+    xbee_mutex_lock(xbee_hnd_mutex);
+    xbeet = default_xbee;
+    while (xbeet->next) {
+      xbeet = xbeet->next;
+    }
+    xbeet->next = xbee;
+    xbee_mutex_unlock(xbee_hnd_mutex);
+  }
+  
   xbee_log("libxbee: Started!");
 
   return xbee;

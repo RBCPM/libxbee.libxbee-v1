@@ -128,10 +128,11 @@ struct xbee_hnd {
   /* ready flag.
      needs to be set to -1 so that the listen thread can begin. */
   volatile int xbee_ready;
+  
+  xbee_hnd next;
 };
 xbee_hnd default_xbee = NULL;
-xbee_hnd *xbee_instances = NULL;
-int xbee_instancesC = 0;
+xbee_mutex_t xbee_hnd_mutex;
 
 typedef struct t_data t_data;
 struct t_data {

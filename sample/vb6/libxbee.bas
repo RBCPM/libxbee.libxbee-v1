@@ -82,7 +82,7 @@ Private Declare Sub xbee_attachCallbackRaw Lib "libxbee.dll" Alias "xbee_attachC
 Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" (ByVal con As Long)
 Private Declare Function xbee_runCallback Lib "libxbee.dll" (ByVal func As Long, ByVal con As Long, ByVal pkt As Long) As Long
 
-Public Declare Sub xbee_endcon Lib "libxbee.dll" Alias "xbee_endcon2" (ByVal con As Long)
+Public Declare Sub xbee_endcon2 Lib "libxbee.dll" (ByVal con As Long)
 Public Declare Sub xbee_flushcon Lib "libxbee.dll" (ByVal con As Long)
 
 Public Declare Function xbee_senddata Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data() As Byte, ByVal Length As Long) As Long
@@ -231,6 +231,11 @@ Private Function xbee_messageHandler(ByVal hWnd As Long, ByVal uMsg As Long, ByV
         xbee_disableCallbacks
     End If
 End Function
+
+Public Sub xbee_endcon(ByRef con As Long)
+    xbee_endcon2 con
+    con = 0
+End Sub
 
 Public Function xbee_sendstring(ByVal con As Long, ByVal str As String)
     xbee_sendstring = xbee_senddata_str(con, str, Len(str))
