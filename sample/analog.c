@@ -35,7 +35,6 @@ exit
 int main(int argc, char *argv[]) {
   xbee_con *con;
   xbee_pkt *pkt;
-  double voltage;
   int i;
 
   /* setup libxbee */
@@ -56,9 +55,7 @@ int main(int argc, char *argv[]) {
           printf("A0: -- No Data --\n");
           continue;
         }
-        /* calculate the voltage */
-        voltage = xbee_getanalog(pkt,i,2,Vref);
-        /* print out the reading */
+        /* print out the reading in raw, and adjusted */
         printf("A0: %.0f (~%.2fv)\n",
                xbee_getanalog(pkt,i,0,0),
                xbee_getanalog(pkt,i,0,Vref));
