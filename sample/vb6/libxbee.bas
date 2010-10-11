@@ -85,7 +85,7 @@ Private Declare Function xbee_runCallback Lib "libxbee.dll" (ByVal func As Long,
 Public Declare Sub xbee_endcon2 Lib "libxbee.dll" (ByVal con As Long)
 Public Declare Sub xbee_flushcon Lib "libxbee.dll" (ByVal con As Long)
 
-Public Declare Function xbee_senddata Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data() As Byte, ByVal Length As Long) As Long
+Public Declare Function xbee_senddata Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByRef data As Byte, ByVal Length As Long) As Long
 Private Declare Function xbee_senddata_str Lib "libxbee.dll" Alias "xbee_nsenddata" (ByVal con As Long, ByVal data As String, ByVal Length As Long) As Long
 
 Public Declare Function xbee_getpacketRaw Lib "libxbee.dll" Alias "xbee_getpacket" (ByVal con As Long) As Long 'xbee_pkt *
