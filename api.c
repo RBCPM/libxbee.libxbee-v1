@@ -957,7 +957,7 @@ int xbee_vsenddata(xbee_con *con, char *format, va_list ap) {
   return _xbee_vsenddata(default_xbee, con, format, ap);
 }
 int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap) {
-  unsigned char data[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
+  unsigned char data[128]; /* max payload is 100 bytes... plus a bit of fluff... */
   int length;
 
   /* make up the data and keep the length, its possible there are nulls in there */
@@ -1657,12 +1657,12 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       /* check for any connections waiting for a status update */
       /* lock the connection mutex */
       xbee_mutex_lock(xbee->conmutex);
-      xbee_log("looking...");
+      xbee_log("Looking for a connection that wants a status update...");
       con = xbee->conlist;
       while (con) {
         if ((con->frameID == p->frameID) &&
             (con->ACKstatus == 255)) {
-          xbee_log("found!");
+          xbee_log("Found @ 0x%08X!",con);
           con->ACKstatus = p->status;
           xbee_sem_post(con->waitforACKsem);
         }
