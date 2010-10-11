@@ -45,7 +45,8 @@ static int init_serial(xbee_hnd xbee, int baudrate) {
                         FILE_FLAG_OVERLAPPED,
                         NULL);
   if (xbee->tty == INVALID_HANDLE_VALUE) {
-    perror("xbee_setup():CreateFile()");
+    xbee_log("Invalid file handle...");
+    xbee_log("Is the XBee plugged in and avaliable on the correct port?");
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);
@@ -54,23 +55,23 @@ static int init_serial(xbee_hnd xbee, int baudrate) {
   }
 
   GetCommState(xbee->tty, &tc);
-  tc.BaudRate =          baudrate;
-  tc.fBinary =           TRUE;
-  tc.fParity =           FALSE;
-  tc.fOutxCtsFlow =      FALSE;
-  tc.fOutxDsrFlow =      FALSE;
-  tc.fDtrControl =       DTR_CONTROL_DISABLE;
-  tc.fDsrSensitivity =   FALSE;
+  tc.BaudRate          = baudrate;
+  tc.fBinary           = TRUE;
+  tc.fParity           = FALSE;
+  tc.fOutxCtsFlow      = FALSE;
+  tc.fOutxDsrFlow      = FALSE;
+  tc.fDtrControl       = DTR_CONTROL_DISABLE;
+  tc.fDsrSensitivity   = FALSE;
   tc.fTXContinueOnXoff = FALSE;
-  tc.fOutX =             FALSE;
-  tc.fInX =              FALSE;
-  tc.fErrorChar =        FALSE;
-  tc.fNull =             FALSE;
-  tc.fRtsControl =       RTS_CONTROL_DISABLE;
-  tc.fAbortOnError =     FALSE;
-  tc.ByteSize =          8;
-  tc.Parity =            NOPARITY;
-  tc.StopBits =          ONESTOPBIT;
+  tc.fOutX             = FALSE;
+  tc.fInX              = FALSE;
+  tc.fErrorChar        = FALSE;
+  tc.fNull             = FALSE;
+  tc.fRtsControl       = RTS_CONTROL_DISABLE;
+  tc.fAbortOnError     = FALSE;
+  tc.ByteSize          = 8;
+  tc.Parity            = NOPARITY;
+  tc.StopBits          = ONESTOPBIT;
   SetCommState(xbee->tty, &tc);
 
   timeouts.ReadIntervalTimeout = MAXDWORD;
@@ -161,7 +162,6 @@ void xbee_free(void *ptr) {
 int gettimeofday(struct timeval *tv, struct timezone *tz) {
   if (tv) {
     struct _timeb timeb;
-
     _ftime(&timeb);
     tv->tv_sec = timeb.time;
     tv->tv_usec = timeb.millitm * 1000;

@@ -323,16 +323,16 @@ int _xbee_end(xbee_hnd xbee) {
   ISREADY(xbee);
   xbee_log("Stopping libxbee instance...");
 
-  /* remove the instance from memory... */
-  xbee_log("Unlinking instance from memory...");
+  /* unlink the instance from list... */
+  xbee_log("Unlinking instance from list...");
   xbee_mutex_lock(xbee_hnd_mutex);
-  xbeet = default_xbee;
-  if (default_xbee == xbee) {
+  if (xbee == default_xbee) {
     default_xbee = default_xbee->next;
     if (!default_xbee) {
       xbee_mutex_destroy(xbee_hnd_mutex);
     }
   } else {
+    xbeet = default_xbee;
     while (xbeet) {
       if (xbeet->next == xbee) {
         xbeet->next = xbee->next;
@@ -341,7 +341,7 @@ int _xbee_end(xbee_hnd xbee) {
       xbeet = xbeet->next;
     }
   }
-  xbee_mutex_unlock(xbee_hnd_mutex);
+  if (default_xbee) xbee_mutex_unlock(xbee_hnd_mutex);
   
   /* if the api mode was not 2 to begin with then put it back */
   if (xbee->oldAPI == 2) {
@@ -351,6 +351,8 @@ int _xbee_end(xbee_hnd xbee) {
     int to = 5;
 
     con = _xbee_newcon(xbee,'I',xbee_localAT);
+    con->callback = NULL;
+    con->waitforACK = 1;
     _xbee_senddata(xbee,con,"AP%c",xbee->oldAPI);
 
     pkt = NULL;
@@ -365,16 +367,15 @@ int _xbee_end(xbee_hnd xbee) {
     _xbee_endcon(xbee,con);
   }
 
+  /* xbee_* functions may no longer run... */
+  xbee->xbee_ready = 0;
+  
+  /* nullify everything */
+
   /* stop listening for data... either after timeout or next char read which ever is first */
   xbee->listenrun = 0;
   xbee_thread_cancel(xbee->listent,0);
   xbee_thread_join(xbee->listent);
-  /* xbee_* functions may no longer run... */
-  xbee->xbee_ready = 0;
-
-  if (xbee->log) fflush(xbee->log);
-
-  /* nullify everything */
 
   /* free all connections */
   con = xbee->conlist;
@@ -415,7 +416,7 @@ int _xbee_end(xbee_hnd xbee) {
       if (xbeet->log == xbee->log) i++;
       xbeet = xbeet->next;
     }
-    xbee_log("%d others are using this log file... leaving it open", i);
+    if (i > 0) xbee_log("%d others are using this log file... leaving it open", i);
     xbee_log("libxbee instance stopped!");
     fflush(xbee->log);
     if (i == 0) xbee_close(xbee->log);
@@ -985,8 +986,6 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   if (con->type == xbee_unknown) return -1;
   if (length > 127) return -1;
   
-  xbee_log("<+>connection @ 0x%08X",con);
-
   if (xbee->log) {
     xbee_log("--== TX Packet ============--");
     xbee_logc("Connection Type: ");
