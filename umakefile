@@ -73,13 +73,13 @@ main: ./bin/main
 ./bin/:
 	mkdir ./bin/
 
-./lib/libxbee.so.1.0.1: ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
-	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.1.0.1 ./obj/*.o -lrt
+./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
+	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.$(VERSION) ./obj/*.o -lrt
 ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so.1 -sf
+	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
 endif
 ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
-	ln ./libxbee.so.1.0.1 ./lib/libxbee.so -sf
+	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
 endif
 
 ./lib/:
