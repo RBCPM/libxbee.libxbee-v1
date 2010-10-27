@@ -20,7 +20,7 @@ SRCS:=${sort ${SRCS}}
 
 
 # all - do everything (default) #
-all: ./lib/libxbee.so.1.0.1 main
+all: ./lib/libxbee.so.$(VERSION) main
 	@echo "*** Done! ***"
 
 
