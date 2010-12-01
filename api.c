@@ -899,7 +899,11 @@ void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int skipUnlink) {
       return;
     }
     /* extract this connection from the list */
-    u->next = t->next;
+    if (t == xbee->conlist) {
+      xbee->conlist = t->next;
+    } else {
+      u->next = t->next;
+    }
 
     /* unlock the connection mutex */
     xbee_mutex_unlock(xbee->conmutex);
