@@ -157,8 +157,8 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
 void xbee_flushcon(xbee_con *con);
 void _xbee_flushcon(xbee_hnd xbee, xbee_con *con);
 
-void xbee_endcon2(xbee_con **con, int skipUnlink);
-void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int skipUnlink);
+void xbee_endcon2(xbee_con **con, int alreadyUnlinked);
+void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked);
 #define xbee_endcon(x) xbee_endcon2(&(x),0)
 #define _xbee_endcon(xbee,x) _xbee_endcon2((xbee),&(x),0)
 

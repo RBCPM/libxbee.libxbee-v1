@@ -872,24 +872,25 @@ void _xbee_flushcon(xbee_hnd xbee, xbee_con *con) {
    xbee_endcon
    close the unwanted connection
    free wrapper function (uses the Xfree macro and sets the pointer to NULL after freeing it) */
-void xbee_endcon2(xbee_con **con, int skipUnlink) {
-  _xbee_endcon2(default_xbee, con, skipUnlink);
+void xbee_endcon2(xbee_con **con, int alreadyUnlinked) {
+  _xbee_endcon2(default_xbee, con, alreadyUnlinked);
 }
-void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int skipUnlink) {
+void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked) {
   xbee_con *t, *u;
 
   ISREADY(xbee);
   
-  if (!skipUnlink) {
-    /* lock the connection mutex */
-    xbee_mutex_lock(xbee->conmutex);
+  /* lock the connection mutex */
+  xbee_mutex_lock(xbee->conmutex);
 
-    u = t = xbee->conlist;
-    while (t && t != *con) {
-      u = t;
-      t = t->next;
-    }
-    if (!t) {
+  u = t = xbee->conlist;
+  while (t && t != *con) {
+    u = t;
+    t = t->next;
+  }
+  if (!t) {
+    /* this could be true if comming from the destroySelf signal... */
+    if (!alreadyUnlinked) {
       /* invalid connection given... */
       if (xbee->log) {
         xbee_log("Attempted to close invalid connection...");
@@ -898,16 +899,17 @@ void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int skipUnlink) {
       xbee_mutex_unlock(xbee->conmutex);
       return;
     }
+  } else {
     /* extract this connection from the list */
     if (t == xbee->conlist) {
       xbee->conlist = t->next;
     } else {
       u->next = t->next;
     }
-
-    /* unlock the connection mutex */
-    xbee_mutex_unlock(xbee->conmutex);
   }
+  
+  /* unlock the connection mutex */
+  xbee_mutex_unlock(xbee->conmutex);
 
   /* check if a callback thread is running... */
   if (t->callback && xbee_mutex_trylock(t->callbackmutex)) {
