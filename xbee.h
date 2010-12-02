@@ -165,10 +165,14 @@ void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked);
 int xbee_nsenddata(xbee_con *con, char *data, int length);
 int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length);
 #ifdef __GNUC__ /* ---- */
-int xbee_senddata(xbee_con *con, char *format, ...) __attribute__ ((format (printf,2,3)));
-int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...) __attribute__ ((format (printf,3,4)));
-int xbee_vsenddata(xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,2,0)));
-int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap) __attribute__ ((format (printf,3,0)));
+int xbee_senddata(xbee_con *con, char *format, ...)
+                   __attribute__ ((format (printf,2,3)));
+int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...)
+                   __attribute__ ((format (printf,3,4)));
+int xbee_vsenddata(xbee_con *con, char *format, va_list ap)
+                   __attribute__ ((format (printf,2,0)));
+int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap)
+                   __attribute__ ((format (printf,3,0)));
 #else /* -------------- */
 int xbee_senddata(xbee_con *con, char *format, ...);
 int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...);

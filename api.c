@@ -1271,7 +1271,8 @@ static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con) {
 /* #################################################################
    xbee_parse_io - INTERNAL
    parses the data given into the packet io information */
-static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample) {
+static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
+                         int maskOffset, int sampleOffset, int sample) {
   xbee_sample *s = &(p->IOdata[sample]);
 
   /* copy in the I/O data mask */

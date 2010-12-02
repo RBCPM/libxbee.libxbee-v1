@@ -178,7 +178,9 @@ static int xbee_startAPI(xbee_hnd xbee);
 static int xbee_sendAT(xbee_hnd xbee, char *command, char *retBuf, int retBuflen);
 static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *retBuf, int retBuflen);
 
-static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d, int maskOffset, int sampleOffset, int sample);
+static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
+                         int maskOffset, int sampleOffset, int sample);
+
 static void xbee_listen_wrapper(t_LTinfo *info);
 static int xbee_listen(xbee_hnd xbee, t_LTinfo *info);
 static unsigned char xbee_getbyte(xbee_hnd xbee);
