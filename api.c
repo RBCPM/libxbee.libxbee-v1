@@ -703,20 +703,20 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   if (xbee->conlist) {
     con = xbee->conlist;
     while (con) {
-      /* if: after a modemStatus, and the types match! */
+      /* if: looking for a modemStatus, and the types match! */
       if ((type == xbee_modemStatus) &&
           (con->type == type)) {
         xbee_mutex_unlock(xbee->conmutex);
         return con;
 
-        /* if: after a txStatus and frameIDs match! */
+        /* if: looking for a txStatus and frameIDs match! */
       } else if ((type == xbee_txStatus) &&
                  (con->type == type) &&
                  (frameID == con->frameID)) {
         xbee_mutex_unlock(xbee->conmutex);
         return con;
 
-        /* if: after a localAT, and the frameIDs match! */
+        /* if: looking for a localAT, and the frameIDs match! */
       } else if ((type == xbee_localAT) &&
                  (con->type == type) &&
                  (frameID == con->frameID)) {
@@ -1452,22 +1452,22 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_logc("%3d | 0x%02X | ",i,c);
         if ((c > 32) && (c < 127)) fprintf(xbee->log,"'%c'",c); else fprintf(xbee->log," _ ");
 
-        if ((t == XBEE_64BIT_DATA && i == 10) ||
-            (t == XBEE_16BIT_DATA && i == 4) ||
-            (t == XBEE_64BIT_IO   && i == 13) ||
-            (t == XBEE_16BIT_IO   && i == 7) ||
-            (t == XBEE_LOCAL_AT   && i == 4) ||
-            (t == XBEE_REMOTE_AT  && i == 14)) {
+        if ((t == XBEE_LOCAL_AT     && i == 4) ||
+            (t == XBEE_REMOTE_AT    && i == 14) ||
+            (t == XBEE_64BIT_DATARX && i == 10) ||
+            (t == XBEE_16BIT_DATARX && i == 4) ||
+            (t == XBEE_64BIT_IO     && i == 13) ||
+            (t == XBEE_16BIT_IO     && i == 7)) {
           /* mark the beginning of the 'data' bytes */
           fprintf(xbee->log,"   <-- data starts");
         } else if (t == XBEE_64BIT_IO) {
-          if (i == 10) fprintf(xbee->log,"   <-- sample count");
+          if (i == 10)      fprintf(xbee->log,"   <-- sample count");
           else if (i == 11) fprintf(xbee->log,"   <-- mask (msb)");
           else if (i == 12) fprintf(xbee->log,"   <-- mask (lsb)");
         } else if (t == XBEE_16BIT_IO) {
-          if (i == 4) fprintf(xbee->log,"   <-- sample count");
-          else if (i == 5) fprintf(xbee->log,"   <-- mask (msb)");
-          else if (i == 6) fprintf(xbee->log,"   <-- mask (lsb)");
+          if (i == 4)       fprintf(xbee->log,"   <-- sample count");
+          else if (i == 5)  fprintf(xbee->log,"   <-- mask (msb)");
+          else if (i == 6)  fprintf(xbee->log,"   <-- mask (lsb)");
         }
         xbee_logcf(xbee);
       }
@@ -1538,10 +1538,10 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_log("FrameID: 0x%02X",d[0]);
         xbee_log("AT Command: %c%c",d[1],d[2]);
         xbee_logc("Status: ");
-        if (d[3] == 0) fprintf(xbee->log,"OK");
-        else if (d[3] == 1) fprintf(xbee->log,"Error");
-        else if (d[3] == 2) fprintf(xbee->log,"Invalid Command");
-        else if (d[3] == 3) fprintf(xbee->log,"Invalid Parameter");
+        if      (d[3] == 0x00) fprintf(xbee->log,"OK");
+        else if (d[3] == 0x01) fprintf(xbee->log,"Error");
+        else if (d[3] == 0x02) fprintf(xbee->log,"Invalid Command");
+        else if (d[3] == 0x03) fprintf(xbee->log,"Invalid Parameter");
         fprintf(xbee->log," (0x%02X)",d[3]);
         xbee_logcf(xbee);
       }
@@ -1582,11 +1582,11 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_logcf(xbee);
         xbee_log("AT Command: %c%c",d[11],d[12]);
         xbee_logc("Status: ");
-        if (d[13] == 0) fprintf(xbee->log,"OK");
-        else if (d[13] == 1) fprintf(xbee->log,"Error");
-        else if (d[13] == 2) fprintf(xbee->log,"Invalid Command");
-        else if (d[13] == 3) fprintf(xbee->log,"Invalid Parameter");
-        else if (d[13] == 4) fprintf(xbee->log,"No Response");
+        if      (d[13] == 0x00) fprintf(xbee->log,"OK");
+        else if (d[13] == 0x01) fprintf(xbee->log,"Error");
+        else if (d[13] == 0x02) fprintf(xbee->log,"Invalid Command");
+        else if (d[13] == 0x03) fprintf(xbee->log,"Invalid Parameter");
+        else if (d[13] == 0x04) fprintf(xbee->log,"No Response");
         fprintf(xbee->log," (0x%02X)",d[13]);
         xbee_logcf(xbee);
       }
@@ -1638,10 +1638,10 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_log("Packet type: TX Status Report (0x89)");
         xbee_log("FrameID: 0x%02X",d[0]);
         xbee_logc("Status: ");
-        if (d[1] == 0) fprintf(xbee->log,"Success");
-        else if (d[1] == 1) fprintf(xbee->log,"No ACK");
-        else if (d[1] == 2) fprintf(xbee->log,"CCA Failure");
-        else if (d[1] == 3) fprintf(xbee->log,"Purged");
+        if      (d[1] == 0x00) fprintf(xbee->log,"Success");
+        else if (d[1] == 0x01) fprintf(xbee->log,"No ACK");
+        else if (d[1] == 0x02) fprintf(xbee->log,"CCA Failure");
+        else if (d[1] == 0x03) fprintf(xbee->log,"Purged");
         fprintf(xbee->log," (0x%02X)",d[1]);
         xbee_logcf(xbee);
       }
@@ -1668,7 +1668,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       con = xbee->conlist;
       while (con) {
         if ((con->frameID == p->frameID) &&
-            (con->ACKstatus == 255)) {
+            (con->ACKstatus == 0xFF)) {
           xbee_log("Found @ 0x%08X!",con);
           con->ACKstatus = p->status;
           xbee_sem_post(con->waitforACKsem);
@@ -1681,17 +1681,17 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       
       /* ########################################## */
       /* if: 16 / 64bit data recieve */
-    } else if ((t == XBEE_64BIT_DATA) ||
-               (t == XBEE_16BIT_DATA)) {
+    } else if ((t == XBEE_64BIT_DATARX) ||
+               (t == XBEE_16BIT_DATARX)) {
       int offset;
-      if (t == XBEE_64BIT_DATA) { /* 64bit */
+      if (t == XBEE_64BIT_DATARX) { /* 64bit */
         offset = 8;
       } else { /* 16bit */
         offset = 2;
       }
       if (xbee->log) {
-        xbee_log("Packet type: %d-bit RX Data (0x%02X)",((t == XBEE_64BIT_DATA)?64:16),t);
-        xbee_logc("%d-bit Address: ",((t == XBEE_64BIT_DATA)?64:16));
+        xbee_log("Packet type: %d-bit RX Data (0x%02X)",((t == XBEE_64BIT_DATARX)?64:16),t);
+        xbee_logc("%d-bit Address: ",((t == XBEE_64BIT_DATARX)?64:16));
         for (j=0;j<offset;j++) {
           fprintf(xbee->log,(j?":%02X":"%02X"),d[j]);
         }
@@ -1706,7 +1706,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       p->remoteATPkt = FALSE;
       p->IOPkt = FALSE;
 
-      if (t == XBEE_64BIT_DATA) { /* 64bit */
+      if (t == XBEE_64BIT_DATARX) { /* 64bit */
         p->type = xbee_64bitData;
 
         p->sAddr64 = TRUE;
@@ -1853,11 +1853,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
     /* if the connection has a callback function then it is passed the packet
        and the packet is not added to the list */
     if (con && con->callback) {
-#ifdef __GNUC__
-      pthread_t t;
-#else
-      HANDLE t;
-#endif
+      xbee_thread_t t;
       t_callback_list *l, *q;
 
       xbee_mutex_lock(con->callbackListmutex);
@@ -2054,7 +2050,7 @@ static int xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con) {
   if (con->waitforACK &&
       ((con->type == xbee_16bitData) ||
        (con->type == xbee_64bitData))) {
-    con->ACKstatus = 255; /* waiting */
+    con->ACKstatus = 0xFF; /* waiting */
     xbee_log("Waiting for ACK/NAK response...");
     xbee_sem_wait(con->waitforACKsem);
     switch (con->ACKstatus) {

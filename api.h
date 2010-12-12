@@ -54,16 +54,6 @@
 #define FALSE 0
 
 #define M8(x) (x & 0xFF)
-#define FDO(x,y,z)				\
-  if (((x) = fdopen((y),(z))) == NULL) {	\
-    perror("fopen()");				\
-    return(-1);					\
-  }
-#define FO(x,y,z)				\
-  if (((x) = open((y),(z))) == -1) {		\
-    perror("open()");				\
-    return(-1);					\
-  }
 
 /* various connection types */
 #define XBEE_LOCAL_AT     0x88
@@ -77,14 +67,13 @@
 
 #define XBEE_TX_STATUS    0x89
 #define XBEE_64BIT_DATATX 0x00
-#define XBEE_64BIT_DATA   0x80
+#define XBEE_64BIT_DATARX 0x80
 #define XBEE_16BIT_DATATX 0x01
-#define XBEE_16BIT_DATA   0x81
-
+#define XBEE_16BIT_DATARX 0x81
 #define XBEE_64BIT_IO     0x82
 #define XBEE_16BIT_IO     0x83
 
-typedef struct xbee_hnd * xbee_hnd;
+typedef struct xbee_hnd* xbee_hnd;
 
 #define __LIBXBEE_API_H
 #include "xbee.h"

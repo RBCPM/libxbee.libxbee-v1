@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #ifndef __LIBXBEE_API_H
-typedef void *xbee_hnd;
+typedef void* xbee_hnd;
 #endif
 
 #include <stdarg.h>
