@@ -7,7 +7,7 @@ CC:=gcc
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
-VERSION:=1.2.0
+VERSION:=1.3.0
 SRCS:=api.c
 
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}

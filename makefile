@@ -7,7 +7,7 @@ MANPATH:=/usr/share/man
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
-VERSION:=1.2.0
+VERSION:=1.3.0
 SHELL:=/bin/bash
 SRCS:=api.c
 MANS:=man3/libxbee.3 \
