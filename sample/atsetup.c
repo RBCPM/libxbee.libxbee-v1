@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
   }
 
   /* setup libxbee */
-  if (xbee_setuplog("/dev/ttyUSB0",57600,2) == -1) {
+  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
     printf("xbee_setup failed...\n");
     return 1;
   }
