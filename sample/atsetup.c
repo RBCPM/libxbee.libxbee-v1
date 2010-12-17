@@ -30,32 +30,55 @@ exit
 #include <string.h>
 #include <xbee.h>
 
-int setAT(xbee_con *con, char *cmd, char *parameter, char **str) {
+/* con        = connection to use
+   cmd        = 2 character command string, eg NI
+   parameter  =  NULL - no parameter
+                !NULL - command parameter, either NULL terminated string, or block of memory
+   length     =  0 - use parameter as NULL terminated string
+                !0 - use 'length' bytes from parameter
+   ret        =  NULL - don't return anything
+                !NULL - pointer to pointer. doAT will allocate memory, you must free it!
+   str        = return data pointer 
+   
+   returns the length of the data in ret, or -ve for error */
+int doAT(xbee_con *con, char *cmd, char *parameter, int length, unsigned char **ret) {
   xbee_pkt *pkt;
-  char *tmp;
+  if (con->type != xbee_localAT && con->type != xbee_16bitRemoteAT && con->type != xbee_64bitRemoteAT) {
+    printf("Thats not an AT connection!...\n");
+    return -1;
+  }
   if (strlen(cmd) != 2) {
     printf("Invalid command: \"%s\"\n",cmd);
-    return -1;
+    return -2;
   }
   if (parameter == NULL) {
     xbee_senddata(con,"%s",cmd);
+  } else if (length != 0) {
+    char *tmp;
+    if ((tmp = malloc(1024)) == NULL) {
+      printf("Failed to get memory!\n");
+      return -3;
+    }
+    snprintf(tmp,1024,"%s",cmd);
+    memcpy(&(tmp[2]),parameter,(length>1022)?1022:length);
+    xbee_nsenddata(con,tmp,length+2);
+    free(tmp);
   } else {
     xbee_senddata(con,"%s%s",cmd,parameter);
   }
   pkt = xbee_getpacketwait(con);
   if (pkt == NULL) {
-    printf("Failed to set NI!\n");
-    return -2;
+    printf("Failed to set %s!\n",cmd);
+    return -4;
   }
   if (pkt->status != 0) {
-    printf("An error occured while setting NI!\n");
-    return -3;
+    printf("An error occured while setting %s!\n",cmd);
+    return -5;
   }
-  if (pkt->datalen > 0) {
-    int i;
-    *str = realloc(*str,sizeof(char) * (pkt->datalen + 1));
-    memcpy(*str,pkt->data,pkt->datalen);
-    (*str)[pkt->datalen] = '\0';
+  if (ret && pkt->datalen > 0) {
+    *ret = realloc(*ret,sizeof(char) * (pkt->datalen + 1));
+    memcpy(*ret,pkt->data,pkt->datalen);
+    (*ret)[pkt->datalen] = '\0';
     return pkt->datalen;
   }
   return 0;
@@ -64,7 +87,7 @@ int setAT(xbee_con *con, char *cmd, char *parameter, char **str) {
 int main(int argc, char *argv[]) {
   xbee_con *con;
   int ret,i;
-  char *str = NULL;
+  unsigned char *str = NULL;
 
   if (argc != 2) {
     printf("Usage: %s <newname>\n",argv[0]);
@@ -72,7 +95,7 @@ int main(int argc, char *argv[]) {
   }
 
   /* setup libxbee */
-  if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
+  if (xbee_setuplog("/dev/ttyUSB0",57600,2) == -1) {
     printf("xbee_setup failed...\n");
     return 1;
   }
@@ -81,9 +104,34 @@ int main(int argc, char *argv[]) {
   con = xbee_newcon('I',xbee_localAT);
   /*con = xbee_newcon('I',xbee_64bitRemoteAT,0x13A200,0x403CB26A);*/
 
-  printf("Getting origional NI: ");
-  if ((ret = setAT(con,"NI",NULL,&str)) < 0) return 1;
+  
+  /* get the node's address! */
+  if ((ret = doAT(con,"SH",NULL,0,&str)) < 0) return 1;
+  if (ret == 4) {
+    printf("SH: 0x%02X%02X%02X%02X\n", str[0], str[1], str[2], str[3]);
+  }
+  if ((ret = doAT(con,"SL",NULL,0,&str)) < 0) return 1;
+  if (ret == 4) {
+    printf("SL: 0x%02X%02X%02X%02X\n", str[0], str[1], str[2], str[3]);
+  }
+  
+  /* set the power level - 2 methods, i prefer the first but it generates compile warnings :( */
+  /*if ((ret = doAT(con,"PL",&((unsigned char[]){4}),1,&str)) < 0) return 1;*/
+  /*{
+    char t[] = {0};
+    if ((ret = doAT(con,"PL",t,1,&str)) < 0) return 1;
+  }*/
+  
+  /* get the power level */
+  if ((ret = doAT(con,"PL",NULL,0,&str)) < 0) return 1;
+  if (ret == 1) {
+    printf("PL: 0x%02X\n", str[0]);
+  }
+  
+  /* get NI */
+  if ((ret = doAT(con,"NI",NULL,0,&str)) < 0) return 1;
   if (ret > 0) {
+    printf("NI: ");
     for (i = 0; i < ret; i++) {
       printf("%c",(str[i]>=32 && str[i]<=126)?str[i]:'.');
     }
@@ -91,12 +139,12 @@ int main(int argc, char *argv[]) {
   }
   
   printf("Setting NI to '%s': ",(argc!=2)?"MyNode":argv[1]);
-  if ((ret = setAT(con,"NI",(argc!=2)?"MyNode":argv[1],&str)) < 0) return 1;
+  if ((ret = doAT(con,"NI",(argc!=2)?"MyNode":argv[1],0,NULL)) < 0) return 1;
   printf("OK\n");
   
-  printf("Getting new NI: ");
-  if ((ret = setAT(con,"NI",NULL,&str)) < 0) return 1;
+  if ((ret = doAT(con,"NI",NULL,0,&str)) < 0) return 1;
   if (ret > 0) {
+    printf("NI: ");
     for (i = 0; i < ret; i++) {
       printf("%c",(str[i]>=32 && str[i]<=126)?str[i]:'.');
     }
