@@ -1900,6 +1900,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       /* if the callback thread not still running, then start a new one! */
       if (!xbee_mutex_trylock(con->callbackmutex)) {
         xbee_thread_t t;
+        int ret;
         t_threadList *p, *q;
         t_CBinfo info;
         info.xbee = xbee;
