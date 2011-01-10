@@ -30,6 +30,7 @@
 #define xbee_thread_create(a,b,c) pthread_create(&(a),NULL,(void *(*)(void *))(b),(void *)(c))
 #define xbee_thread_cancel(a,b)   pthread_cancel((a))
 #define xbee_thread_join(a)       pthread_join((a),NULL)
+#define xbee_thread_tryjoin(a)    pthread_tryjoin_np((a),NULL)
 
 #define xbee_mutex_init(a)        pthread_mutex_init(&(a),NULL)
 #define xbee_mutex_destroy(a)     pthread_mutex_destroy(&(a))
@@ -39,6 +40,7 @@
 
 #define xbee_sem_init(a)          sem_init(&(a),0,0)
 #define xbee_sem_destroy(a)       sem_destroy(&(a))
+#define xbee_sem_wait(a)          sem_wait(&(a))
 #define xbee_sem_post(a)          sem_post(&(a))
 
 #define xbee_cond_init(a)         pthread_cond_init(&(a),NULL)

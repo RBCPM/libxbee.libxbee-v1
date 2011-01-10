@@ -62,12 +62,12 @@ PDFS:=${sort ${PDFS}}
 
 
 # all - do everything (default) #
-all: ./lib/libxbee.so.$(VERSION) main
+all: ./lib/libxbee.so.$(VERSION)
 	@echo "*** Done! ***"
 
 
 # run - remake main and then run #
-run: main
+run: all main
 	./bin/main
 
 

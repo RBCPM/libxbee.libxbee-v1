@@ -373,9 +373,13 @@ int _xbee_end(xbee_hnd xbee) {
   /* nullify everything */
 
   /* stop listening for data... either after timeout or next char read which ever is first */
-  xbee->listenrun = 0;
+  xbee->run = 0;
+  
   xbee_thread_cancel(xbee->listent,0);
   xbee_thread_join(xbee->listent);
+  
+  xbee_thread_cancel(xbee->threadt,0);
+  xbee_thread_join(xbee->threadt);
 
   /* free all connections */
   con = xbee->conlist;
@@ -501,7 +505,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   xbee->pktlist = NULL;
   xbee->pktlast = NULL;
   xbee->pktcount = 0;
-  xbee->listenrun = 1;
+  xbee->run = 1;
 
   /* setup the mutexes */
   if (xbee_mutex_init(xbee->conmutex)) {
@@ -580,7 +584,23 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   /* can start xbee_listen thread now */
   info.xbee = xbee;
   if (xbee_thread_create(xbee->listent, xbee_listen_wrapper, &info)) {
-    perror("xbee_setup():xbee_thread_create()");
+    perror("xbee_setup():xbee_thread_create(listent)");
+    if (xbee->log) xbee_close(xbee->log);
+    xbee_mutex_destroy(xbee->conmutex);
+    xbee_mutex_destroy(xbee->pktmutex);
+    xbee_mutex_destroy(xbee->sendmutex);
+    Xfree(xbee->path);
+#ifdef __GNUC__ /* ---- */
+    close(xbee->ttyfd);
+#endif /* ------------- */
+    xbee_close(xbee->tty);
+    Xfree(xbee);
+    return NULL;
+  }
+  
+  /* can start xbee_thread_watch thread thread now */
+  if (xbee_thread_create(xbee->threadt, xbee_thread_watch, &info)) {
+    perror("xbee_setup():xbee_thread_create(threadt)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
@@ -1351,7 +1371,7 @@ static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
    stops the listen thread after the current packet has been processed */
 void xbee_listen_stop(xbee_hnd xbee) {
   ISREADY(xbee);
-  xbee->listenrun = 0;
+  xbee->run = 0;
 }
 
 /* #################################################################
@@ -1371,10 +1391,10 @@ static void xbee_listen_wrapper(t_LTinfo *info) {
   usleep(1000000);
 #endif /* ----------- */
 
-  while (xbee->listenrun) {
+  while (xbee->run) {
     info->i = -1;
     ret = xbee_listen(xbee, info);
-    if (!xbee->listenrun) break;
+    if (!xbee->run) break;
     xbee_log("xbee_listen() returned [%d]... Restarting in 250ms!",ret);
     usleep(25000);
   }
@@ -1394,13 +1414,13 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
   /* just falls out if the proper 'go-ahead' isn't given */
   if (info->i != -1) return -1;
   /* do this forever :) */
-  while (xbee->listenrun) {
+  while (xbee->run) {
     /* wait for a valid start byte */
     if ((c = xbee_getrawbyte(xbee)) != 0x7E) {
       if (xbee->log) xbee_log("***** Unexpected byte (0x%02X)... *****",c);
       continue;
     }
-    if (!xbee->listenrun) return 0;
+    if (!xbee->run) return 0;
 
     if (xbee->log) {
       struct timeval tv;
@@ -1853,7 +1873,6 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
     /* if the connection has a callback function then it is passed the packet
        and the packet is not added to the list */
     if (con && con->callback) {
-      xbee_thread_t t;
       t_callback_list *l, *q;
 
       xbee_mutex_lock(con->callbackListmutex);
@@ -1865,7 +1884,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
       }
       l = Xcalloc(sizeof(t_callback_list));
       l->pkt = p;
-      if (!con->callbackList) {
+      if (!con->callbackList || q == NULL) {
         con->callbackList = l;
       } else {
         q->next = l;
@@ -1880,11 +1899,36 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
 
       /* if the callback thread not still running, then start a new one! */
       if (!xbee_mutex_trylock(con->callbackmutex)) {
+        xbee_thread_t t;
+        t_threadList *p, *q;
         t_CBinfo info;
         info.xbee = xbee;
         info.con = con;
         xbee_log("Starting new callback thread!");
-        xbee_thread_create(t,xbee_callbackWrapper,&info);
+        if ((ret = xbee_thread_create(t,xbee_callbackWrapper,&info)) != 0) {
+          xbee_mutex_unlock(con->callbackmutex);
+          /* this MAY help... */
+          xbee_sem_post(xbee->threadsem);
+          xbee_log("An error occured while starting thread (%d)... Out of resources?", ret);
+          xbee_log("This packet has been lost!");
+          continue;
+        }
+        xbee_log("Started thread 0x%08X!", t);
+        xbee_mutex_lock(xbee->threadmutex);
+        p = xbee->threadList;
+        q = NULL;
+        while (p) {
+          q = p;
+          p = p->next;
+        }
+        p = Xcalloc(sizeof(t_threadList));
+        if (q == NULL) {
+          xbee->threadList = p;
+        } else {
+          q->next = p;
+        }
+        p->thread = t;
+        xbee_mutex_unlock(xbee->threadmutex);
       } else {
         xbee_log("Using existing callback thread... callback has been scheduled.");
       }
@@ -1934,7 +1978,6 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
   xbee = info->xbee;
   con = info->con;
   /* dont forget! the callback mutex is already locked... by the parent thread :) */
-
   xbee_mutex_lock(con->callbackListmutex);
   while (con->callbackList) {
     /* shift the list along 1 */
@@ -1956,16 +1999,58 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
 
     xbee_mutex_lock(con->callbackListmutex);
   }
-  xbee_mutex_unlock(con->callbackListmutex);
 
   xbee_log("Callback thread ending...");
   /* releasing the thread mutex is the last thing we do! */
   xbee_mutex_unlock(con->callbackmutex);
+  xbee_mutex_unlock(con->callbackListmutex);
 
   if (con->destroySelf) {
     _xbee_endcon2(xbee,&con,1);
   }
+  xbee_sem_post(xbee->threadsem);
 }
+
+/* #################################################################
+   xbee_thread_watch - INTERNAL
+   watches for dead threads and tidies up */
+static void xbee_thread_watch(t_LTinfo *info) {
+  xbee_hnd xbee;
+  
+  xbee = info->xbee;
+  xbee_mutex_init(xbee->threadmutex);
+  xbee_sem_init(xbee->threadsem);
+  
+  while (xbee->run) {
+    t_threadList *p, *q;
+    xbee_mutex_lock(xbee->threadmutex);
+    p = xbee->threadList;
+    q = NULL;
+    
+    while (p) {
+      if (!(xbee_thread_tryjoin(p->thread))) {
+        xbee_log("Joined with thread 0x%08X...",p->thread);
+        if (p == xbee->threadList) {
+          xbee->threadList = p->next;
+        } else if (q) {
+          q->next = p->next;
+        }
+        free(p);
+      } else {
+        q = p;
+      }
+      p = p->next;
+    }
+    
+    xbee_mutex_unlock(xbee->threadmutex);
+    xbee_log("Waiting...");
+    xbee_sem_wait(xbee->threadsem);
+  }
+  
+  xbee_mutex_destroy(xbee->threadmutex);
+  xbee_sem_destroy(xbee->threadsem);
+}
+
 
 /* #################################################################
    xbee_getbyte - INTERNAL
@@ -1995,7 +2080,7 @@ static unsigned char xbee_getrawbyte(xbee_hnd xbee) {
       perror("libxbee:xbee_getrawbyte()");
       exit(1);
     }
-    if (!xbee->listenrun) break;
+    if (!xbee->run) break;
     if (ret == 0) continue;
 
     /* read 1 character */
@@ -2052,7 +2137,7 @@ static int xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con) {
        (con->type == xbee_64bitData))) {
     con->ACKstatus = 0xFF; /* waiting */
     xbee_log("Waiting for ACK/NAK response...");
-    xbee_sem_wait(con->waitforACKsem);
+    xbee_sem_wait1sec(con->waitforACKsem);
     switch (con->ACKstatus) {
       case 0: xbee_log("ACK recieved!"); break;
       case 1: xbee_log("NAK recieved..."); break;

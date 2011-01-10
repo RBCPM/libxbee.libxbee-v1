@@ -139,8 +139,8 @@ static int xbee_select(xbee_hnd xbee, struct timeval *timeout) {
   return select(xbee->ttyfd+1, &fds, NULL, NULL, timeout);
 }
 
-#define xbee_sem_wait(a) xbee_sem_wait2(&(a))
-static inline int xbee_sem_wait2(xbee_sem_t *sem) {
+#define xbee_sem_wait1sec(a) xbee_sem_wait1sec2(&(a))
+static inline int xbee_sem_wait1sec2(xbee_sem_t *sem) {
   struct timespec to;
   clock_gettime(CLOCK_REALTIME,&to);
   to.tv_sec++;

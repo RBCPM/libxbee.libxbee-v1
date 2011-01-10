@@ -78,6 +78,12 @@ typedef struct xbee_hnd* xbee_hnd;
 #define __LIBXBEE_API_H
 #include "xbee.h"
 
+typedef struct t_threadList t_threadList;
+struct t_threadList {
+  xbee_thread_t thread;
+  t_threadList *next;
+};
+
 struct xbee_hnd {
   xbee_file_t tty;
 #ifdef __GNUC__ /* ---- */
@@ -108,7 +114,13 @@ struct xbee_hnd {
   xbee_mutex_t sendmutex;
 
   xbee_thread_t listent;
-  int listenrun;
+  
+  xbee_thread_t threadt;
+  xbee_mutex_t  threadmutex;
+  xbee_sem_t    threadsem;
+  t_threadList *threadList;
+  
+  int run;
 
   int oldAPI;
   char cmdSeq;
@@ -170,6 +182,7 @@ static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *r
 static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
                          int maskOffset, int sampleOffset, int sample);
 
+static void xbee_thread_watch(t_LTinfo *info);
 static void xbee_listen_wrapper(t_LTinfo *info);
 static int xbee_listen(xbee_hnd xbee, t_LTinfo *info);
 static unsigned char xbee_getbyte(xbee_hnd xbee);

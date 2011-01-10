@@ -43,6 +43,7 @@ HMODULE glob_hModule = NULL;
 #define xbee_thread_create(a,b,c) (((a) = CreateThread(NULL,0,(void *)(b),(void *)(c),0,NULL)) == NULL)
 #define xbee_thread_cancel(a,b)   TerminateThread((a),(b))
 #define xbee_thread_join(a)       WaitForSingleObject((a),INFINITE)
+#define xbee_thread_tryjoin(a)    WaitForSingleObject((a),0)
 
 #define xbee_mutex_init(a)        (!InitializeCriticalSectionAndSpinCount(&(a),0))
 #define xbee_mutex_destroy(a)     DeleteCriticalSection(&(a))
@@ -52,7 +53,8 @@ HMODULE glob_hModule = NULL;
 
 #define xbee_sem_init(a)          (((a) = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL)
 #define xbee_sem_destroy(a)       CloseHandle((a))
-#define xbee_sem_wait(a)          WaitForSingleObject((a),1000)
+#define xbee_sem_wait(a)          WaitForSingleObject((a),INFINITE)
+#define xbee_sem_wait1sec(a)      WaitForSingleObject((a),1000)
 #define xbee_sem_post(a)          SetEvent((a))
 
 #define xbee_cond_init(a)         InitializeConditionVariable(&(a))
