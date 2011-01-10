@@ -915,7 +915,7 @@ void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked) {
   if (t->callback && xbee_mutex_trylock(t->callbackmutex)) {
     /* if it is running... tell it to destroy the connection on completion */
     xbee_log("Attempted to close a connection with active callbacks... "
-             "Connection will be destroied when callbacks have completeted...");
+             "Connection will be destroyed when callbacks have completeted...");
     t->destroySelf = 1;
     return;
   }
