@@ -31,7 +31,9 @@
 #ifdef __GNUC__ /* ---- */
 #include <unistd.h>
 #include <termios.h>
+#define __USE_GNU
 #include <pthread.h>
+#undef __USE_GNU
 #include <sys/time.h>
 #else /* -------------- */
 #include <Windows.h>
