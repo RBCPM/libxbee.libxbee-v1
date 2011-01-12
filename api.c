@@ -2046,6 +2046,7 @@ static void xbee_thread_watch(t_LTinfo *info) {
     xbee_mutex_unlock(xbee->threadmutex);
     xbee_log("Waiting...");
     xbee_sem_wait(xbee->threadsem);
+    usleep(25000); /* 25ms to allow the thread to end before we try to join */
   }
   
   xbee_mutex_destroy(xbee->threadmutex);
