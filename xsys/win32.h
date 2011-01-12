@@ -63,6 +63,8 @@ HMODULE glob_hModule = NULL;
 #define xbee_cond_signal(a)       WakeConditionVariable(&(a))
 #define xbee_cond_broadcast(a)    WakeAllConditionVariable(&(a))
 
+#define xbee_feof(a)              (xbee->ttyeof)
+#define xbee_ferror(a)            (0)
 #define xbee_close(a)             CloseHandle((a))
 
 typedef struct win32_callback_info win32_callback_info;

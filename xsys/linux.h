@@ -51,4 +51,7 @@
 
 #define xbee_write(xbee,a,b)      fwrite((a),1,(b),(xbee)->tty)
 #define xbee_read(xbee,a,b)       fread((a),1,(b),(xbee)->tty)
+#define xbee_ferror(xbee)         ferror((xbee)->tty)
+#define xbee_feof(xbee)           feof((xbee)->tty)
 #define xbee_close(a)             fclose((a))
+

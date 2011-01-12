@@ -137,22 +137,30 @@ static int xbee_select(xbee_hnd xbee, struct timeval *timeout) {
 
 /* this offers the same behavior as non-blocking I/O under linux */
 int xbee_write(xbee_hnd xbee, const void *ptr, size_t size) {
+  xbee->ttyeof = FALSE;
   if (!WriteFile(xbee->tty, ptr, size, NULL, &(xbee->ttyovrw)) &&
       (GetLastError() != ERROR_IO_PENDING)) return 0;
-  if (!GetOverlappedResult(xbee->tty, &(xbee->ttyovrw), &(xbee->ttyw), TRUE)) return 0;
+  if (!GetOverlappedResult(xbee->tty, &(xbee->ttyovrw), &(xbee->ttyw), TRUE)) {
+    if (GetLastError() == ERROR_HANDLE_EOF) xbee->ttyeof = TRUE;
+    return 0;
+  }
   return xbee->ttyw;
 }
 
 /* this offers the same behavior as non-blocking I/O under linux */
 int xbee_read(xbee_hnd xbee, void *ptr, size_t size) {
+  xbee->ttyeof = FALSE;
   if (!ReadFile(xbee->tty, ptr, size, NULL, &(xbee->ttyovrr)) &&
       (GetLastError() != ERROR_IO_PENDING)) return 0;
-  if (!GetOverlappedResult(xbee->tty, &(xbee->ttyovrr), &(xbee->ttyr), TRUE)) return 0;
+  if (!GetOverlappedResult(xbee->tty, &(xbee->ttyovrr), &(xbee->ttyr), TRUE)) {
+    if (GetLastError() == ERROR_HANDLE_EOF) xbee->ttyeof = TRUE;
+    return 0;
+  }
   return xbee->ttyr;
 }
 
 /* this is because Win32 has some weird memory management rules...
-   - the thread that allocated the memory, must free it... */
+   - the thread that allocated the memory, MUST free it... */
 void xbee_free(void *ptr) {
   if (!ptr) return;
   free(ptr);

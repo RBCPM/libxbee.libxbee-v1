@@ -51,7 +51,7 @@ int init_serial(xbee_hnd xbee, int baudrate) {
 
   /* open the serial port as a file descriptor */
   if ((xbee->ttyfd = open(xbee->path,O_RDWR | O_NOCTTY | O_NONBLOCK)) == -1) {
-    perror("xbee_setup():open()");
+    xbee_perror("xbee_setup():open()");
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);
@@ -66,7 +66,7 @@ int init_serial(xbee_hnd xbee, int baudrate) {
   fl.l_len = 0;
   fl.l_pid = getpid();
   if (fcntl(xbee->ttyfd, F_SETLK, &fl) == -1) {
-    perror("xbee_setup():fcntl()");
+    xbee_perror("xbee_setup():fcntl()");
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);
@@ -77,7 +77,7 @@ int init_serial(xbee_hnd xbee, int baudrate) {
 
   /* open the serial port as a FILE* */
   if ((xbee->tty = fdopen(xbee->ttyfd,"r+")) == NULL) {
-    perror("xbee_setup():fdopen()");
+    xbee_perror("xbee_setup():fdopen()");
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);

@@ -53,31 +53,31 @@ const char *xbee_build_info(void) {
 /* ################################################################# */
 
 /* malloc wrapper function */
-static void *Xmalloc(size_t size) {
+static void *Xmalloc2(xbee_hnd xbee, size_t size) {
   void *t;
   t = malloc(size);
   if (!t) {
     /* uhoh... thats pretty bad... */
-    perror("libxbee:malloc()");
+    xbee_perror("libxbee:malloc()");
     exit(1);
   }
   return t;
 }
 
 /* calloc wrapper function */
-static void *Xcalloc(size_t size) {
+static void *Xcalloc2(xbee_hnd xbee, size_t size) {
   void *t;
   t = calloc(1, size);
   if (!t) {
     /* uhoh... thats pretty bad... */
-    perror("libxbee:calloc()");
+    xbee_perror("libxbee:calloc()");
     exit(1);
   }
   return t;
 }
 
 /* realloc wrapper function */
-static void *Xrealloc(void *ptr, size_t size) {
+static void *Xrealloc2(xbee_hnd xbee, void *ptr, size_t size) {
   void *t;
   t = realloc(ptr,size);
   if (!t) {
@@ -219,7 +219,7 @@ static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *r
     to.tv_usec = 250000;
   }
   if ((ret = xbee_select(xbee,&to)) == -1) {
-    perror("libxbee:xbee_sendATdelay()");
+    xbee_perror("libxbee:xbee_sendATdelay()");
     exit(1);
   }
 
@@ -248,7 +248,7 @@ static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *r
     memset(&to, 0, sizeof(to));
     to.tv_usec = 150000;
     if ((ret = xbee_select(xbee,&to)) == -1) {
-      perror("libxbee:xbee_sendATdelay()");
+      xbee_perror("libxbee:xbee_sendATdelay()");
       exit(1);
     }
 
@@ -463,7 +463,7 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
 xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime) {
   t_LTinfo info;
   int ret;
-  xbee_hnd xbee;
+  xbee_hnd xbee = NULL;;
 
   /* create a new instance */
   xbee = Xcalloc(sizeof(struct xbee_hnd));
@@ -479,7 +479,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
     xbee->log = fdopen(xbee->logfd,"w");
     if (!xbee->log) {
       /* errno == 9 is bad file descriptor (probrably not provided) */
-      if (errno != 9) perror("xbee_setup(): Failed opening logfile");
+      if (errno != 9) xbee_perror("xbee_setup(): Failed opening logfile");
       xbee->logfd = 0;
     } else {
 #ifdef __GNUC__ /* ---- */
@@ -509,20 +509,20 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
 
   /* setup the mutexes */
   if (xbee_mutex_init(xbee->conmutex)) {
-    perror("xbee_setup():xbee_mutex_init(conmutex)");
+    xbee_perror("xbee_setup():xbee_mutex_init(conmutex)");
     if (xbee->log) xbee_close(xbee->log);
     Xfree(xbee);
     return NULL;
   }
   if (xbee_mutex_init(xbee->pktmutex)) {
-    perror("xbee_setup():xbee_mutex_init(pktmutex)");
+    xbee_perror("xbee_setup():xbee_mutex_init(pktmutex)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     Xfree(xbee);
     return NULL;
   }
   if (xbee_mutex_init(xbee->sendmutex)) {
-    perror("xbee_setup():xbee_mutex_init(sendmutex)");
+    xbee_perror("xbee_setup():xbee_mutex_init(sendmutex)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
@@ -532,7 +532,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
 
   /* take a copy of the XBee device path */
   if ((xbee->path = Xmalloc(sizeof(char) * (strlen(path) + 1))) == NULL) {
-    perror("xbee_setup():Xmalloc(path)");
+    xbee_perror("xbee_setup():Xmalloc(path)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
@@ -584,7 +584,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   /* can start xbee_listen thread now */
   info.xbee = xbee;
   if (xbee_thread_create(xbee->listent, xbee_listen_wrapper, &info)) {
-    perror("xbee_setup():xbee_thread_create(listent)");
+    xbee_perror("xbee_setup():xbee_thread_create(listent)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
@@ -600,7 +600,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   
   /* can start xbee_thread_watch thread thread now */
   if (xbee_thread_create(xbee->threadt, xbee_thread_watch, &info)) {
-    perror("xbee_setup():xbee_thread_create(threadt)");
+    xbee_perror("xbee_setup():xbee_thread_create(threadt)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
@@ -2078,21 +2078,24 @@ static unsigned char xbee_getrawbyte(xbee_hnd xbee) {
   do {
     /* wait for a read to be possible */
     if ((ret = xbee_select(xbee,NULL)) == -1) {
-      perror("libxbee:xbee_getrawbyte()");
+      xbee_perror("libxbee:xbee_getrawbyte()");
       exit(1);
     }
     if (!xbee->run) break;
     if (ret == 0) continue;
 
     /* read 1 character */
-    xbee_read(xbee,&c,1);
-#ifdef _WIN32 /* ---- */
-    ret = xbee->ttyr;
-    if (ret == 0) {
+    if (xbee_read(xbee,&c,1) == 0) {
+      /* for some reason no characters were read... */
+      if (xbee_ferror(xbee) || xbee_feof(xbee)) {
+        xbee_log("Error or EOF detected");
+        fprintf(stderr,"libxbee:xbee_read(): Error or EOF detected\n");
+        exit(1);
+      }
+      /* no error... try again */
       usleep(10);
       continue;
     }
-#endif /* ----------- */
   } while (0);
 
   return (c & 0xFF);

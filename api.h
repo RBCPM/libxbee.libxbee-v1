@@ -93,6 +93,7 @@ struct xbee_hnd {
 #else /* -------------- */
   int ttyr;
   int ttyw;
+  int ttyeof;
 
   OVERLAPPED ttyovrw;
   OVERLAPPED ttyovrr;
@@ -161,11 +162,14 @@ struct t_callback_list {
   t_callback_list *next;
 };
 
-static void *Xmalloc(size_t size);
-static void *Xcalloc(size_t size);
-static void *Xrealloc(void *ptr, size_t size);
+static void *Xmalloc2(xbee_hnd xbee, size_t size);
+static void *Xcalloc2(xbee_hnd xbee, size_t size);
+static void *Xrealloc2(xbee_hnd xbee, void *ptr, size_t size);
 static void Xfree2(void **ptr);
-#define Xfree(x) Xfree2((void **)&x)
+#define Xmalloc(x)     Xmalloc2(xbee,(x))
+#define Xcalloc(x)     Xcalloc2(xbee,(x))
+#define Xrealloc(x,y)  Xrealloc2(xbee,(x),(y))
+#define Xfree(x)       Xfree2((void **)&x)
 
 static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const char *file,
                       const int line, const char *function, char *format, ...);
@@ -175,6 +179,10 @@ static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const ch
 #define xbee_logcf(xbee)               \
   fprintf((xbee)->log,"\n");           \
   xbee_mutex_unlock((xbee)->logmutex); \
+
+#define xbee_perror(str)                           \
+  if (xbee) xbee_log("%s:%s",str,strerror(errno)); \
+  perror(str);                                     \
 
 static int xbee_startAPI(xbee_hnd xbee);
 
