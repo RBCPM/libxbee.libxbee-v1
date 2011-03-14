@@ -1404,7 +1404,8 @@ static void xbee_listen_wrapper(t_LTinfo *info) {
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
 static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
-  unsigned char c, t, d[1024];
+#define LISTEN_BUFLEN 1024
+  unsigned char c, t, d[LISTEN_BUFLEN];
   unsigned int l, i, chksum, o;
   int j;
   xbee_pkt *p, *q;
@@ -1445,7 +1446,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_log("Recived oversized packet! Length: %d",l - 1);
       }
     }
-    if (l > sizeof(d) - 1) {
+    if (l > LISTEN_BUFLEN) {
       if (xbee->log) {
         xbee_log("Recived packet larger than buffer! Discarding...");
       }
@@ -1463,7 +1464,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
     chksum = t;
 
     /* suck in all the data */
-    for (i = 0; l > 1 && i < 128; l--, i++) {
+    for (i = 0; l > 1 && i < LISTEN_BUFLEN; l--, i++) {
       /* get an unescaped byte */
       c = xbee_getbyte(xbee);
       d[i] = c;
