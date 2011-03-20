@@ -7,7 +7,7 @@ CC:=gcc
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
-VERSION:=1.3.0
+VERSION:=1.4.0
 SRCS:=api.c
 
 CFLAGS:=-Wall -Wstrict-prototypes -Wno-variadic-macros -pedantic -c -fPIC ${DEBUG}
@@ -75,12 +75,8 @@ main: ./bin/main
 
 ./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.$(VERSION) ./obj/*.o -lrt
-ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
-endif
-ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
-endif
 
 ./lib/:
 	mkdir ./lib/

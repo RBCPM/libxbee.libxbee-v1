@@ -7,7 +7,7 @@ MANPATH:=/usr/share/man
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 
-VERSION:=1.3.0
+VERSION:=1.4.0
 SHELL:=/bin/bash
 SRCS:=api.c
 MANS:=man3/libxbee.3 \
@@ -56,7 +56,7 @@ SRCS:=${sort ${SRCS}}
 PDFS:=${sort ${PDFS}}
 
 .PHONY: FORCE
-.PHONY: all run new clean cleanpdfs main pdfs
+.PHONY: all run new clean cleanpdfs main pdfs html
 .PHONY: install install_su install_man
 .PHONY: uninstall uninstall_su uninstall_man/
 
@@ -183,12 +183,8 @@ main: ./bin/main
 
 ./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 $(CLINKS) -o ./lib/libxbee.so.$(VERSION) ./obj/*.o
-ifeq ($(strip $(wildcard ./lib/libxbee.so.1)),)
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
-endif
-ifeq ($(strip $(wildcard ./lib/libxbee.so)),)
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
-endif
 
 ./lib/:
 	mkdir ./lib/
