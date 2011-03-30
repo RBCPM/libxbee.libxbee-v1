@@ -1,5 +1,6 @@
 #-- uncomment this to enable debugging
 #DEBUG:=/Zi /DDEBUG
+#LDBUG:=/DEBUG
 
 #-- you may need to edit these lines if your installation is different
 VCPath:=C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC
@@ -25,8 +26,14 @@ clean:
 	-rmdir /Q /S lib
 	-rmdir /Q /S obj
 
+.\obj:
+	mkdir obj
+
+.\lib:
+	mkdir lib  
+
 .\lib\libxbee.dll: .\lib .\obj\api.obj .\obj\win32.res
-	${LINK} /nologo /DLL /MAP:lib\libxbee.map /DEF:xsys\win32.def \
+	${LINK} ${LDBUG} /nologo /DLL /MAP:lib\libxbee.map /DEF:xsys\win32.def \
 		"/LIBPATH:${SDKPath}\Lib" "/LIBPATH:${VCPath}\lib" \
 		/OUT:.\lib\libxbee.dll .\obj\api.obj .\obj\win32.res
 
@@ -35,9 +42,3 @@ clean:
 
 .\obj\win32.res: .\xsys\win32.rc
 	${RC} "/I${SDKPath}\Include" "/I${VCPath}\include" /n /fo.\obj\win32.res .\xsys\win32.rc 
-
-.\obj:
-	mkdir obj
-
-.\lib:
-	mkdir lib  
