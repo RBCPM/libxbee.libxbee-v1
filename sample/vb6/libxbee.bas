@@ -79,7 +79,7 @@ Public Declare Sub xbee_disableACKwait Lib "libxbee.dll" (ByVal con As Long)
 Public Declare Sub xbee_enableDestroySelf Lib "libxbee.dll" (ByVal con As Long)
 
 Private Declare Sub xbee_attachCallbackRaw Lib "libxbee.dll" Alias "xbee_attachCallback" (ByVal con As Long, ByVal hWnd As Long, ByVal uMsg As Long)
-Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" (ByVal con As Long)
+Private Declare Sub xbee_detachCallbackRaw Lib "libxbee.dll" Alias "xbee_detachCallback" (ByVal con As Long)
 Private Declare Function xbee_runCallback Lib "libxbee.dll" (ByVal func As Long, ByVal con As Long, ByVal pkt As Long) As Long
 
 Public Declare Sub xbee_endcon2 Lib "libxbee.dll" (ByVal con As Long)
