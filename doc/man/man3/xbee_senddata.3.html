@@ -73,6 +73,14 @@ Upon successful completion, these functions return 0.
 If an invalid packet or connection was provided, -1 is returned.
 <P>
 If an unknown error occured, -2 is returned.
+<P>
+If
+<I>con</I>
+
+has
+<I>waitforACK</I>
+
+enabled, then these functions return 1 when an ACK was not recieved within 1 second.
 <A NAME="lbAF">&nbsp;</A>
 <H2>EXAMPLE</H2>
 
@@ -116,6 +124,6 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 17:48:08 GMT, March 20, 2011
+Time: 00:08:23 GMT, March 30, 2011
 </BODY>
 </HTML>

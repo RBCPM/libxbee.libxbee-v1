@@ -63,6 +63,12 @@ Upon successful completion, these functions return 0.
 If an invalid packet or connection was provided, -1 is returned.
 .sp
 If an unknown error occured, -2 is returned.
+.sp
+If
+.I con
+has
+.I waitforACK
+enabled, then these functions return 1 when an ACK was not recieved within 1 second.
 .SH EXAMPLE
 To send the string "Hello World!" through a previously made connection:
 .in +4n
