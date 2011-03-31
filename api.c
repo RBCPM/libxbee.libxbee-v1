@@ -573,7 +573,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
       close(xbee->ttyfd);
 #endif /* ------------- */
       xbee_close(xbee->tty);
-    Xfree(xbee);
+      Xfree(xbee);
       return NULL;
     }
   }
@@ -1995,9 +1995,41 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
     xbee_log("  connection @ 0x%08X",con);
     xbee_log("  packet     @ 0x%08X",pkt);
     Xfree(temp);
-    con->callback(con,pkt);
-    xbee_log("Callback complete!");
-    Xfree(pkt);
+    if (con->callback) {
+      con->callback(con,pkt);
+      xbee_log("Callback complete!");
+      Xfree(pkt);
+    } else {
+      xbee_pkt *q;
+      int i;
+      xbee_log("Callback function was removed! Appending packet to full list...");
+      /* lock the packet mutex, so we can safely add the packet to the list */
+      xbee_mutex_lock(xbee->pktmutex);
+
+      /* if: the list is empty */
+      if (!xbee->pktlist) {
+        /* start the list! */
+        xbee->pktlist = pkt;
+      } else if (xbee->pktlast) {
+        /* add the packet to the end */
+        xbee->pktlast->next = pkt;
+      } else {
+        /* pktlast wasnt set... look for the end and then set it */
+        i = 0;
+        q = xbee->pktlist;
+        while (q->next) {
+          q = q->next;
+          i++;
+        }
+        q->next = pkt;
+        xbee->pktcount = i;
+      }
+      xbee->pktlast = pkt;
+      xbee->pktcount++;
+
+      /* unlock the packet mutex */
+      xbee_mutex_unlock(xbee->pktmutex);
+    }
 
     xbee_mutex_lock(con->callbackListmutex);
   }

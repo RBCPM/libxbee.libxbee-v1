@@ -65,7 +65,7 @@ HMODULE glob_hModule = NULL;
 
 #define xbee_feof(a)              (xbee->ttyeof)
 #define xbee_ferror(a)            (0)
-#define xbee_close(a)             CloseHandle((a))
+#define xbee_close(a)             (((a)==xbee->log)?fclose((a)):CloseHandle((a)))
 
 typedef struct win32_callback_info win32_callback_info;
 struct win32_callback_info {
