@@ -1916,7 +1916,9 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
           continue;
         }
         xbee_log("Started thread 0x%08X!", t);
+        xbee_log("Locking threadmutex...");
         xbee_mutex_lock(xbee->threadmutex);
+        xbee_log("Locked threadmutex...");
         p = xbee->threadList;
         q = NULL;
         while (p) {
@@ -1930,7 +1932,9 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
           q->next = p;
         }
         p->thread = t;
+        p->next = NULL;
         xbee_mutex_unlock(xbee->threadmutex);
+        xbee_log("Unocked threadmutex...");
       } else {
         xbee_log("Using existing callback thread... callback has been scheduled.");
       }
@@ -2056,30 +2060,38 @@ static void xbee_thread_watch(t_LTinfo *info) {
   xbee_sem_init(xbee->threadsem);
   
   while (xbee->run) {
-    t_threadList *p, *q;
+    t_threadList *p, *q, *t;
+    xbee_log("Locking threadmutex...");
     xbee_mutex_lock(xbee->threadmutex);
+    xbee_log("Locked threadmutex...");
     p = xbee->threadList;
     q = NULL;
     
     while (p) {
-      if (!(xbee_thread_tryjoin(p->thread))) {
-        xbee_log("Joined with thread 0x%08X...",p->thread);
-        if (p == xbee->threadList) {
-          xbee->threadList = p->next;
-        } else if (q) {
-          q->next = p->next;
-        }
-        free(p);
-      } else {
-        q = p;
-      }
+      t = p;
       p = p->next;
+      xbee_log("Trying to join with thread 0x%08X...",t->thread);
+      if (!(xbee_thread_tryjoin(t->thread))) {
+        xbee_log("Joined with thread 0x%08X...",t->thread);
+        if (t == xbee->threadList) {
+          xbee->threadList = t->next;
+        } else if (q) {
+          q->next = t->next;
+        }
+        xbee_log("Tidied up...");
+        free(t);
+        xbee_log("Free'd...");
+      } else {
+        q = t;
+      }
     }
     
+    xbee_log("Unlocking threadmutex...");
     xbee_mutex_unlock(xbee->threadmutex);
+    xbee_log("Unocked threadmutex...");
     xbee_log("Waiting...");
     xbee_sem_wait(xbee->threadsem);
-    usleep(25000); /* 25ms to allow the thread to end before we try to join */
+    usleep(100000); /* 100ms to allow the thread to end before we try to join */
   }
   
   xbee_mutex_destroy(xbee->threadmutex);
