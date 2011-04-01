@@ -2061,16 +2061,13 @@ static void xbee_thread_watch(t_LTinfo *info) {
   
   while (xbee->run) {
     t_threadList *p, *q, *t;
-    xbee_log("Locking threadmutex...");
     xbee_mutex_lock(xbee->threadmutex);
-    xbee_log("Locked threadmutex...");
     p = xbee->threadList;
     q = NULL;
     
     while (p) {
       t = p;
       p = p->next;
-      xbee_log("Trying to join with thread 0x%08X...",t->thread);
       if (!(xbee_thread_tryjoin(t->thread))) {
         xbee_log("Joined with thread 0x%08X...",t->thread);
         if (t == xbee->threadList) {
@@ -2078,18 +2075,13 @@ static void xbee_thread_watch(t_LTinfo *info) {
         } else if (q) {
           q->next = t->next;
         }
-        xbee_log("Tidied up...");
         free(t);
-        xbee_log("Free'd...");
       } else {
         q = t;
       }
     }
     
-    xbee_log("Unlocking threadmutex...");
     xbee_mutex_unlock(xbee->threadmutex);
-    xbee_log("Unocked threadmutex...");
-    xbee_log("Waiting...");
     xbee_sem_wait(xbee->threadsem);
     usleep(100000); /* 100ms to allow the thread to end before we try to join */
   }
