@@ -1283,6 +1283,14 @@ static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con) {
     /* if: the packet is 16bit addressed, and the addresses match */
     } else if (!pkt->sAddr64 && !memcmp(pkt->Addr16,con->tAddr,2)) {
       return 1;
+    } else if (con->type == pkt->type && 
+               (con->type == xbee_16bitData || con->type == xbee_64bitData) && 
+               (!(!con->txBroadcast ^ !pkt->isBroadcastPAN))) {
+      char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+      if ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
+          (!con->tAddr64 && !memcmp(con->tAddr,t,2))) {
+        return 1;
+      }
     }
   }
   return 0;
@@ -1719,8 +1727,10 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         xbee_logcf(xbee);
         xbee_log("RSSI: -%ddB",d[offset]);
         if (d[offset + 1] & 0x02) xbee_log("Options: Address Broadcast");
-        if (d[offset + 1] & 0x03) xbee_log("Options: PAN Broadcast");
+        if (d[offset + 1] & 0x04) xbee_log("Options: PAN Broadcast");
       }
+      p->isBroadcastADR = !!(d[offset+1] & 0x02);
+      p->isBroadcastPAN = !!(d[offset+1] & 0x04);
       p->dataPkt = TRUE;
       p->txStatusPkt = FALSE;
       p->modemStatusPkt = FALSE;
@@ -1803,8 +1813,6 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         }
         xbee_logcf(xbee);
         xbee_log("RSSI: -%ddB",d[offset]);
-        if (d[9] & 0x02) xbee_log("Options: Address Broadcast");
-        if (d[9] & 0x02) xbee_log("Options: PAN Broadcast");
         xbee_log("Samples: %d",d[offset + 2]);
       }
       i2 = offset + 5;
@@ -1851,14 +1859,33 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
     /* lock the connection mutex */
     xbee_mutex_lock(xbee->conmutex);
 
-    con = xbee->conlist;
     hasCon = 0;
-    while (con) {
-      if (xbee_matchpktcon(xbee, p, con)) {
-        hasCon = 1;
-        break;
+    if (p->isBroadcastADR || p->isBroadcastPAN) {
+      char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+      /* if the packet was broadcast, search for a broadcast accepting connection */
+      con = xbee->conlist;
+      while (con) {
+        if (con->type == p->type && 
+            (con->type == xbee_16bitData || con->type == xbee_64bitData) && 
+            (!(!con->txBroadcast ^ !p->isBroadcastPAN)) &&
+            ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
+             (!con->tAddr64 && !memcmp(con->tAddr,t,2)))) {
+          hasCon = 1;
+          xbee_log("Found broadcasting connection @ 0x%p",con);
+          break;
+        }
+        con = con->next;
       }
-      con = con->next;
+    }
+    if (!hasCon || !con) {
+      con = xbee->conlist;
+      while (con) {
+        if (xbee_matchpktcon(xbee, p, con)) {
+          hasCon = 1;
+          break;
+        }
+        con = con->next;
+      }
     }
 
     /* unlock the connection mutex */

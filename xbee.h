@@ -88,7 +88,8 @@ struct xbee_pkt {
   unsigned int modemStatusPkt : 1;
   unsigned int remoteATPkt    : 1;
   unsigned int IOPkt          : 1;
-  unsigned int __spare__      : 2;
+  unsigned int isBroadcastADR : 1;
+  unsigned int isBroadcastPAN : 1;
 
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
