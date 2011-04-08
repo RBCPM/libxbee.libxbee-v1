@@ -1,5 +1,5 @@
 #-- uncomment this to enable debugging
-#DEBUG:=/Zi /DDEBUG
+#DEBUG:=/Zi /DDEBUG /MTd
 #LDBUG:=/DEBUG
 
 #-- you may need to edit these lines if your installation is different
@@ -9,6 +9,7 @@ SDKPath:=C:\Program Files\Microsoft SDKs\Windows\v6.0A
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 SHELL:=cmd
+DEBUG?=/MT
 
 SRCS:=api.c
 
@@ -38,7 +39,7 @@ clean:
 		/OUT:.\lib\libxbee.dll .\obj\api.obj .\obj\win32.res
 
 .\obj\api.obj: .\obj api.c api.h xbee.h
-	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /MT /RTCs /Gz /c /Fd.\lib\libxbee.pdb /Fo.\obj\api.obj ${SRCS}
+	${CC} ${DEBUG} /nologo "/I${SDKPath}\Include" "/I${VCPath}\include" /RTCs /Gz /c /Fd.\lib\libxbee.pdb /Fo.\obj\api.obj ${SRCS}
 
 .\obj\win32.res: .\xsys\win32.rc
 	${RC} "/I${SDKPath}\Include" "/I${VCPath}\include" /n /fo.\obj\win32.res .\xsys\win32.rc 
