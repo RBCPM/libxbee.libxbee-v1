@@ -34,17 +34,17 @@ int ver(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow) {
   return 0;
 }
 
-void xbee_UNLOADALL(xbee_hnd xbee) {
-  if (xbee->next) xbee_UNLOADALL(xbee->next);
-  _xbee_end(xbee);
+void xbee_UNLOADALL(void) {
+  while (default_xbee) {
+    _xbee_end(default_xbee);
+  }
 }
 
 /* this gets called when the dll is loaded and unloaded... */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
-  xbee_hnd xbee, xbee2;
   if (dwReason == DLL_PROCESS_DETACH) {
     /* ensure that libxbee has been shut down nicely */
-    xbee_UNLOADALL(default_xbee);
+    xbee_UNLOADALL();
   } else if (dwReason == DLL_PROCESS_ATTACH || dwReason == DLL_THREAD_ATTACH) {
     if (!glob_hModule) {
       /* keep a handle on the module */
@@ -59,7 +59,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
 }
 
 HRESULT DllCanUnloadNow(void) {
-  xbee_UNLOADALL(default_xbee);
+  if (default_xbee) return 0;
   return 1;
 }
 

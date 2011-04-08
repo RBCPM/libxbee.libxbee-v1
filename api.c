@@ -408,22 +408,11 @@ int _xbee_end(xbee_hnd xbee) {
   /* close the serial port */
   Xfree(xbee->path);
   if (xbee->tty) xbee_close(xbee->tty);
-#ifdef __GNUC__ /* ---- */
-  if (xbee->ttyfd) close(xbee->ttyfd);
-#endif /* ------------- */
 
   /* close log and tty */
   if (xbee->log) {
-    i = 0;
-    xbeet = default_xbee;
-    while (xbeet) {
-      if (xbeet->log == xbee->log) i++;
-      xbeet = xbeet->next;
-    }
-    if (i > 0) xbee_log("%d others are using this log file... leaving it open", i);
-    xbee_log("libxbee instance stopped!");
     fflush(xbee->log);
-    if (i == 0) xbee_close(xbee->log);
+    xbee_close(xbee->log);
   }
   xbee_mutex_destroy(xbee->logmutex);
 
@@ -463,19 +452,20 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
 xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime) {
   t_LTinfo info;
   int ret;
-  xbee_hnd xbee = NULL;;
+  xbee_hnd xbee = NULL;
 
   /* create a new instance */
   xbee = Xcalloc(sizeof(struct xbee_hnd));
+  xbee->next = NULL;
   
-#ifdef DEBUG
-  /* logfd or stderr */
-  xbee->logfd = ((logfd)?logfd:2);
-#else
-  xbee->logfd = logfd;
-#endif
   xbee_mutex_init(xbee->logmutex);
-  if (xbee->logfd) {
+  if (logfd) {
+#ifdef DEBUG
+    /* logfd or stderr */
+    xbee->logfd = dup(logfd?logfd:2);
+#else
+    xbee->logfd = dup(logfd);
+#endif
     xbee->log = fdopen(xbee->logfd,"w");
     if (!xbee->log) {
       /* errno == 9 is bad file descriptor (probrably not provided) */

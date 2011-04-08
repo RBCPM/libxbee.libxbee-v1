@@ -184,15 +184,20 @@ int gettimeofday(struct timeval *tv, struct timezone *tz) {
 
 /* enable the debug output to a custom file or fallback to stderr */
 int xbee_setupDebugAPI(char *path, int baudrate, char *logfile, char cmdSeq, int cmdTime) {
-  xbee_hnd xbee = default_xbee;
+  xbee_hnd xbee = NULL;
   int fd, ret;
   if ((fd = _open(logfile,_O_WRONLY | _O_CREAT | _O_TRUNC)) == -1) {
-    ret = xbee_setuplogAPI(path,baudrate,2,cmdSeq,cmdTime);
-  } else {
-    ret = xbee_setuplogAPI(path,baudrate,fd,cmdSeq,cmdTime);
+    fd = 2;
   }
-  if (fd == -1) {
-    xbee_log("Error opening logfile '%s' (errno=%d)... using stderr instead...",logfile,errno);
+  ret = xbee_setuplogAPI(path,baudrate,fd,cmdSeq,cmdTime);
+  if (fd > 2) { /* close fd, as libxbee dup'ed it */
+    //_close(fd);
+  }
+  if (!ret) { /* libxbee started correctly */
+    xbee = default_xbee;
+    if (fd == -1) {
+      xbee_log("Error opening logfile '%s' (errno=%d)... using stderr instead!",logfile,errno);
+    }
   }
   return ret;
 }
