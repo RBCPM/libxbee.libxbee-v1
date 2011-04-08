@@ -79,8 +79,10 @@ int doAT(xbee_con *con, char *cmd, char *parameter, int length, unsigned char **
     *ret = realloc(*ret,sizeof(char) * (pkt->datalen + 1));
     memcpy(*ret,pkt->data,pkt->datalen);
     (*ret)[pkt->datalen] = '\0';
+    Xfree(pkt);
     return pkt->datalen;
   }
+  Xfree(pkt);
   return 0;
 }
 
