@@ -318,7 +318,6 @@ int _xbee_end(xbee_hnd xbee) {
   xbee_con *con, *ncon;
   xbee_pkt *pkt, *npkt;
   xbee_hnd xbeet;
-  int i;
 
   ISREADY(xbee);
   xbee_log("Stopping libxbee instance...");
@@ -1276,7 +1275,7 @@ static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con) {
     } else if (con->type == pkt->type && 
                (con->type == xbee_16bitData || con->type == xbee_64bitData) && 
                (!(!con->txBroadcast ^ !pkt->isBroadcastPAN))) {
-      char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+      unsigned char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
       if ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
           (!con->tAddr64 && !memcmp(con->tAddr,t,2))) {
         return 1;
@@ -1851,7 +1850,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
 
     hasCon = 0;
     if (p->isBroadcastADR || p->isBroadcastPAN) {
-      char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+      unsigned char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
       /* if the packet was broadcast, search for a broadcast accepting connection */
       con = xbee->conlist;
       while (con) {
