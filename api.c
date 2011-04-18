@@ -674,7 +674,8 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   /* if: 64 bit address expected (2 ints) */
   if ((type == xbee_64bitRemoteAT) ||
       (type == xbee_64bitData) ||
-      (type == xbee_64bitIO)) {
+      (type == xbee_64bitIO) ||
+      (type == xbee2_data)) {
     t = va_arg(ap, int);
     tAddr[0] = (t >> 24) & 0xFF;
     tAddr[1] = (t >> 16) & 0xFF;
@@ -755,7 +756,8 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   /* is it a 64bit connection? */
   if ((type == xbee_64bitRemoteAT) ||
       (type == xbee_64bitData) ||
-      (type == xbee_64bitIO)) {
+      (type == xbee_64bitIO) ||
+      (type == xbee2_data)) {
     con->tAddr64 = TRUE;
   }
   con->atQueue = 0; /* queue AT commands? */
@@ -796,6 +798,14 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
     case xbee_64bitIO:
       xbee_logc("New %d-bit IO connection! (to: ",(con->tAddr64?64:16));
       for (i=0;i<(con->tAddr64?8:2);i++) {
+        fprintf(xbee->log,(i?":%02X":"%02X"),tAddr[i]);
+      }
+      fprintf(xbee->log,")");
+      xbee_logcf(xbee);
+      break;
+    case xbee2_data:
+      xbee_logc("New Series 2 data connection! (to: ");
+      for (i=0;i<8;i++) {
         fprintf(xbee->log,(i?":%02X":"%02X"),tAddr[i]);
       }
       fprintf(xbee->log,")");
@@ -1014,6 +1024,8 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     case xbee_64bitData:     fprintf(xbee->log,"Data (64-bit)"); break;
     case xbee_16bitIO:       fprintf(xbee->log,"IO (16-bit)"); break;
     case xbee_64bitIO:       fprintf(xbee->log,"IO (64-bit)"); break;
+    case xbee2_data:         fprintf(xbee->log,"Series 2 Data"); break;
+    case xbee2_txStatus:     fprintf(xbee->log,"Series 2 Tx Status"); break;
     case xbee_txStatus:      fprintf(xbee->log,"Tx Status"); break;
     case xbee_modemStatus:   fprintf(xbee->log,"Modem Status"); break;
     }
@@ -1040,6 +1052,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   if (con->type == xbee_localAT) {
     /* AT commands are 2 chars long (plus optional parameter) */
     if (length < 2) return -1;
+    if (length > 32) return -1;
 
     /* use the command? */
     buf[0] = ((!con->atQueue)?XBEE_LOCAL_ATREQ:XBEE_LOCAL_ATQUE);
@@ -1060,6 +1073,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   } else if ((con->type == xbee_16bitRemoteAT) ||
              (con->type == xbee_64bitRemoteAT)) {
     if (length < 2) return -1; /* at commands are 2 chars long (plus optional parameter) */
+    if (length > 32) return -1;
     buf[0] = XBEE_REMOTE_ATREQ;
     buf[1] = con->frameID;
 
@@ -1090,6 +1104,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   } else if ((con->type == xbee_16bitData) ||
              (con->type == xbee_64bitData)) {
     int offset;
+    if (length > 100) return -1;
 
     /* if: 16bit Data */
     if (con->type == xbee_16bitData) {
@@ -1130,6 +1145,35 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     if (xbee->log) {
       xbee_log("******* TODO ********\n");
     }
+    
+    /* ########################################## */
+    /* if: Series 2 Data */
+  } else if (con->type == xbee2_data) {
+    if (length > 72) return -1;
+    
+    buf[0] = XBEE2_DATATX;
+    buf[1] = con->frameID;
+
+    /* copy in the relevant address */
+    memcpy(&buf[2],con->tAddr,8);
+    buf[10] = 0xFF;
+    buf[11] = 0xFE;
+
+    /* Maximum Radius/hops */
+    buf[12] = 0x00; 
+    
+    /* Options */
+    buf[13] = 0x00;
+    
+    /* copy in the data */
+    for (i=0;i<length;i++) {
+      buf[i+14] = data[i];
+    }
+
+    /* setup the packet */
+    pkt = xbee_make_pkt(xbee, buf, i+14);
+    /* send it on */
+    return xbee_send_pkt(xbee, pkt, con);
   }
 
   return -2;
@@ -1836,6 +1880,105 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         i2 = xbee_parse_io(xbee, p, d, offset + 3, i2, o);
       }
       xbee_log("----------------------------");
+
+      /* ########################################## */
+      /* if: Series 2 Transmit status */
+    } else if (t == XBEE2_TX_STATUS) {
+      if (xbee->log) {
+        xbee_log("Packet type: Series 2 Transmit Status (0x%02X)", t);
+        xbee_log("FrameID: 0x%02X",d[0]);
+        xbee_log("16-bit Delivery Address: %02X:%02X",d[1],d[2]);
+        xbee_log("Transmit Retry Count: %02X",d[3]);
+        xbee_logc("Delivery Status: ");
+        if      (d[4] == 0x00) fprintf(xbee->log,"Success");
+        else if (d[4] == 0x02) fprintf(xbee->log,"CCA Failure");
+        else if (d[4] == 0x15) fprintf(xbee->log,"Invalid Destination");
+        else if (d[4] == 0x21) fprintf(xbee->log,"Network ACK Failure");
+        else if (d[4] == 0x22) fprintf(xbee->log,"Not Joined to Network");
+        else if (d[4] == 0x23) fprintf(xbee->log,"Self-Addressed");
+        else if (d[4] == 0x24) fprintf(xbee->log,"Address Not Found");
+        else if (d[4] == 0x25) fprintf(xbee->log,"Route Not Found");
+        else if (d[4] == 0x74) fprintf(xbee->log,"Data Payload Too Large"); /* ??? */
+        fprintf(xbee->log," (0x%02X)",d[4]);
+        xbee_logcf(xbee);
+
+        xbee_logc("Discovery Status: ");
+        if      (d[5] == 0x00) fprintf(xbee->log,"No Discovery Overhead");
+        else if (d[5] == 0x01) fprintf(xbee->log,"Address Discovery");
+        else if (d[5] == 0x02) fprintf(xbee->log,"Route Discovery");
+        else if (d[5] == 0x03) fprintf(xbee->log,"Address & Route Discovery");
+        fprintf(xbee->log," (0x%02X)",d[5]);
+        xbee_logcf(xbee);
+      }
+
+      p->type = xbee_txStatus;
+
+      p->sAddr64 = FALSE;
+      p->dataPkt = FALSE;
+      p->txStatusPkt = TRUE;
+      p->modemStatusPkt = FALSE;
+      p->remoteATPkt = FALSE;
+      p->IOPkt = FALSE;
+
+      p->frameID = d[0];
+
+      p->status = d[4];
+
+      /* never returns data */
+      p->datalen = 0;
+
+      /* ########################################## */
+      /* if: Series 2 data recieve */
+    } else if (t == XBEE2_DATARX) {
+      int offset;
+      offset = 10;
+      if (xbee->log) {
+        xbee_log("Packet type: Series 2 Data Rx (0x%02X)", t);
+        
+        xbee_logc("64-bit Address: ");
+        for (j=0;j<8;j++) {
+          fprintf(xbee->log,(j?":%02X":"%02X"),d[j]);
+        }
+        xbee_logcf(xbee);
+        
+        xbee_logc("16-bit Address: ");
+        for (j=0;j<2;j++) {
+          fprintf(xbee->log,(j?":%02X":"%02X"),d[j+8]);
+        }
+        xbee_logcf(xbee);
+        
+        if (d[offset] & 0x01) xbee_log("Options: Packet Acknowledged");
+        if (d[offset] & 0x02) xbee_log("Options: Packet was a broadcast packet");
+        if (d[offset] & 0x20) xbee_log("Options: Packet Encrypted");                /* ??? */
+        if (d[offset] & 0x40) xbee_log("Options: Packet from end device");          /* ??? */
+      }
+      p->dataPkt = TRUE;
+      p->txStatusPkt = FALSE;
+      p->modemStatusPkt = FALSE;
+      p->remoteATPkt = FALSE;
+      p->IOPkt = FALSE;
+      p->type = xbee2_data;
+      p->sAddr64 = TRUE;
+
+      p->Addr64[0] = d[0];
+      p->Addr64[1] = d[1];
+      p->Addr64[2] = d[2];
+      p->Addr64[3] = d[3];
+      p->Addr64[4] = d[4];
+      p->Addr64[5] = d[5];
+      p->Addr64[6] = d[6];
+      p->Addr64[7] = d[7];
+
+      p->Addr16[0] = d[8];
+      p->Addr16[1] = d[9];
+
+      p->status = d[offset];
+
+      /* copy in the data */
+      p->datalen = i - (offset + 1);
+      for (;i>offset;i--) {
+        p->data[i-(offset + 1)] = d[i];
+      }
 
       /* ########################################## */
       /* if: Unknown */

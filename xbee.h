@@ -55,7 +55,10 @@ enum xbee_types {
 
   xbee_localAT,       /* frame ID */
   xbee_remoteAT,
-
+  xbee_modemStatus,
+  xbee_txStatus,
+  
+  /* XBee Series 1 stuff */
   xbee_16bitRemoteAT, /* frame ID */
   xbee_64bitRemoteAT, /* frame ID */
 
@@ -64,9 +67,10 @@ enum xbee_types {
 
   xbee_16bitIO,
   xbee_64bitIO,
-
-  xbee_txStatus,
-  xbee_modemStatus
+  
+  /* XBee Series 2 stuff */
+  xbee2_data,
+  xbee2_txStatus
 };
 typedef enum xbee_types xbee_types;
 

@@ -67,6 +67,7 @@
 
 #define XBEE_MODEM_STATUS 0x8A
 
+/* XBee Series 1 stuff */
 #define XBEE_TX_STATUS    0x89
 #define XBEE_64BIT_DATATX 0x00
 #define XBEE_64BIT_DATARX 0x80
@@ -74,6 +75,11 @@
 #define XBEE_16BIT_DATARX 0x81
 #define XBEE_64BIT_IO     0x82
 #define XBEE_16BIT_IO     0x83
+
+/* XBee Series 2 stuff */
+#define XBEE2_DATATX      0x10
+#define XBEE2_DATARX      0x90
+#define XBEE2_TX_STATUS   0x8B
 
 typedef struct xbee_hnd* xbee_hnd;
 
