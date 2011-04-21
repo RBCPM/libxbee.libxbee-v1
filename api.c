@@ -2218,6 +2218,12 @@ static void xbee_thread_watch(t_LTinfo *info) {
   xbee_mutex_init(xbee->threadmutex);
   xbee_sem_init(xbee->threadsem);
   
+
+#ifdef _WIN32 /* ---- */
+  /* win32 requires this delay... no idea why */
+  usleep(1000000);
+#endif /* ----------- */
+
   while (xbee->run) {
     t_threadList *p, *q, *t;
     xbee_mutex_lock(xbee->threadmutex);

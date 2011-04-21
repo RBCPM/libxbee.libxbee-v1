@@ -67,14 +67,5 @@ HMODULE glob_hModule = NULL;
 #define xbee_ferror(a)            (0)
 #define xbee_close(a)             (((a)==xbee->log)?fclose((a)):CloseHandle((a)))
 
-typedef struct win32_callback_info win32_callback_info;
-struct win32_callback_info {
-  xbee_con *con;
-  HWND hWnd;
-  UINT uMsg;
-  win32_callback_info *next;
-};
-
-win32_callback_info *callbackMap = NULL;
-xbee_mutex_t callbackmutex;
-char callbackmutexInitialized = 0;
+HWND win32_hWnd = 0;
+UINT win32_MessageID = 0;

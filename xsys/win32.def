@@ -28,6 +28,7 @@ EXPORTS
   xbee_disableACKwait
   xbee_enableDestroySelf
 
+  xbee_enableCallbacks
   xbee_attachCallback
   xbee_detachCallback
   xbee_runCallback

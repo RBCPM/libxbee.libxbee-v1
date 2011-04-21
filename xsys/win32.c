@@ -231,27 +231,18 @@ void xbee_enableDestroySelf(xbee_con *con) {
 /* for vb6... it will send a message to the given hWnd which can in turn check for a packet */
 void xbee_callback(xbee_con *con, xbee_pkt *pkt) {
   xbee_hnd xbee = default_xbee;
-  win32_callback_info *p = callbackMap;
   
-  /* grab the mutex */
-  xbee_mutex_lock(callbackmutex);
-  
-  /* see if there is an existing callback for this connection */
-  while (p) {
-    if (p->con == con) break;
-    p = p->next;
+  if (!win32_hWnd) {
+    xbee_log("*** Cannot do callback! No hWnd set... ***");
+    return;
+  }
+  if (!win32_MessageID) {
+    xbee_log("*** Cannot do callback! No MessageID set... ***");
+    return;
   }
   
-  /* release the mutex (before the SendMessage, as this could take time...) */
-  xbee_mutex_unlock(callbackmutex);
-  
-  /* if there is, continue! */
-  if (p) {
-    xbee_log("Callback message sent!");
-    SendMessage(p->hWnd, p->uMsg, (int)con, (int)pkt);
-  } else {
-    xbee_log("Callback message NOT sent... Unmapped callback! (con=0x%08X)",con);
-  }
+  xbee_log("Callback message sent!");
+  SendMessage(win32_hWnd, win32_MessageID, (int)con, (int)pkt);
 }
 
 /* very simple C function to provide more functionality to VB6 */
@@ -259,80 +250,30 @@ int xbee_runCallback(int(*func)(xbee_con*,xbee_pkt*), xbee_con *con, xbee_pkt *p
   return func(con,pkt);
 }
 
-void xbee_attachCallback(xbee_con *con, HWND hWnd, UINT uMsg) {
+void xbee_enableCallbacks(HWND hWnd, UINT uMsg) {
   xbee_hnd xbee = default_xbee;
-  win32_callback_info *l, *p;
-  
-  /* grab the mutex */
-  xbee_mutex_lock(callbackmutex);
-  
-  l = NULL;
-  p = callbackMap;
-  
-  /* see if there is an existing callback for this connection */
-  while (p) {
-    if (p->con == con) break;
-    l = p;
-    p = p->next;
+  if (!win32_MessageID || win32_MessageID != uMsg) {
+    xbee_log("Configuring libxbee to use MessageID = 0x%08X", uMsg);
+    win32_MessageID = uMsg;
   }
-  /* if not, then add it */
-  if (!p) {
-    p = Xcalloc(sizeof(win32_callback_info));
-    p->next = NULL;
-    p->con = con;
-    if (!l) {
-      xbee_log("Mapping the first callback...");
-      callbackMap = p;
-    } else {
-      xbee_log("Mapping another callback...");
-      l->next = p;
-    }
-  } else {
-    xbee_log("Updating callback map...");
+  if (!win32_hWnd || win32_hWnd != hWnd) {
+    xbee_log("Configuring libxbee to use hWnd = 0x%08X", hWnd);
+    win32_hWnd = hWnd;
   }
-  /* setup / update the parameters */
-  xbee_log("  connection @ 0x%08X",con);
-  xbee_log("  hWnd       = 0x%08X",hWnd);
-  xbee_log("  uMsg       = 0x%08X",uMsg);
-  p->hWnd = hWnd;
-  p->uMsg = uMsg;
-  
+}
+
+void xbee_attachCallback(xbee_con *con) {
+  xbee_hnd xbee = default_xbee;
+
   /* setup the callback function */
+  xbee_log("Setting callback for connection @ 0x%08X",con);
   con->callback = xbee_callback;
-  
-  /* release the mutex */
-  xbee_mutex_unlock(callbackmutex);
 }
 
 void xbee_detachCallback(xbee_con *con) {
   xbee_hnd xbee = default_xbee;
-  win32_callback_info *l = NULL, *p = callbackMap;
-  xbee_mutex_lock(callbackmutex);
   
-  /* see if there is an existing callback for this connection */
-  while (p) {
-    if (p->con == con) break;
-    l = p;
-    p = p->next;
-  }
-  /* if there is, then remove it! */
-  if (p) {
-    if (!l) {
-      callbackMap = NULL;
-    } else if (l->next) {
-      l->next = l->next->next;
-    } else {
-      l->next = NULL;
-    }
-    xbee_log("Unmapping callback...");
-    xbee_log("  connection @ 0x%08X",con);
-    xbee_log("  hWnd       = 0x%08X",p->hWnd);
-    xbee_log("  uMsg       = 0x%08X",p->uMsg);
-    Xfree(p);
-  }
-  
+  /* un-setup the callback function */
+  xbee_log("Unsetting callback for connection @ 0x%08X",con);
   con->callback = NULL;
-  
-  /* release the mutex */
-  xbee_mutex_unlock(callbackmutex);
 }

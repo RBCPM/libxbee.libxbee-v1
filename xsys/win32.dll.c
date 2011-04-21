@@ -50,10 +50,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved) {
       /* keep a handle on the module */
       glob_hModule = (HMODULE)hModule;
     }
-    if (!callbackmutexInitialized) {
-      xbee_mutex_init(callbackmutex);
-      callbackmutexInitialized = 1;
-    }
   }
   return TRUE;
 }
