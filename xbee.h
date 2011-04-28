@@ -131,6 +131,7 @@ struct xbee_con {
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
   void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
+  void *customData;               /* can be used to store data related to this connection */
   void *callbackList;
   xbee_mutex_t callbackmutex;
   xbee_mutex_t callbackListmutex;
