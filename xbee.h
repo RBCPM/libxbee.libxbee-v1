@@ -126,7 +126,8 @@ struct xbee_con {
   unsigned int destroySelf   : 1; /* if set, the callback thread will destroy the connection
                                      after all of the packets have been processed */
   unsigned int waitforACK    : 1; /* waits for the ACK or NAK after transmission */
-  unsigned int __spare__     : 2;
+  unsigned int noFreeAfterCB : 1; /* prevents libxbee from free'ing the packet after the callback has completed */
+  unsigned int __spare__     : 1;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
@@ -153,6 +154,8 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
 int xbee_end(void);
 int _xbee_end(xbee_hnd xbee);
 
+void xbee_logitf(char *format, ...);
+void _xbee_logitf(xbee_hnd xbee, char *format, ...);
 void xbee_logit(char *str);
 void _xbee_logit(xbee_hnd xbee, char *str);
 

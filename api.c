@@ -157,6 +157,22 @@ static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const ch
   fprintf(xbee->log,logformat,file,line,function,buf);
   if (unlock) xbee_mutex_unlock(xbee->logmutex);
 }
+void xbee_logitf(char *format, ...) {
+  char buf[128];
+  va_list ap;
+  va_start(ap,format);
+  vsnprintf(buf,127,format,ap);
+  va_end(ap);
+  xbee_logit(buf);
+}
+void _xbee_logitf(xbee_hnd xbee, char *format, ...) {
+  char buf[128];
+  va_list ap;
+  va_start(ap,format);
+  vsnprintf(buf,127,format,ap);
+  va_end(ap);
+  _xbee_logit(xbee, buf);
+}
 void xbee_logit(char *str) {
   _xbee_logit(default_xbee, str);
 }
@@ -2075,9 +2091,7 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
           continue;
         }
         xbee_log("Started thread 0x%08X!", t);
-        xbee_log("Locking threadmutex...");
         xbee_mutex_lock(xbee->threadmutex);
-        xbee_log("Locked threadmutex...");
         p = xbee->threadList;
         q = NULL;
         while (p) {
@@ -2093,7 +2107,6 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
         p->thread = t;
         p->next = NULL;
         xbee_mutex_unlock(xbee->threadmutex);
-        xbee_log("Unocked threadmutex...");
       } else {
         xbee_log("Using existing callback thread... callback has been scheduled.");
       }
@@ -2161,7 +2174,7 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
     if (con->callback) {
       con->callback(con,pkt);
       xbee_log("Callback complete!");
-      Xfree(pkt);
+      if (!con->noFreeAfterCB) Xfree(pkt);
     } else {
       xbee_pkt *q;
       int i;
