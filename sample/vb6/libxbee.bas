@@ -112,10 +112,7 @@ Private Declare Function lstrlenW Lib "kernel32" (ByVal lpString As Long) As Lon
 Private Declare Function RegisterWindowMessage Lib "user32" Alias "RegisterWindowMessageA" (ByVal lpString As String) As Long
 Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
 Private Declare Function CallWindowProc Lib "user32" Alias "CallWindowProcA" (ByVal lpPrevWndFunc As Long, ByVal hWnd As Long, ByVal Msg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
-Private Const CUSTOM_MSG_MIN = 49152
-Private Const CUSTOM_MSG_MAX = 65535
 Private Const WM_DESTROY = &H2
-Private Const WM_CLOSE = &H12
 Private Const GWL_WNDPROC = -4
 
 Public Function PointerToString(lngPtr As Long) As String

@@ -587,8 +587,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   xbee->xbee_ready = -1;
 
   /* can start xbee_listen thread now */
-  info.xbee = xbee;
-  if (xbee_thread_create(xbee->listent, xbee_listen_wrapper, &info)) {
+  if (xbee_thread_create(xbee->listent, xbee_listen_wrapper, xbee)) {
     xbee_perror("xbee_setup():xbee_thread_create(listent)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
@@ -604,7 +603,7 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   }
   
   /* can start xbee_thread_watch thread thread now */
-  if (xbee_thread_create(xbee->threadt, xbee_thread_watch, &info)) {
+  if (xbee_thread_create(xbee->threadt, xbee_thread_watch, xbee)) {
     xbee_perror("xbee_setup():xbee_thread_create(threadt)");
     if (xbee->log) xbee_close(xbee->log);
     xbee_mutex_destroy(xbee->conmutex);
@@ -1434,23 +1433,21 @@ void xbee_listen_stop(xbee_hnd xbee) {
 /* #################################################################
    xbee_listen_wrapper - INTERNAL
    the xbee_listen wrapper. Prints an error when xbee_listen ends */
-static void xbee_listen_wrapper(t_LTinfo *info) {
-  xbee_hnd xbee;
+static void xbee_listen_wrapper(xbee_hnd xbee) {
   int ret;
-  xbee = info->xbee;
+
   /* just falls out if the proper 'go-ahead' isn't given */
   if (xbee->xbee_ready != -1) return;
   /* now allow the parent to continue */
   xbee->xbee_ready = -2;
-
+  
 #ifdef _WIN32 /* ---- */
   /* win32 requires this delay... no idea why */
   usleep(1000000);
 #endif /* ----------- */
 
   while (xbee->run) {
-    info->i = -1;
-    ret = xbee_listen(xbee, info);
+    ret = xbee_listen(xbee);
     if (!xbee->run) break;
     xbee_log("xbee_listen() returned [%d]... Restarting in 250ms!",ret);
     usleep(25000);
@@ -1460,7 +1457,7 @@ static void xbee_listen_wrapper(t_LTinfo *info) {
 /* xbee_listen - INTERNAL
    the xbee xbee_listen thread
    reads data from the xbee and puts it into a linked list to keep the xbee buffers free */
-static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
+static int xbee_listen(xbee_hnd xbee) {
 #define LISTEN_BUFLEN 1024
   unsigned char c, t, d[LISTEN_BUFLEN];
   unsigned int l, i, chksum, o;
@@ -1469,8 +1466,6 @@ static int xbee_listen(xbee_hnd xbee, t_LTinfo *info) {
   xbee_con *con;
   int hasCon;
 
-  /* just falls out if the proper 'go-ahead' isn't given */
-  if (info->i != -1) return -1;
   /* do this forever :) */
   while (xbee->run) {
     /* wait for a valid start byte */
@@ -2224,18 +2219,15 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
 /* #################################################################
    xbee_thread_watch - INTERNAL
    watches for dead threads and tidies up */
-static void xbee_thread_watch(t_LTinfo *info) {
-  xbee_hnd xbee;
-  
-  xbee = info->xbee;
-  xbee_mutex_init(xbee->threadmutex);
-  xbee_sem_init(xbee->threadsem);
-  
+static void xbee_thread_watch(xbee_hnd xbee) {
 
 #ifdef _WIN32 /* ---- */
   /* win32 requires this delay... no idea why */
   usleep(1000000);
 #endif /* ----------- */
+
+  xbee_mutex_init(xbee->threadmutex);
+  xbee_sem_init(xbee->threadsem);
 
   while (xbee->run) {
     t_threadList *p, *q, *t;

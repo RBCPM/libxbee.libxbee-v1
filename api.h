@@ -198,9 +198,9 @@ static int xbee_sendATdelay(xbee_hnd xbee, int guardTime, char *command, char *r
 static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
                          int maskOffset, int sampleOffset, int sample);
 
-static void xbee_thread_watch(t_LTinfo *info);
-static void xbee_listen_wrapper(t_LTinfo *info);
-static int xbee_listen(xbee_hnd xbee, t_LTinfo *info);
+static void xbee_thread_watch(xbee_hnd xbee);
+static void xbee_listen_wrapper(xbee_hnd xbee);
+static int xbee_listen(xbee_hnd xbee);
 static unsigned char xbee_getbyte(xbee_hnd xbee);
 static unsigned char xbee_getrawbyte(xbee_hnd xbee);
 static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con);
