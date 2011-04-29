@@ -331,6 +331,10 @@ Public Function localCB(ByVal con As Long, ByRef pkt As xbee_pkt) As Long
     End Select
     
     If (AT <> "ND") Then Exit Function
+    If (pkt.status <> 0) Then
+        MsgBox "An error occured when attempting to scan!", vbCritical
+        Exit Function
+    End If
     
     If (pkt.datalen = 0) Then
         ' increment the counter for each node

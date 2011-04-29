@@ -1044,11 +1044,16 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     case xbee_modemStatus:   fprintf(xbee->log,"Modem Status"); break;
     }
     xbee_logcf(xbee);
-    xbee_logc("Destination: ");
-    for (i=0;i<(con->tAddr64?8:2);i++) {
-      fprintf(xbee->log,(i?":%02X":"%02X"),con->tAddr[i]);
+    switch (con->type) {
+    case xbee_localAT: case xbee_remoteAT: case xbee_txStatus: case xbee_modemStatus:
+      break;
+    default:
+      xbee_logc("Destination: ");
+      for (i=0;i<(con->tAddr64?8:2);i++) {
+        fprintf(xbee->log,(i?":%02X":"%02X"),con->tAddr[i]);
+      }
+      xbee_logcf(xbee);
     }
-    xbee_logcf(xbee);
     xbee_log("Length: %d",length);
     for (i=0;i<length;i++) {
       xbee_logc("%3d | 0x%02X ",i,(unsigned char)data[i]);

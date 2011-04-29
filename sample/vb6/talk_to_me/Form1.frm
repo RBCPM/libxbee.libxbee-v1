@@ -1032,9 +1032,14 @@ Private Sub Form_Load()
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
+    Static c As Integer
     dieNow = 1
     Cancel = 1
     Me.Caption = "Waiting for command to complete..."
+    c = c + 1
+    If (c >= 2) Then
+        Cancel = 0
+    End If
 End Sub
 
 Private Sub nodelist_Click()
