@@ -465,7 +465,6 @@ int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTi
   return (default_xbee?0:-1);
 }
 xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime) {
-  t_LTinfo info;
   int ret;
   xbee_hnd xbee = NULL;
 
@@ -2173,7 +2172,7 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
     } else {
       xbee_pkt *q;
       int i;
-      xbee_log("Callback function was removed! Appending packet to full list...");
+      xbee_log("Callback function was removed! Appending packet to main list...");
       /* lock the packet mutex, so we can safely add the packet to the list */
       xbee_mutex_lock(xbee->pktmutex);
 

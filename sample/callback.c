@@ -51,6 +51,7 @@ void callback(xbee_con *con, xbee_pkt *pkt) {
       printf("xbee_senddata: Success after retry!\n",ret);
     }
   }
+free(pkt);
 }
 
 int main(int argc, char *argv[]) {
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
   /* setup the xbee */
   //if (xbee_setupAPI("/dev/ttyUSB0",57600,'+',250) == -1) {
   //if (xbee_setuplogAPI("/dev/ttyUSB0",57600,2,'+',250) == -1) {
-  if (xbee_setuplog("/dev/ttyUSB1",57600,2) == -1) {
+  if (xbee_setuplog("/dev/ttyUSB0",57600,2) == -1) {
     /* oh no... it failed */
     printf("xbee_setup() failed...\n");
     exit(1);
