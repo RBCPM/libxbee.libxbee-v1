@@ -122,7 +122,7 @@ struct xbee_con {
   unsigned int tAddr64       : 1;
   unsigned int atQueue       : 1; /* queues AT commands until AC is sent */
   unsigned int txDisableACK  : 1;
-  unsigned int txBroadcast   : 1; /* broadcasts to PAN */
+  unsigned int txBroadcastPAN: 1; /* broadcasts to PAN */
   unsigned int destroySelf   : 1; /* if set, the callback thread will destroy the connection
                                      after all of the packets have been processed */
   unsigned int waitforACK    : 1; /* waits for the ACK or NAK after transmission */

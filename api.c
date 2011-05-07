@@ -776,7 +776,7 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   }
   con->atQueue = 0; /* queue AT commands? */
   con->txDisableACK = 0; /* disable ACKs? */
-  con->txBroadcast = 0; /* broadcast? */
+  con->txBroadcastPAN = 0; /* broadcast? */
   con->frameID = frameID;
   con->waitforACK = 0;
   memcpy(con->tAddr,tAddr,8); /* copy in the remote address */
@@ -1144,7 +1144,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     buf[1] = con->frameID;
 
     /* disable ack? broadcast? */
-    buf[offset-1] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcast)?0x04:0x00);
+    buf[offset-1] = ((con->txDisableACK)?0x01:0x00) | ((con->txBroadcastPAN)?0x04:0x00);
 
     /* copy in the data */
     for (i=0;i<length;i++) {
@@ -1337,7 +1337,7 @@ static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con) {
       return 1;
     } else if (con->type == pkt->type && 
                (con->type == xbee_16bitData || con->type == xbee_64bitData) && 
-               (!(!con->txBroadcast ^ !pkt->isBroadcastPAN))) {
+               (pkt->isBroadcastADR || pkt->isBroadcastPAN)) {
       unsigned char t[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
       if ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
           (!con->tAddr64 && !memcmp(con->tAddr,t,2))) {
@@ -2013,8 +2013,7 @@ static int xbee_listen(xbee_hnd xbee) {
       con = xbee->conlist;
       while (con) {
         if (con->type == p->type && 
-            (con->type == xbee_16bitData || con->type == xbee_64bitData) && 
-            (!(!con->txBroadcast ^ !p->isBroadcastPAN)) &&
+            (con->type == xbee_16bitData || con->type == xbee_64bitData) &&
             ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
              (!con->tAddr64 && !memcmp(con->tAddr,t,2)))) {
           hasCon = 1;
