@@ -2017,7 +2017,7 @@ static int xbee_listen(xbee_hnd xbee) {
             ((con->tAddr64 && !memcmp(con->tAddr,t,8)) ||
              (!con->tAddr64 && !memcmp(con->tAddr,t,2)))) {
           hasCon = 1;
-          xbee_log("Found broadcasting connection @ 0x%p",con);
+          xbee_log("Found broadcasting connection @ 0x%08X",con);
           break;
         }
         con = con->next;
@@ -2082,7 +2082,7 @@ static int xbee_listen(xbee_hnd xbee) {
         xbee_log("Starting new callback thread!");
         if ((ret = xbee_thread_create(t,xbee_callbackWrapper,&info)) != 0) {
           xbee_mutex_unlock(con->callbackmutex);
-          /* this MAY help... */
+          /* this MAY help with future attempts... */
           xbee_sem_post(xbee->threadsem);
           xbee_log("An error occured while starting thread (%d)... Out of resources?", ret);
           xbee_log("This packet has been lost!");
