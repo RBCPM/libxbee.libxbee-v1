@@ -1084,7 +1084,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     /* setup the packet */
     pkt = xbee_make_pkt(xbee, buf, i+2);
     /* send it on */
-    return xbee_send_pkt(xbee, pkt, con);
+    return _xbee_send_pkt(xbee, pkt, con);
 
     /* ########################################## */
     /* if: remote AT */
@@ -1115,7 +1115,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     /* setup the packet */
     pkt = xbee_make_pkt(xbee, buf, i+13);
     /* send it on */
-    return xbee_send_pkt(xbee, pkt, con);
+    return _xbee_send_pkt(xbee, pkt, con);
 
     /* ########################################## */
     /* if: 16 or 64bit Data */
@@ -1153,7 +1153,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     /* setup the packet */
     pkt = xbee_make_pkt(xbee, buf, i+offset);
     /* send it on */
-    return xbee_send_pkt(xbee, pkt, con);
+    return _xbee_send_pkt(xbee, pkt, con);
 
     /* ########################################## */
     /* if: I/O */
@@ -1191,7 +1191,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
     /* setup the packet */
     pkt = xbee_make_pkt(xbee, buf, i+14);
     /* send it on */
-    return xbee_send_pkt(xbee, pkt, con);
+    return _xbee_send_pkt(xbee, pkt, con);
   }
 
   return -2;
@@ -2211,11 +2211,11 @@ static void xbee_callbackWrapper(t_CBinfo *info) {
 
     xbee_mutex_lock(con->callbackListmutex);
   }
+  xbee_mutex_unlock(con->callbackListmutex);
 
   xbee_log("Callback thread ending...");
   /* releasing the thread mutex is the last thing we do! */
   xbee_mutex_unlock(con->callbackmutex);
-  xbee_mutex_unlock(con->callbackListmutex);
 
   if (con->destroySelf) {
     _xbee_endcon2(xbee,&con,1);
@@ -2317,9 +2317,9 @@ static unsigned char xbee_getrawbyte(xbee_hnd xbee) {
 }
 
 /* #################################################################
-   xbee_send_pkt - INTERNAL
+   _xbee_send_pkt - INTERNAL
    sends a complete packet of data */
-static int xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con) {
+static int _xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con) {
   int retval = 0;
 
   /* lock connection mutex */

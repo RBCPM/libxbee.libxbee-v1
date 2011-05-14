@@ -228,7 +228,7 @@ static unsigned char xbee_getrawbyte(xbee_hnd xbee);
 static int xbee_matchpktcon(xbee_hnd xbee, xbee_pkt *pkt, xbee_con *con);
 
 static t_data *xbee_make_pkt(xbee_hnd xbee, unsigned char *data, int len);
-static int xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con);
+static int _xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con);
 static void xbee_callbackWrapper(t_CBinfo *info);
 
 /* these functions can be found in the xsys files */
