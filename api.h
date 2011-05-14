@@ -177,18 +177,40 @@ static void Xfree2(void **ptr);
 #define Xrealloc(x,y)  Xrealloc2(xbee,(x),(y))
 #define Xfree(x)       Xfree2((void **)&x)
 
-static void xbee_logf(xbee_hnd xbee, const char *logformat, int unlock, const char *file,
+/* usage:
+    xbee_logSf()   lock the log
+    xbee_logEf()   unlock the log
+    
+    xbee_log()     lock   print with \n      unlock          # to print a single line
+    xbee_logc()    lock   print with no \n                   # to print a single line with a custom ending
+    xbee_logcf()          print \n           unlock          # to end a custom-ended single line
+    
+    xbee_logS()    lock   print with \n                      # to start a continuous block
+    xbee_logI()           print with \n                      # to continue a continuous block
+    xbee_logIc()          print with no \n                   # to continue a continuous block with a custom ending
+    xbee_logIcf()         print \n                           # to continue a continuous block with ended custom-ended line
+    xbee_logE()           print with \n      unlock          # to end a continuous block
+*/
+static void xbee_logf(xbee_hnd xbee, const char *logformat, const char *file,
                       const int line, const char *function, char *format, ...);
 #define LOG_FORMAT "[%s:%d] %s(): %s"
-#define xbee_log(...) xbee_logf(xbee,LOG_FORMAT"\n",1,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
-#define xbee_logc(...) xbee_logf(xbee,LOG_FORMAT,0,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__)
-#define xbee_logcf(xbee)               \
-  fprintf((xbee)->log,"\n");           \
-  xbee_mutex_unlock((xbee)->logmutex); \
 
-#define xbee_perror(str)                           \
-  if (xbee) xbee_log("%s:%s",str,strerror(errno)); \
-  perror(str);                                     \
+#define xbee_logSf()      if (xbee->log) { xbee_mutex_lock(xbee->logmutex);   }
+#define xbee_logEf()      if (xbee->log) { xbee_mutex_unlock(xbee->logmutex); }
+
+#define xbee_log(...)     if (xbee->log) { xbee_logSf(); xbee_logf(xbee,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__); xbee_logEf(); }
+#define xbee_logc(...)    if (xbee->log) { xbee_logSf(); xbee_logf(xbee,LOG_FORMAT    ,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__);               }
+#define xbee_logcf()      if (xbee->log) {               fprintf(xbee->log, "\n");                                                  xbee_logEf(); }
+
+#define xbee_logS(...)    if (xbee->log) { xbee_logSf(); xbee_logf(xbee,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__);               }
+#define xbee_logI(...)    if (xbee->log) {               xbee_logf(xbee,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__);               }
+#define xbee_logIc(...)   if (xbee->log) {               xbee_logf(xbee,LOG_FORMAT    ,__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__);               }
+#define xbee_logIcf()     if (xbee->log) {               fprintf(xbee->log, "\n");                                                                }
+#define xbee_logE(...)    if (xbee->log) {               xbee_logf(xbee,LOG_FORMAT"\n",__FILE__,__LINE__,__FUNCTION__,__VA_ARGS__); xbee_logEf(); }
+
+#define xbee_perror(str)                                 \
+  if (xbee->log) xbee_logI("%s:%s",str,strerror(errno)); \
+  perror(str);
 
 static int xbee_startAPI(xbee_hnd xbee);
 

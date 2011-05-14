@@ -45,8 +45,8 @@ static int init_serial(xbee_hnd xbee, int baudrate) {
                         FILE_FLAG_OVERLAPPED,
                         NULL);
   if (xbee->tty == INVALID_HANDLE_VALUE) {
-    xbee_log("Invalid file handle...");
-    xbee_log("Is the XBee plugged in and avaliable on the correct port?");
+    xbee_logS("Invalid file handle...");
+    xbee_logE("Is the XBee plugged in and avaliable on the correct port?");
     xbee_mutex_destroy(xbee->conmutex);
     xbee_mutex_destroy(xbee->pktmutex);
     xbee_mutex_destroy(xbee->sendmutex);

@@ -45,11 +45,11 @@ HMODULE glob_hModule = NULL;
 #define xbee_thread_join(a)       WaitForSingleObject((a),INFINITE)
 #define xbee_thread_tryjoin(a)    WaitForSingleObject((a),0)
 
-#define xbee_mutex_init(a)        (!InitializeCriticalSectionAndSpinCount(&(a),0))
-#define xbee_mutex_destroy(a)     DeleteCriticalSection(&(a))
-#define xbee_mutex_lock(a)        EnterCriticalSection(&(a))
-#define xbee_mutex_trylock(a)     (!TryEnterCriticalSection(&(a)))
-#define xbee_mutex_unlock(a)      LeaveCriticalSection(&(a))
+#define xbee_mutex_init(a)        (((a) = CreateEvent(NULL,FALSE,TRUE,NULL)) == NULL)
+#define xbee_mutex_destroy(a)     CloseHandle((a))
+#define xbee_mutex_lock(a)        WaitForSingleObject((a),INFINITE)
+#define xbee_mutex_trylock(a)     WaitForSingleObject((a),0)
+#define xbee_mutex_unlock(a)      SetEvent((a))
 
 #define xbee_sem_init(a)          (((a) = CreateEvent(NULL,FALSE,FALSE,NULL)) == NULL)
 #define xbee_sem_destroy(a)       CloseHandle((a))

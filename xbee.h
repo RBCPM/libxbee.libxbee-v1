@@ -43,7 +43,7 @@ typedef sem_t              xbee_sem_t;
 typedef FILE*              xbee_file_t;
 #else /* -------------- */
 #include <Windows.h>
-typedef CRITICAL_SECTION   xbee_mutex_t;
+typedef HANDLE             xbee_mutex_t;
 typedef CONDITION_VARIABLE xbee_cond_t;
 typedef HANDLE             xbee_thread_t;
 typedef HANDLE             xbee_sem_t;
