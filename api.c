@@ -762,6 +762,9 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
     ocon = con;
   }
 
+  /* unlock the connection mutex */
+  xbee_mutex_unlock(xbee->conmutex);
+  
   /* create a new connection and set its attributes */
   con = Xcalloc(sizeof(xbee_con));
   con->type = type;
@@ -835,6 +838,9 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
     }
   }
 
+  /* lock the connection mutex */
+  xbee_mutex_lock(xbee->conmutex);
+  
   /* make it the last in the list */
   con->next = NULL;
   /* add it to the list */
@@ -2071,7 +2077,7 @@ static int xbee_listen(xbee_hnd xbee) {
       xbee_logI("  info block @ 0x%08X",l);
       xbee_logI("  function   @ 0x%08X",con->callback);
       xbee_logI("  connection @ 0x%08X",con);
-      xbee_logI("  packet     @ 0x%08X",p);
+      xbee_logE("  packet     @ 0x%08X",p);
 
       /* if the callback thread not still running, then start a new one! */
       if (!xbee_mutex_trylock(con->callbackmutex)) {
@@ -2081,7 +2087,7 @@ static int xbee_listen(xbee_hnd xbee) {
         t_CBinfo info;
         info.xbee = xbee;
         info.con = con;
-        xbee_logE("Starting new callback thread!");
+        xbee_log("Starting new callback thread!");
         if ((ret = xbee_thread_create(t,xbee_callbackWrapper,&info)) != 0) {
           xbee_mutex_unlock(con->callbackmutex);
           /* this MAY help with future attempts... */
