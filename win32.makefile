@@ -1,6 +1,6 @@
 #-- uncomment this to enable debugging
-DEBUG:=/Zi /DDEBUG /MTd
-LDBUG:=/DEBUG
+#DEBUG:=/Zi /DDEBUG /MTd
+#LDBUG:=/DEBUG
 
 #-- you may need to edit these lines if your installation is different
 VCPath:=C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC
