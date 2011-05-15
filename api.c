@@ -2357,23 +2357,23 @@ static int _xbee_send_pkt(xbee_hnd xbee, t_data *pkt, xbee_con *con) {
     }
     xbee_logIcf();
   }
+  xbee_logEf();
   
   if (con->waitforACK &&
       ((con->type == xbee_16bitData) ||
        (con->type == xbee_64bitData))) {
     con->ACKstatus = 0xFF; /* waiting */
-    xbee_logI("Waiting for ACK/NAK response...");
+    xbee_log("Waiting for ACK/NAK response...");
     xbee_sem_wait1sec(con->waitforACKsem);
     switch (con->ACKstatus) {
-      case 0: xbee_logI("ACK recieved!"); break;
-      case 1: xbee_logI("NAK recieved..."); break;
-      case 2: xbee_logI("CCA failure..."); break;
-      case 3: xbee_logI("Purged..."); break;
-      case 255: default: xbee_logI("Timeout...");
+      case 0: xbee_log("ACK recieved!"); break;
+      case 1: xbee_log("NAK recieved..."); break;
+      case 2: xbee_log("CCA failure..."); break;
+      case 3: xbee_log("Purged..."); break;
+      case 255: default: xbee_log("Timeout...");
     }
     if (con->ACKstatus) retval = 1; /* error */
   }
-  xbee_logEf();
   
   /* unlock connection mutex */
   xbee_mutex_unlock(con->Txmutex);
