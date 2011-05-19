@@ -240,3 +240,15 @@ static int xbee_select(xbee_hnd xbee, struct timeval *timeout);
 #else /* -------------- */
 #include "xsys\win32.c"
 #endif /* ------------- */
+
+#ifndef Win32Message
+#define Win32Message()
+#endif
+
+#define ISREADY(a)      if (!xbee || !xbee->xbee_ready) {                                       \
+                          if (stderr) fprintf(stderr,"libxbee: Run xbee_setup() first!...\n");  \
+                          Win32Message();                                                       \
+                          a;                                                                    \
+                        }
+#define ISREADYP()      ISREADY(return)
+#define ISREADYR(a)     ISREADY(return a)

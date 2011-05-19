@@ -35,6 +35,8 @@
 /* libxbee's GUID is {7A6E25AA-ECB5-4370-87B5-A1D31840FE23} */
 #define dllGUID "{7A6E25AA-ECB5-4370-87B5-A1D31840FE23}"
 
+#define Win32Message()  MessageBox(0,"Run xbee_setup() first!...","libxbee",MB_OK);
+
 HMODULE glob_hModule = NULL;
 
 /* this uses miliseconds not microseconds... */

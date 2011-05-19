@@ -22,16 +22,6 @@ char svn_rev[128] = "\0";
 
 #include "api.h"
 
-void ISREADY(xbee_hnd xbee) {
-  if (!xbee || !xbee->xbee_ready) {
-    if (stderr) fprintf(stderr,"libxbee: Run xbee_setup() first!...\n");
-#ifdef _WIN32
-    MessageBox(0,"Run xbee_setup() first!...","libxbee",MB_OK);
-#endif
-    exit(1);
-  }
-}
-
 const char *xbee_svn_version(void) {
   if (svn_rev[0] == '\0') {
     char *t;
@@ -333,7 +323,7 @@ int _xbee_end(xbee_hnd xbee) {
   xbee_pkt *pkt, *npkt;
   xbee_hnd xbeet;
 
-  ISREADY(xbee);
+  ISREADYR(0);
   xbee_log("Stopping libxbee instance...");
 
   /* unlink the instance from list... */
@@ -676,7 +666,7 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   int t;
   int i;
 
-  ISREADY(xbee);
+  ISREADYR(NULL);
 
   if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
   else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
@@ -863,7 +853,7 @@ void xbee_flushcon(xbee_con *con) {
 void _xbee_flushcon(xbee_hnd xbee, xbee_con *con) {
   xbee_pkt *r, *p, *n;
 
-  ISREADY(xbee);
+  ISREADYP();
   
   /* lock the packet mutex */
   xbee_mutex_lock(xbee->pktmutex);
@@ -913,7 +903,7 @@ void xbee_endcon2(xbee_con **con, int alreadyUnlinked) {
 void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked) {
   xbee_con *t, *u;
 
-  ISREADY(xbee);
+  ISREADYP();
   
   /* lock the connection mutex */
   xbee_mutex_lock(xbee->conmutex);
@@ -1021,7 +1011,7 @@ int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length) {
   int i;
   unsigned char buf[128]; /* max payload is 100 bytes... plus a bit for the headers etc... */
 
-  ISREADY(xbee);
+  ISREADYR(-1);
 
   if (!con) return -1;
   if (con->type == xbee_unknown) return -1;
@@ -1227,7 +1217,7 @@ xbee_pkt *xbee_getpacket(xbee_con *con) {
 xbee_pkt *_xbee_getpacket(xbee_hnd xbee, xbee_con *con) {
   xbee_pkt *l, *p, *q;
 
-  ISREADY(xbee);
+  ISREADYR(NULL);
   
   /* lock the packet mutex */
   xbee_mutex_lock(xbee->pktmutex);
@@ -1433,7 +1423,7 @@ static int xbee_parse_io(xbee_hnd xbee, xbee_pkt *p, unsigned char *d,
    xbee_listen_stop
    stops the listen thread after the current packet has been processed */
 void xbee_listen_stop(xbee_hnd xbee) {
-  ISREADY(xbee);
+  ISREADYP();
   xbee->run = 0;
 }
 
