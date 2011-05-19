@@ -471,13 +471,11 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   xbee->next = NULL;
   
   xbee_mutex_init(xbee->logmutex);
-  if (logfd) {
 #ifdef DEBUG
-    /* logfd or stderr */
-    xbee->logfd = dup(logfd?logfd:2);
-#else
-    xbee->logfd = dup(logfd);
+  if (!logfd) logfd = 2;
 #endif
+  if (logfd) {
+    xbee->logfd = dup(logfd);
     xbee->log = fdopen(xbee->logfd,"w");
     if (!xbee->log) {
       /* errno == 9 is bad file descriptor (probrably not provided) */
