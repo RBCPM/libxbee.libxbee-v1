@@ -41,13 +41,17 @@ typedef pthread_cond_t     xbee_cond_t;
 typedef pthread_t          xbee_thread_t;
 typedef sem_t              xbee_sem_t;
 typedef FILE*              xbee_file_t;
-#else /* -------------- */
+#elif defined(WIN32) /* -------------- */
 #include <Windows.h>
+#define CALLTYPE   __stdcall
+#define CALLTYPEVA __cdecl
 typedef HANDLE             xbee_mutex_t;
 typedef CONDITION_VARIABLE xbee_cond_t;
 typedef HANDLE             xbee_thread_t;
 typedef HANDLE             xbee_sem_t;
 typedef HANDLE             xbee_file_t;
+#else
+#error "Unknown operating system or compiler"
 #endif /* ------------- */
 
 enum xbee_types {
@@ -142,74 +146,65 @@ struct xbee_con {
   xbee_con *next;
 };
 
-int xbee_setup(char *path, int baudrate);
-int xbee_setuplog(char *path, int baudrate, int logfd);
-int xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
-int xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
-xbee_hnd _xbee_setup(char *path, int baudrate);
-xbee_hnd _xbee_setuplog(char *path, int baudrate, int logfd);
-xbee_hnd _xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
-xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
+int CALLTYPE xbee_setup(char *path, int baudrate);
+int CALLTYPE xbee_setuplog(char *path, int baudrate, int logfd);
+int CALLTYPE xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
+int CALLTYPE xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
+xbee_hnd CALLTYPE _xbee_setup(char *path, int baudrate);
+xbee_hnd CALLTYPE _xbee_setuplog(char *path, int baudrate, int logfd);
+xbee_hnd CALLTYPE _xbee_setupAPI(char *path, int baudrate, char cmdSeq, int cmdTime);
+xbee_hnd CALLTYPE _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int cmdTime);
 
-int xbee_end(void);
-int _xbee_end(xbee_hnd xbee);
+int CALLTYPE xbee_end(void);
+int CALLTYPE _xbee_end(xbee_hnd xbee);
 
-void xbee_logitf(char *format, ...);
-void _xbee_logitf(xbee_hnd xbee, char *format, ...);
-void xbee_logit(char *str);
-void _xbee_logit(xbee_hnd xbee, char *str);
+void CALLTYPE xbee_logitf(char *format, ...);
+void CALLTYPE _xbee_logitf(xbee_hnd xbee, char *format, ...);
+void CALLTYPE xbee_logit(char *str);
+void CALLTYPE _xbee_logit(xbee_hnd xbee, char *str);
 
-xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...);
-xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
-xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
+xbee_con * CALLTYPEVA xbee_newcon(unsigned char frameID, xbee_types type, ...);
+xbee_con * CALLTYPEVA _xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
+xbee_con * CALLTYPE _xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
 
-void xbee_flushcon(xbee_con *con);
-void _xbee_flushcon(xbee_hnd xbee, xbee_con *con);
+void CALLTYPE xbee_flushcon(xbee_con *con);
+void CALLTYPE _xbee_flushcon(xbee_hnd xbee, xbee_con *con);
 
-void xbee_endcon2(xbee_con **con, int alreadyUnlinked);
-void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked);
+void CALLTYPE xbee_endcon2(xbee_con **con, int alreadyUnlinked);
+void CALLTYPE _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked);
 #define xbee_endcon(x) xbee_endcon2(&(x),0)
 #define _xbee_endcon(xbee,x) _xbee_endcon2((xbee),&(x),0)
 
-int xbee_nsenddata(xbee_con *con, char *data, int length);
-int _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length);
-#ifdef __GNUC__ /* ---- */
-int xbee_senddata(xbee_con *con, char *format, ...)
-                   __attribute__ ((format (printf,2,3)));
-int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...)
-                   __attribute__ ((format (printf,3,4)));
-int xbee_vsenddata(xbee_con *con, char *format, va_list ap)
-                   __attribute__ ((format (printf,2,0)));
-int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap)
-                   __attribute__ ((format (printf,3,0)));
-#else /* -------------- */
-int xbee_senddata(xbee_con *con, char *format, ...);
-int _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...);
-int xbee_vsenddata(xbee_con *con, char *format, va_list ap);
-int _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap);
+int CALLTYPE xbee_nsenddata(xbee_con *con, char *data, int length);
+int CALLTYPE _xbee_nsenddata(xbee_hnd xbee, xbee_con *con, char *data, int length);
+int CALLTYPEVA xbee_senddata(xbee_con *con, char *format, ...);
+int CALLTYPEVA _xbee_senddata(xbee_hnd xbee, xbee_con *con, char *format, ...);
+int CALLTYPE xbee_vsenddata(xbee_con *con, char *format, va_list ap);
+int CALLTYPE _xbee_vsenddata(xbee_hnd xbee, xbee_con *con, char *format, va_list ap);
 
+#if defined(WIN32)
 /* oh and just 'cos windows has rubbish memory management rules... this too */
-void xbee_free(void *ptr);
+void CALLTYPE xbee_free(void *ptr);
 #endif /* ------------- */
 
-xbee_pkt *xbee_getpacket(xbee_con *con);
-xbee_pkt *_xbee_getpacket(xbee_hnd xbee, xbee_con *con);
-xbee_pkt *xbee_getpacketwait(xbee_con *con);
-xbee_pkt *_xbee_getpacketwait(xbee_hnd xbee, xbee_con *con);
+xbee_pkt * CALLTYPE xbee_getpacket(xbee_con *con);
+xbee_pkt * CALLTYPE _xbee_getpacket(xbee_hnd xbee, xbee_con *con);
+xbee_pkt * CALLTYPE xbee_getpacketwait(xbee_con *con);
+xbee_pkt * CALLTYPE _xbee_getpacketwait(xbee_hnd xbee, xbee_con *con);
 
-int xbee_hasdigital(xbee_pkt *pkt, int sample, int input);
-int xbee_getdigital(xbee_pkt *pkt, int sample, int input);
+int CALLTYPE xbee_hasdigital(xbee_pkt *pkt, int sample, int input);
+int CALLTYPE xbee_getdigital(xbee_pkt *pkt, int sample, int input);
 
-int xbee_hasanalog(xbee_pkt *pkt, int sample, int input);
-double xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
+int CALLTYPE xbee_hasanalog(xbee_pkt *pkt, int sample, int input);
+double CALLTYPE xbee_getanalog(xbee_pkt *pkt, int sample, int input, double Vref);
 
-const char *xbee_svn_version(void);
-const char *xbee_build_info(void);
+const char * CALLTYPE xbee_svn_version(void);
+const char * CALLTYPE xbee_build_info(void);
 
-void xbee_listen_stop(xbee_hnd xbee);
+void CALLTYPE xbee_listen_stop(xbee_hnd xbee);
 
 #ifdef __cplusplus
-}
+} /* cplusplus */
 #endif
 
 #endif

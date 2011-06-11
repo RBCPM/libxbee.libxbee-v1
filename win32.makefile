@@ -6,6 +6,9 @@
 VCPath:=C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC
 SDKPath:=C:\Program Files\Microsoft SDKs\Windows\v6.0A
 
+#!! if using visual studio 2010, you may need to run the following in a shell,
+#     and then within the same shell run `make -f win32.makefile`
+#   C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat
 
 ###### YOU SHOULD NOT CHANGE BELOW THIS LINE ######
 SHELL:=cmd
