@@ -41,8 +41,8 @@ EXPORTS
 
   xbee_endcon2
   _xbee_endcon2
-  xbee_flushcon
-  _xbee_flushcon
+  xbee_purgecon
+  _xbee_purgecon
 
   xbee_senddata
   _xbee_senddata
