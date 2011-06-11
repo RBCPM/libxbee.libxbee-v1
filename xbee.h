@@ -54,6 +54,14 @@ typedef HANDLE             xbee_file_t;
 #error "Unknown operating system or compiler"
 #endif /* ------------- */
 
+#ifndef CALLTYPE
+#define CALLTYPE
+#endif
+
+#ifndef CALLTYPEVA
+#define CALLTYPEVA
+#endif
+
 enum xbee_types {
   xbee_unknown,
 
@@ -167,8 +175,8 @@ xbee_con * CALLTYPEVA xbee_newcon(unsigned char frameID, xbee_types type, ...);
 xbee_con * CALLTYPEVA _xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
 xbee_con * CALLTYPE _xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
 
-void CALLTYPE xbee_flushcon(xbee_con *con);
-void CALLTYPE _xbee_flushcon(xbee_hnd xbee, xbee_con *con);
+void CALLTYPE xbee_purgecon(xbee_con *con);
+void CALLTYPE _xbee_purgecon(xbee_hnd xbee, xbee_con *con);
 
 void CALLTYPE xbee_endcon2(xbee_con **con, int alreadyUnlinked);
 void CALLTYPE _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked);

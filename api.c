@@ -847,10 +847,10 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
    xbee_conflush
    removes any packets that have been collected for the specified
    connection */
-void xbee_flushcon(xbee_con *con) {
-  _xbee_flushcon(default_xbee, con);
+void xbee_purgecon(xbee_con *con) {
+  _xbee_purgecon(default_xbee, con);
 }
-void _xbee_flushcon(xbee_hnd xbee, xbee_con *con) {
+void _xbee_purgecon(xbee_hnd xbee, xbee_con *con) {
   xbee_pkt *r, *p, *n;
 
   ISREADYP();
@@ -946,7 +946,7 @@ void _xbee_endcon2(xbee_hnd xbee, xbee_con **con, int alreadyUnlinked) {
   }
 
   /* remove all packets for this connection */
-  _xbee_flushcon(xbee,t);
+  _xbee_purgecon(xbee,t);
 
   /* destroy the callback mutex */
   xbee_mutex_destroy(t->callbackmutex);
@@ -1923,7 +1923,7 @@ static int xbee_listen(xbee_hnd xbee) {
         xbee_logIcf();
       }
 
-      p->type = xbee_txStatus;
+      p->type = xbee2_txStatus;
 
       p->sAddr64 = FALSE;
       p->dataPkt = FALSE;
