@@ -642,7 +642,7 @@ xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
   xbee_con *ret;
   va_list ap;
 
-  /* xbee_vsenddata() wants a va_list... */
+  /* xbee_vnewcon() wants a va_list... */
   va_start(ap, type);
   /* hand it over :) */
   ret = _xbee_vnewcon(default_xbee, frameID, type, ap);
@@ -653,7 +653,7 @@ xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ..
   xbee_con *ret;
   va_list ap;
 
-  /* xbee_vsenddata() wants a va_list... */
+  /* xbee_vnewcon() wants a va_list... */
   va_start(ap, type);
   /* hand it over :) */
   ret = _xbee_vnewcon(xbee, frameID, type, ap);

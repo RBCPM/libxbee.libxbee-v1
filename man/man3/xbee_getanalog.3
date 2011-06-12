@@ -21,9 +21,9 @@ xbee_hasanalog, xbee_getanalog
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
-.BI "int xbee_hasanalog(xbee_pkt *" pkt ",int " sample ", int " input ");"
+.BI "int xbee_hasanalog(xbee_pkt *" pkt ", int " sample ", int " input ");"
 .sp
-.BI "double xbee_getanalog(xbee_pkt *" pkt ",int " sample ", int " input ", double " Vref ");"
+.BI "double xbee_getanalog(xbee_pkt *" pkt ", int " sample ", int " input ", double " Vref ");"
 .ad b
 .SH DESCRIPTION
 The
@@ -78,9 +78,9 @@ xbee_pkt *pkt;
 double Vref = 3.3;
 if ((pkt = xbee_getpacket(con)) != NULL) {
   if (xbee_hasanalog(pkt,0,0)) {
-    printf("A0 read %fv\n",xbee_getanalog(pkt,0,0,Vref));
+    printf("A0 read %fv\\n",xbee_getanalog(pkt,0,0,Vref));
   } else {
-    printf("No A0 data\n");
+    printf("No A0 data\\n");
   }
   free(pkt);
 }

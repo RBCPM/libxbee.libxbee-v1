@@ -17,7 +17,7 @@
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .TH XBEE_SENDDATA 3  2009-11-01 "GNU" "Linux Programmer's Manual"
 .SH NAME
-xbee_senddata, xbee_vsenddata
+xbee_senddata, xbee_nsenddata, xbee_vsenddata
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
@@ -43,7 +43,7 @@ points to a connection made previously with
 The
 .I format
 string and any following parameters are passed to
-.BR sprintf ()
+.BR snprintf ()
 within these functions.
 Please see the
 .BR printf (3)

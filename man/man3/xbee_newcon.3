@@ -17,13 +17,13 @@
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .TH XBEE_NEWCON 3  2009-11-01 "GNU" "Linux Programmer's Manual"
 .SH NAME
-xbee_newcon
+xbee_newcon, xbee_purgecon, xbee_endcon
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
 .BI "xbee_con *xbee_newcon(unsigned char " frameID ", xbee_types " type ", ...);"
 .sp
-.BI "void xbee_flushcon(xbee_con *" con ");"
+.BI "void xbee_purgecon(xbee_con *" con ");"
 .sp
 .BI "void xbee_endcon(xbee_con *" con ");"
 .ad b
@@ -31,7 +31,7 @@ xbee_newcon
 The
 .BR xbee_newcon ()
 function will setup a new connection with the specified settings.
-It takes at least 2 arguments, and possibly up to 4 depending on the
+It takes at least 2 arguments, and potentially up to 4 depending on the
 .I type.
 .sp
 .B NOTE:
@@ -40,8 +40,9 @@ You must setup a connection in order to recieve packets.
 .sp
 The argument
 .I frameID
-allows similar functionality to that of TCP/IP port numbers. This is 1 character (or 8-bit integer) that
-identifies where the data is coming from or going to.
+allows similar functionality to that of TCP/IP port numbers. This is 1 
+.I unsigned char
+(or 8-bit integer) that identifies where the data is coming from or going to.
 .s
 The
 .I type
@@ -73,9 +74,15 @@ sends/recieves I/O data through a remote node (using 16-bit addressing)
 .TP
 .B xbee_64bitIO
 sends/recieves I/O data through a remote node (using 64-bit addressing)
+.TP
+.B xbee2_data
+sends/recieves data using a Series 2 XBee (uses 64-bit addressing)
+.TP
+.B xbee2_txStatus
+recieves transmit status information from the local Series 2 XBee
 .PP
 If you are using
-.BR xbee_localAT ", " xbee_txStatus " or " xbee_modemStatus
+.BR xbee_localAT ", " xbee_txStatus ", " xbee2_txStatus " or " xbee_modemStatus
 then only the
 .I frameID
 and
@@ -89,7 +96,7 @@ If you are using any 64-bit connection, you must also specify 2 integers contain
 64-bit address, first the high 32-bits, then the low 32-bits.
 .sp
 The
-.BR xbee_flushcon ()
+.BR xbee_purgecon ()
 function is very basic. It removes any packets that have been collected in the buffer for the specified connection.
 .sp
 The
@@ -105,6 +112,9 @@ connection.
 .sp
 For information on using callback functions for packet handling please see
 .BR xbee_con (3)
+or
+.B callback.c
+in the SVN sample directory.
 .SH EXAMPLE
 To create a local AT connection:
 .in +4n

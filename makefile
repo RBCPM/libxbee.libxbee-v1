@@ -15,6 +15,7 @@ MANS:=man3/libxbee.3 \
       man3/xbee_end.3 \
       man3/xbee_endcon.3 \
       man3/xbee_flushcon.3 \
+      man3/xbee_purgecon.3 \
       man3/xbee_getanalog.3 \
       man3/xbee_getdigital.3 \
       man3/xbee_getpacket.3 \

@@ -17,7 +17,7 @@
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
 .TH XBEE_SETUP 3  2009-11-01 "GNU" "Linux Programmer's Manual"
 .SH NAME
-xbee_setup
+xbee_setup, xbee_setuplog, xbee_setupAPI, xbee_setuplogAPI
 .SH SYNOPSIS
 .B #include <xbee.h>
 .sp
@@ -25,7 +25,7 @@ xbee_setup
 .sp
 .BI "int xbee_setuplog(char *" path ", int " baudrate ", int " logfd ");"
 .sp
-.BI "int xbee_setupAPI(char *" path ", char " cmdSeq ", int " cmdTime ");"
+.BI "int xbee_setupAPI(char *" path ", int " baudrate ", char " cmdSeq ", int " cmdTime ");"
 .sp
 .BI "int xbee_setuplogAPI(char *" path ", int " baudrate ", int " logfd ", char " cmdSeq ", int " cmdTime ");"
 .ad b
@@ -44,7 +44,7 @@ is the path to the serial port that the XBee is connected to (e.g. /dev/ttyUSB0)
 The
 .I baudrate
 is the baud rate that the local XBee is configured to run at. The following are avaliable:
-.in +4n
+.in +2n
 .nf
 .B 1200
 .B 2400
@@ -59,12 +59,18 @@ is the baud rate that the local XBee is configured to run at. The following are 
 .sp
 Using
 .BR xbee_setuplog ()
-is exactly the same, but instead you give an open file descriptor. All log messages will be written to this file (you can use stderr or stdout if you want!).
+is exactly the same, but instead you give an open file descriptor. All log messages will be written to this file (you can use stderr or stdout if you want!). NOTE: The file descriptor is
+.BR dup ()'ed
+before use, so you may close it immediately. Providing a value of
+.B 0
+will disable the log output.
 .sp
 Using
 .BR xbee_setupAPI ()
 is exactly the same, but instead you provide the 'Command Sequence' character and the 'Guard Time' that your local XBee has been configured with.
-libxbee will then place your XBee in API mode 2, and when you call xbee_end() it will return your XBee to its previous API mode.
+libxbee will then place your XBee in API mode 2, and when you call
+.BR xbee_end ()
+it will return your XBee to its previous API mode.
 .sp
 Using
 .BR xbee_setuplogAPI ()
@@ -89,6 +95,10 @@ if (xbee_setup("/dev/ttyUSB0",57600) == -1) {
 }
 .fi
 .in
+.SH NOTE
+If libxbee is compiled with
+.B DEBUG
+defined, then the log output will ALWAYS be enabled. If no file descriptor is provided, then stderr will be used.
 .SH AUTHOR
 Attie Grande <attie@attie.co.uk> 
 .SH "SEE ALSO"
