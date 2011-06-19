@@ -41,7 +41,7 @@ typedef pthread_cond_t     xbee_cond_t;
 typedef pthread_t          xbee_thread_t;
 typedef sem_t              xbee_sem_t;
 typedef FILE*              xbee_file_t;
-#elif defined(WIN32) /* -------------- */
+#elif (defined(WIN32) || defined(_WIN32)) /* -------------- */
 #include <Windows.h>
 #define CALLTYPE   __stdcall
 #define CALLTYPEVA __cdecl
