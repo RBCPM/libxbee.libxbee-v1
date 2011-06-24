@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of XBEE_PKT</TITLE>
 </HEAD><BODY>
 <H1>XBEE_PKT</H1>
-Section: Linux Programmer's Manual (3)<BR>Updated: 2009-11-01<BR><A HREF="#index">Index</A>
+Section: Linux Programmer's Manual (3)<BR>Updated: 2010-06-24<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -22,23 +22,31 @@ This is the packet structure. If you want to get more advanced information from 
 
 <PRE>
 struct xbee_pkt {
+  /* for packet identification purposes... these should not really be nessesary */
+  unsigned int  sAddr64;          /* TRUE / FALSE */
+  unsigned int  dataPkt;
+  unsigned int  txStatusPkt;
+  unsigned int  modemStatusPkt;
+  unsigned int  remoteATPkt;
+  unsigned int  IOPkt;
+  
+  /* how the packet was transmitted */
+  unsigned int  isBroadcastADR;   /* if TRUE, dest addr was 0xFFFF */
+  unsigned int  isBroadcastPAN;   /* if TRUE, dest PAN  was 0xFFFF */
+  
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
-  unsigned char status;           /* AT  Data  Status    */ /* status / options */
-  unsigned char Addr64[8];        /* AT  Data            */
-  unsigned char Addr16[2];        /* AT  Data            */
-  unsigned char data[128];        /* AT  Data            */
+  
+  unsigned char status;           /* AT  Data  Status    */ /* status / options field - see the XBee manual for more information */
   unsigned char RSSI;             /*     Data            */
-  unsigned int datalen;
+  
+  unsigned char Addr16[2];        /* AT  Data            */
+  unsigned char Addr64[8];        /* AT  Data            */
+  
+  unsigned char data[128];        /* AT  Data            */
+  unsigned int  datalen;
 
-  /* X  A5 A4 A3 A2 A1 A0 D8    D7 D6 D5 D4 D3 D2 D1 D0 */
-  unsigned short IOmask;          /*                  IO */
-
-  /* X  X  X  X  X  X  X  D8    D7 D6 D5 D4 D3 D2 D1 D0 */
-  unsigned short IOdata;          /*                  IO */
-
-  /* X  X  X  X  X  D  D  D     D  D  D  D  D  D  D  D  */
-  unsigned short IOanalog[6];     /*                  IO */
+  xbee_sample   IOdata[];         /* use the xbee_has* and xbee_get* functions to access this data */
 };
 typedef struct xbee_pkt xbee_pkt;
 </PRE>
@@ -53,26 +61,38 @@ and others need explaining. I will touch on the most important here:
 <DD>
 This is the 2 character identifier for the AT command response you just recieved.
 Of course if you didnt setup an AT connection, you should never see, or try to see data here.
-<DT><B>Addr64</B> and <B>Addr16</B>
+<DT><B>Addr16</B>, <B>Addr64</B> and <B>sAddr64</B>
 
 <DD>
 These contain the address of the XBee that you recieved the packet from. You should really know this
 because you setup the connection. However remote AT packets will contain both 16 and 64 bit
 addresses.
+<B>sAddr64</B>
+
+will indicate wether the packet is 16 or 64 bit addressed.
+<DT><B>RSSI</B>
+
+<DD>
+This is the Recieve Signal Strength Indicator. It is the inverted decibel value.
+<P>
+printf(&quot;-%ddB\n&quot;,p-&gt;RSSI);
 <DT><B>data</B>
 
 <DD>
-This is the data you just recieved. Either the AT reponse, or the data from the remote XBee node.
+This is the data you just recieved. Either the AT reponse, or the data from the remote XBee node. Be careful using
+<B>printf</B>()
+
+with the
+<B>data</B>
+
+as it isn't null terminated. Use
+<B>datalen</B>
+
+to determine the length of the data.
 <DT><B>datalen</B>
 
 <DD>
-Would you be suprised if I told you this is how much data there is?... Dont try and
-<B>printf</B>()
-
-the
-<B>data</B>
-
-as it isn't null terminated. Use this for processing instead.
+Would you be suprised if I told you this is how much data there is?... 
 
 
 </DL>
@@ -102,6 +122,6 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 00:08:23 GMT, March 30, 2011
+Time: 15:35:04 GMT, June 24, 2011
 </BODY>
 </HTML>

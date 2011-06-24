@@ -15,8 +15,62 @@
 .\"
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
-.TH LIBXBEE 3  2009-11-01 "GNU" "Linux Programmer's Manual"
+.TH XBEE_CON 3  2010-06-24 "GNU" "Linux Programmer's Manual"
 .SH NAME
-libxbee
+xbee_con
+.SH SYNOPSIS
+.B #include <xbee.h>
+.ad b
+.SH DESCRIPTION
+This is the connection structure. If you would like to use more advanced features of libxbee such as callback functions, you must configure them here.
 .sp
-This page has not been written yet...
+.in +4n
+.nf
+struct xbee_con {
+  /* general connection configuration options */
+  unsigned int  atQueue;          /* queues AT commands until AC is sent */
+  unsigned int  txDisableACK;
+  unsigned int  txBroadcastPAN;   /* broadcasts to PAN */
+  unsigned int  waitforACK;       /* waits for the ACK or NAK after transmission */
+  unsigned char ACKstatus;        /* 255 = waiting, 0 = success, 1 = no ack, 2 = cca fail, 3 = purged */
+
+  /* callback options */
+  void *customData;               /* can be used to store data related to this connection */
+  void (*callback)(xbee_con*,xbee_pkt*); /* callback function */
+  
+  unsigned int  destroySelf;      /* if set, the callback thread will destroy the connection
+                                     after all of the packets have been processed */
+  unsigned int  noFreeAfterCB;    /* prevents libxbee from free'ing the packet after the callback has completed */
+};
+typedef struct xbee_con xbee_con;
+.fi
+.in
+.sp
+Most of these fields are fairly self explanatory, however some need attention brought to them
+and others need explaining. I will touch on the most important here:
+.TP
+.B callback
+This is a function pointer. If you wish to use callbacks, then you can install your own function here. To disable callbacks, set this to
+.BR NULL .
+.sp 0
+It is not recommended to call
+.BR xbee_endcon ()
+from within a callback function. Instead see the
+.B destroySelf
+flag.
+.TP
+.B noFreeAfterCB
+When inside a callback it is sometimes desirable to store the packet somewhere before it is eventually processed. To prevent libxbee from free'ing the packet immediately after the callback completes, set this to TRUE.
+.TP
+.B customData
+This is a
+.B void*
+allowing you to store custom, connection orientated data. This is easily accessible from within a callback function for example. You are totally responsible for managing any memory here.
+.TP
+.B destroySelf
+This can be used to terminate the connection once all of the packets have been processed.
+.SH AUTHOR
+Attie Grande <attie@attie.co.uk> 
+.SH "SEE ALSO"
+.BR libxbee (3),
+.BR xbee_newcon (3)

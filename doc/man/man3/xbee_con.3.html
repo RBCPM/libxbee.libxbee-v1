@@ -1,26 +1,106 @@
-<HTML><HEAD><TITLE>Manpage of LIBXBEE</TITLE>
+<HTML><HEAD><TITLE>Manpage of XBEE_CON</TITLE>
 </HEAD><BODY>
-<H1>LIBXBEE</H1>
-Section: Linux Programmer's Manual (3)<BR>Updated: 2009-11-01<BR><A HREF="#index">Index</A>
+<H1>XBEE_CON</H1>
+Section: Linux Programmer's Manual (3)<BR>Updated: 2010-06-24<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-libxbee
+xbee_con
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>#include &lt;<A HREF="file:/usr/include/xbee.h">xbee.h</A>&gt;</B>
+
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+This is the connection structure. If you would like to use more advanced features of libxbee such as callback functions, you must configure them here.
 <P>
-This page has not been written yet...
+
+<PRE>
+struct xbee_con {
+  /* general connection configuration options */
+  unsigned int  atQueue;          /* queues AT commands until AC is sent */
+  unsigned int  txDisableACK;
+  unsigned int  txBroadcastPAN;   /* broadcasts to PAN */
+  unsigned int  waitforACK;       /* waits for the ACK or NAK after transmission */
+  unsigned char ACKstatus;        /* 255 = waiting, 0 = success, 1 = no ack, 2 = cca fail, 3 = purged */
+
+  /* callback options */
+  void *customData;               /* can be used to store data related to this connection */
+  void (*callback)(xbee_con*,xbee_pkt*); /* callback function */
+  
+  unsigned int  destroySelf;      /* if set, the callback thread will destroy the connection
+                                     after all of the packets have been processed */
+  unsigned int  noFreeAfterCB;    /* prevents libxbee from free'ing the packet after the callback has completed */
+};
+typedef struct xbee_con xbee_con;
+</PRE>
+
+
+<P>
+Most of these fields are fairly self explanatory, however some need attention brought to them
+and others need explaining. I will touch on the most important here:
+<DL COMPACT>
+<DT><B>callback</B>
+
+<DD>
+This is a function pointer. If you wish to use callbacks, then you can install your own function here. To disable callbacks, set this to
+<B>NULL</B>.
+
+<P>
+It is not recommended to call
+<B>xbee_endcon</B>()
+
+from within a callback function. Instead see the
+<B>destroySelf</B>
+
+flag.
+<DT><B>noFreeAfterCB</B>
+
+<DD>
+When inside a callback it is sometimes desirable to store the packet somewhere before it is eventually processed. To prevent libxbee from free'ing the packet immediately after the callback completes, set this to TRUE.
+<DT><B>customData</B>
+
+<DD>
+This is a
+<B>void*</B>
+
+allowing you to store custom, connection orientated data. This is easily accessible from within a callback function for example. You are totally responsible for managing any memory here.
+<DT><B>destroySelf</B>
+
+<DD>
+This can be used to terminate the connection once all of the packets have been processed.
+</DL>
+<A NAME="lbAE">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt; 
+<A NAME="lbAF">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/libxbee.3.html">libxbee</A></B>(3),
+
+<B><A HREF="../man3/xbee_newcon.3.html">xbee_newcon</A></B>(3)
+
 <P>
 
 <HR>
 <A NAME="index">&nbsp;</A><H2>Index</H2>
 <DL>
 <DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">AUTHOR</A><DD>
+<DT><A HREF="#lbAF">SEE ALSO</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 00:08:23 GMT, March 30, 2011
+Time: 15:35:04 GMT, June 24, 2011
 </BODY>
 </HTML>

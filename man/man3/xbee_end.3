@@ -15,9 +15,27 @@
 .\"
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
-.TH LIBXBEE 3  2009-11-01 "GNU" "Linux Programmer's Manual"
+.TH XBEE_END 3  2010-06-24 "GNU" "Linux Programmer's Manual"
 .SH NAME
-libxbee
+xbee_end
+.SH SYNOPSIS
+.B #include <xbee.h>
 .sp
-This page has not been written yet...
-
+.BI "int xbee_end(void);"
+.ad b
+.SH DESCRIPTION
+.sp
+The
+.BR xbee_end ()
+function can be used to end a libxbee instance.
+.sp
+It will return the XBee unit to its initial API mode (if a variant of
+.BR xbee_setupAPI ()
+was used).
+.sp 0
+All connections, queued packets and internal structures will be removed from memory, and any open files or devices will be closed.
+.SH AUTHOR
+Attie Grande <attie@attie.co.uk> 
+.SH "SEE ALSO"
+.BR libxbee (3),
+.BR xbee_setup (3)

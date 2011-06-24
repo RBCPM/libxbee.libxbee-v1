@@ -15,9 +15,29 @@
 .\"
 .\" You should have received a copy of the GNU General Public License
 .\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
-.TH LIBXBEE 3  2009-11-01 "GNU" "Linux Programmer's Manual"
+.TH XBEE_LOGIT 3  2010-06-24 "GNU" "Linux Programmer's Manual"
 .SH NAME
-libxbee
+xbee_logit, xbee_logitf
+.SH SYNOPSIS
+.B #include <xbee.h>
 .sp
-This page has not been written yet...
-
+.BI "void xbee_logit(char *" str ");"
+.sp
+.BI "void xbee_logitf(char *" format ", ...);"
+.ad b
+.SH DESCRIPTION
+.sp
+.BR xbee_logit ()
+provides the very simple ability to add your own logging to the libxbee log (logging must be enabled by using a
+.BR xbee_setuplog ()
+variant).
+.sp
+.BR xbee_logitf ()
+provides more complex logging support. The parameters exactly match that of
+.BR printf (2).
+.SH AUTHOR
+Attie Grande <attie@attie.co.uk> 
+.SH "SEE ALSO"
+.BR libxbee (3),
+.BR xbee_setuplog (3)
+.BR printf (3)

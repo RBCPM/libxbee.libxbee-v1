@@ -1,27 +1,69 @@
-<HTML><HEAD><TITLE>Manpage of LIBXBEE</TITLE>
+<HTML><HEAD><TITLE>Manpage of XBEE_LOGIT</TITLE>
 </HEAD><BODY>
-<H1>LIBXBEE</H1>
-Section: Linux Programmer's Manual (3)<BR>Updated: 2009-11-01<BR><A HREF="#index">Index</A>
+<H1>XBEE_LOGIT</H1>
+Section: Linux Programmer's Manual (3)<BR>Updated: 2010-06-24<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-libxbee
+xbee_logit, xbee_logitf
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>#include &lt;<A HREF="file:/usr/include/xbee.h">xbee.h</A>&gt;</B>
+
 <P>
-This page has not been written yet...
+<B>void xbee_logit(char *</B><I>str</I><B>);</B>
+
 <P>
+<B>void xbee_logitf(char *</B><I>format</I><B>, ...);</B>
+
+
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<P>
+<B>xbee_logit</B>()
+
+provides the very simple ability to add your own logging to the libxbee log (logging must be enabled by using a
+<B>xbee_setuplog</B>()
+
+variant).
+<P>
+<B>xbee_logitf</B>()
+
+provides more complex logging support. The parameters exactly match that of
+<B><A HREF="../man2/printf.2.html">printf</A></B>(2).
+
+<A NAME="lbAE">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt; 
+<A NAME="lbAF">&nbsp;</A>
+<H2>SEE ALSO</H2>
+
+<B><A HREF="../man3/libxbee.3.html">libxbee</A></B>(3),
+
+<B><A HREF="../man3/xbee_setuplog.3.html">xbee_setuplog</A></B>(3)
+
+<B><A HREF="../man3/printf.3.html">printf</A></B>(3)
+
 <P>
 
 <HR>
 <A NAME="index">&nbsp;</A><H2>Index</H2>
 <DL>
 <DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">AUTHOR</A><DD>
+<DT><A HREF="#lbAF">SEE ALSO</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 00:08:23 GMT, March 30, 2011
+Time: 15:35:04 GMT, June 24, 2011
 </BODY>
 </HTML>

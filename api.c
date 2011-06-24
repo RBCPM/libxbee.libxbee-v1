@@ -388,7 +388,16 @@ int _xbee_end(xbee_hnd xbee) {
   con = xbee->conlist;
   xbee->conlist = NULL;
   while (con) {
+    t_callback_list *t, *n;
     ncon = con->next;
+    t = con->callbackList;
+    con->callbackList = NULL;
+    while (t) {
+      n = t->next;
+      Xfree(t->pkt);
+      Xfree(t);
+      t = n;
+    }
     Xfree(con);
     con = ncon;
   }

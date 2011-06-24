@@ -98,14 +98,15 @@ struct xbee_sample {
 
 typedef struct xbee_pkt xbee_pkt;
 struct xbee_pkt {
-  unsigned int sAddr64        : 1; /* yes / no */
-  unsigned int dataPkt        : 1; /* if no - AT packet */
+  unsigned int sAddr64        : 1; /* TRUE / FALSE */
+  unsigned int dataPkt        : 1;
   unsigned int txStatusPkt    : 1;
   unsigned int modemStatusPkt : 1;
   unsigned int remoteATPkt    : 1;
   unsigned int IOPkt          : 1;
-  unsigned int isBroadcastADR : 1;
-  unsigned int isBroadcastPAN : 1;
+  
+  unsigned int isBroadcastADR : 1;/* if TRUE, dest addr was 0xFFFF */
+  unsigned int isBroadcastPAN : 1;/* if TRUE, dest PAN  was 0xFFFF */
 
   unsigned char frameID;          /* AT        Status    */
   unsigned char atCmd[2];         /* AT                  */
@@ -119,8 +120,8 @@ struct xbee_pkt {
   unsigned char Addr64[8];        /* AT  Data            */
 
   unsigned char data[128];        /* AT  Data            */
-
   unsigned int datalen;
+  
   xbee_types type;
 
   xbee_pkt *next;
@@ -138,13 +139,14 @@ struct xbee_con {
   unsigned int destroySelf   : 1; /* if set, the callback thread will destroy the connection
                                      after all of the packets have been processed */
   unsigned int waitforACK    : 1; /* waits for the ACK or NAK after transmission */
-  unsigned int noFreeAfterCB : 1; /* prevents libxbee from free'ing the packet after the callback has completed */
+  unsigned int noFreeAfterCB : 1; /* prevents libxbee from free'ing the packet after
+                                     the callback has completed */
   unsigned int __spare__     : 1;
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */
   void *customData;               /* can be used to store data related to this connection */
-  void (*callback)(xbee_con*,xbee_pkt*); /* call back function */
+  void (*callback)(xbee_con*,xbee_pkt*); /* callback function */
   void *callbackList;
   xbee_mutex_t callbackmutex;
   xbee_mutex_t callbackListmutex;

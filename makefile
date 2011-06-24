@@ -22,6 +22,7 @@ MANS:=man3/libxbee.3 \
       man3/xbee_hasanalog.3 \
       man3/xbee_hasdigital.3 \
       man3/xbee_logit.3 \
+      man3/xbee_logitf.3 \
       man3/xbee_newcon.3 \
       man3/xbee_nsenddata.3 \
       man3/xbee_pkt.3 \

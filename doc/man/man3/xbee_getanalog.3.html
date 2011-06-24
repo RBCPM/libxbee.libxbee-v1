@@ -1,7 +1,7 @@
 <HTML><HEAD><TITLE>Manpage of XBEE_GETPACKET</TITLE>
 </HEAD><BODY>
 <H1>XBEE_GETPACKET</H1>
-Section: Linux Programmer's Manual (3)<BR>Updated: 2009-11-01<BR><A HREF="#index">Index</A>
+Section: Linux Programmer's Manual (3)<BR>Updated: 2010-06-24<BR><A HREF="#index">Index</A>
 <A HREF="../index.html">Return to Main Contents</A><HR>
 
 <A NAME="lbAB">&nbsp;</A>
@@ -14,10 +14,10 @@ xbee_hasanalog, xbee_getanalog
 <B>#include &lt;<A HREF="file:/usr/include/xbee.h">xbee.h</A>&gt;</B>
 
 <P>
-<B>int xbee_hasanalog(xbee_pkt *</B><I>pkt</I><B>,int </B><I>sample</I><B>, int </B><I>input</I><B>);</B>
+<B>int xbee_hasanalog(xbee_pkt *</B><I>pkt</I><B>, int </B><I>sample</I><B>, int </B><I>input</I><B>);</B>
 
 <P>
-<B>double xbee_getanalog(xbee_pkt *</B><I>pkt</I><B>,int </B><I>sample</I><B>, int </B><I>input</I><B>, double </B><I>Vref</I><B>);</B>
+<B>double xbee_getanalog(xbee_pkt *</B><I>pkt</I><B>, int </B><I>sample</I><B>, int </B><I>input</I><B>, double </B><I>Vref</I><B>);</B>
 
 
 <A NAME="lbAD">&nbsp;</A>
@@ -92,9 +92,9 @@ xbee_pkt *pkt;
 double Vref = 3.3;
 if ((pkt = xbee_getpacket(con)) != NULL) {
   if (xbee_hasanalog(pkt,0,0)) {
-    printf(&quot;A0 read %fv,xbee_getanalog(pkt,0,0,Vref));
+    printf(&quot;A0 read %fv\n&quot;,xbee_getanalog(pkt,0,0,Vref));
   } else {
-    printf(&quot;No A0 data);
+    printf(&quot;No A0 data\n&quot;);
   }
   free(pkt);
 }
@@ -135,6 +135,6 @@ Attie Grande &lt;<A HREF="mailto:attie@attie.co.uk">attie@attie.co.uk</A>&gt;
 This document was created by
 <A HREF="http://localhost/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 00:08:23 GMT, March 30, 2011
+Time: 15:35:04 GMT, June 24, 2011
 </BODY>
 </HTML>
