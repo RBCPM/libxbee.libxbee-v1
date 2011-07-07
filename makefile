@@ -185,8 +185,6 @@ main: ./bin/main
 
 ./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
 	gcc -shared -Wl,-soname,libxbee.so.1 $(CLINKS) -o ./lib/libxbee.so.$(VERSION) ./obj/*.o
-	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
-	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
 
 ./lib/:
 	mkdir ./lib/
