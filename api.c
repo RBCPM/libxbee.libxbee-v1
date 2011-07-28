@@ -644,36 +644,34 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
 }
 
 /* #################################################################
-   xbee_con
-   produces a connection to the specified device and frameID
-   if a connection had already been made, then this connection will be returned */
-xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
+   xbee_getcon
+   produces a connection to the specified device and frameID, only if it already exists
+   if a connection has not already been made, then NULL will be returned */
+xbee_con *xbee_getcon(unsigned char frameID, xbee_types type, ...) {
+  xbee_con *ret;
+  va_list ap;
+
+  /* xbee_vgetcon() wants a va_list... */
+  va_start(ap, type);
+  /* hand it over :) */
+  ret = _xbee_vgetcon(default_xbee, frameID, type, ap);
+  va_end(ap);
+  return ret;
+}
+xbee_con *_xbee_getcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...) {
   xbee_con *ret;
   va_list ap;
 
   /* xbee_vnewcon() wants a va_list... */
   va_start(ap, type);
   /* hand it over :) */
-  ret = _xbee_vnewcon(default_xbee, frameID, type, ap);
+  ret = _xbee_vgetcon(xbee, frameID, type, ap);
   va_end(ap);
   return ret;
 }
-xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...) {
-  xbee_con *ret;
-  va_list ap;
-
-  /* xbee_vnewcon() wants a va_list... */
-  va_start(ap, type);
-  /* hand it over :) */
-  ret = _xbee_vnewcon(xbee, frameID, type, ap);
-  va_end(ap);
-  return ret;
-}
-xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap) {
-  xbee_con *con, *ocon;
+xbee_con *_xbee_vgetcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap) {
   unsigned char tAddr[8];
   int t;
-  int i;
 
   ISREADYR(NULL);
 
@@ -714,6 +712,11 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   } else {
     memset(tAddr,0,8);
   }
+  
+  return _xbee_xgetcon(xbee, frameID, type, tAddr);
+}
+xbee_con *_xbee_xgetcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, unsigned char *tAddr) {
+  xbee_con *con;
 
   /* lock the connection mutex */
   xbee_mutex_lock(xbee->conmutex);
@@ -754,13 +757,59 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
       if (con->next == NULL) break;
       con = con->next;
     }
-
-    /* keep hold of the last connection... we will need to link it up later */
-    ocon = con;
   }
 
   /* unlock the connection mutex */
   xbee_mutex_unlock(xbee->conmutex);
+  
+  return NULL;
+}
+
+
+/* #################################################################
+   xbee_newcon
+   produces a connection to the specified device and frameID
+   if a connection had already been made, then this connection will be returned */
+xbee_con *xbee_newcon(unsigned char frameID, xbee_types type, ...) {
+  xbee_con *ret;
+  va_list ap;
+
+  /* xbee_vnewcon() wants a va_list... */
+  va_start(ap, type);
+  /* hand it over :) */
+  ret = _xbee_vnewcon(default_xbee, frameID, type, ap);
+  va_end(ap);
+  return ret;
+}
+xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...) {
+  xbee_con *ret;
+  va_list ap;
+
+  /* xbee_vnewcon() wants a va_list... */
+  va_start(ap, type);
+  /* hand it over :) */
+  ret = _xbee_vnewcon(xbee, frameID, type, ap);
+  va_end(ap);
+  return ret;
+}
+xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap) {
+  xbee_con *con, *ocon;
+  unsigned char tAddr[8];
+  int i;
+
+  ISREADYR(NULL);
+
+  if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
+  else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
+  
+  con = _xbee_vgetcon(xbee, frameID, type, ap);
+  if (con) return con;
+  
+  /* get hold of the last connection */
+  ocon = xbee->conlist;
+  while (ocon && ocon->next) {
+    ocon = ocon->next;
+  }
   
   /* create a new connection and set its attributes */
   con = Xcalloc(sizeof(xbee_con));

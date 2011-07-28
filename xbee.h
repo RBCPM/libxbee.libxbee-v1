@@ -177,6 +177,11 @@ xbee_con * CALLTYPEVA xbee_newcon(unsigned char frameID, xbee_types type, ...);
 xbee_con * CALLTYPEVA _xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
 xbee_con * CALLTYPE _xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
 
+xbee_con * CALLTYPEVA xbee_getcon(unsigned char frameID, xbee_types type, ...);
+xbee_con * CALLTYPEVA _xbee_getcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ...);
+xbee_con * CALLTYPE _xbee_vgetcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap);
+xbee_con * CALLTYPE _xbee_xgetcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, unsigned char *tAddr);
+
 void CALLTYPE xbee_purgecon(xbee_con *con);
 void CALLTYPE _xbee_purgecon(xbee_hnd xbee, xbee_con *con);
 
