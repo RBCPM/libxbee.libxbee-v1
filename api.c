@@ -671,8 +671,12 @@ xbee_con *_xbee_getcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ..
 }
 xbee_con *_xbee_vgetcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap) {
   unsigned char tAddr[8];
-  int t;
 
+  return _xbee_vvgetcon(xbee,tAddr,frameID,type,ap);
+}
+xbee_con *_xbee_vvgetcon(xbee_hnd xbee, unsigned char *tAddr, unsigned char frameID, xbee_types type, va_list ap) {
+  int t;
+  
   ISREADYR(NULL);
 
   if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
@@ -802,7 +806,7 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   if (!type || type == xbee_unknown) type = xbee_localAT; /* default to local AT */
   else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
   
-  con = _xbee_vgetcon(xbee, frameID, type, ap);
+  con = _xbee_vvgetcon(xbee, tAddr, frameID, type, ap);
   if (con) return con;
   
   /* get hold of the last connection */
