@@ -836,6 +836,10 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   xbee_mutex_init(con->Txmutex);
   xbee_sem_init(con->waitforACKsem);
 
+  if (frameID == 0) {
+    xbee_log("Warning: FrameID == 0, responses will be disabled...");
+  }
+
   if (xbee->log) {
     switch(type) {
     case xbee_localAT:
