@@ -383,6 +383,9 @@ int _xbee_end(xbee_hnd xbee) {
   
   xbee_thread_cancel(xbee->threadt,0);
   xbee_thread_join(xbee->threadt);
+  
+  xbee_mutex_destroy(xbee->threadmutex);
+  xbee_sem_destroy(xbee->threadsem);
 
   /* free all connections */
   con = xbee->conlist;
@@ -597,6 +600,8 @@ xbee_hnd _xbee_setuplogAPI(char *path, int baudrate, int logfd, char cmdSeq, int
   }
   
   /* can start xbee_thread_watch thread thread now */
+  xbee_mutex_init(xbee->threadmutex);
+  xbee_sem_init(xbee->threadsem);
   if (xbee_thread_create(xbee->threadt, xbee_thread_watch, xbee)) {
     xbee_perror("xbee_setup():xbee_thread_create(threadt)");
     if (xbee->log) xbee_close(xbee->log);
@@ -2293,9 +2298,6 @@ static void xbee_thread_watch(xbee_hnd xbee) {
   usleep(1000000);
 #endif /* ----------- */
 
-  xbee_mutex_init(xbee->threadmutex);
-  xbee_sem_init(xbee->threadsem);
-
   while (xbee->run) {
     t_threadList *p, *q, *t;
     xbee_mutex_lock(xbee->threadmutex);
@@ -2322,9 +2324,6 @@ static void xbee_thread_watch(xbee_hnd xbee) {
     xbee_sem_wait(xbee->threadsem);
     usleep(100000); /* 100ms to allow the thread to end before we try to join */
   }
-  
-  xbee_mutex_destroy(xbee->threadmutex);
-  xbee_sem_destroy(xbee->threadsem);
 }
 
 
