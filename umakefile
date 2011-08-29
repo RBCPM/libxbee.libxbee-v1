@@ -74,7 +74,7 @@ main: ./bin/main
 	mkdir ./bin/
 
 ./lib/libxbee.so.$(VERSION): ./lib/ ${addprefix ./obj/,${SRCS:.c=.o}} ./xbee.h
-	gcc -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.$(VERSION) ./obj/*.o -lrt
+	${CC} -shared -Wl,-soname,libxbee.so.1 -o ./lib/libxbee.so.$(VERSION) ./obj/*.o -lrt
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so.1 -sf
 	ln ./libxbee.so.$(VERSION) ./lib/libxbee.so -sf
 
