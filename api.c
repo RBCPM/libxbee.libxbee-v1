@@ -2361,10 +2361,24 @@ static unsigned char xbee_getrawbyte(xbee_hnd xbee) {
     /* read 1 character */
     if (xbee_read(xbee,&c,1) == 0) {
       /* for some reason no characters were read... */
-      if (xbee_ferror(xbee) || xbee_feof(xbee)) {
-        xbee_log("Error or EOF detected");
-        fprintf(stderr,"libxbee:xbee_read(): Error or EOF detected\n");
-        exit(1); /* this should have something nicer... */
+      if (xbee_ferror(xbee)) {
+        if (xbee_feof(xbee)) {
+          xbee_log("EOF detected");
+          fprintf(stderr,"libxbee:xbee_read(): EOF detected\n");
+          exit(1); /* this should have something nicer... */
+        } else {
+          char *str;
+          str = strerror(errno);
+          if (!str) {
+            xbee_log("Unknown error detected (%d)",errno);
+            fprintf(stderr,"libxbee:xbee_read(): Unknown error detected (%d)\n",errno);
+          } else {
+            xbee_log("Error detected (%s)",str);
+            fprintf(stderr,"libxbee:xbee_read(): Error detected (%s)\n",str);
+          }
+          usleep(1000);
+          continue;
+        }
       }
       /* no error... try again */
       usleep(10);
