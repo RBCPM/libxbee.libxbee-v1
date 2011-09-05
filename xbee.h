@@ -141,7 +141,7 @@ struct xbee_con {
   unsigned int waitforACK    : 1; /* waits for the ACK or NAK after transmission */
   unsigned int noFreeAfterCB : 1; /* prevents libxbee from free'ing the packet after
                                      the callback has completed */
-  unsigned int __spare__     : 1;
+  unsigned int sleeping      : 1; /* if sleeping, another connection can be made and take control */
   xbee_types type;
   unsigned char frameID;
   unsigned char tAddr[8];         /* 64-bit 0-7   16-bit 0-1 */

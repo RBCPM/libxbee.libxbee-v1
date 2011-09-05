@@ -802,7 +802,7 @@ xbee_con *_xbee_newcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, ..
   return ret;
 }
 xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, va_list ap) {
-  xbee_con *con, *ocon;
+  xbee_con *scon, *con, *ocon;
   unsigned char tAddr[8];
   int i;
 
@@ -812,12 +812,13 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
   else if (type == xbee_remoteAT) type = xbee_64bitRemoteAT; /* if remote AT, default to 64bit */
   
   con = _xbee_vvgetcon(xbee, tAddr, frameID, type, ap);
-  if (con) return con;
-  
-  /* get hold of the last connection */
-  ocon = xbee->conlist;
-  while (ocon && ocon->next) {
-    ocon = ocon->next;
+  scon = NULL;
+  if (con) {
+    if (con->sleeping) {
+      scon = con;
+    } else {
+      return con;
+    }
   }
   
   /* create a new connection and set its attributes */
@@ -899,14 +900,36 @@ xbee_con *_xbee_vnewcon(xbee_hnd xbee, unsigned char frameID, xbee_types type, v
 
   /* lock the connection mutex */
   xbee_mutex_lock(xbee->conmutex);
-  
-  /* make it the last in the list */
-  con->next = NULL;
-  /* add it to the list */
-  if (xbee->conlist) {
-    ocon->next = con;
+    
+  if (scon) {
+    /* if there is a sleeping connection...
+       insert this just before it so that it will get found first */
+    if (scon == xbee->conlist) {
+      xbee->conlist = con;
+    } else {
+      ocon = xbee->conlist;
+      while (ocon && ocon->next) {
+        if (ocon->next == scon) {
+          ocon->next = con;
+          break;
+        }
+      }
+    }
+    con->next = scon;
   } else {
-    xbee->conlist = con;
+    /* make it the last in the list */
+    con->next = NULL;
+    /* add it to the list */
+    if (xbee->conlist) {      
+      /* get hold of the last connection */
+      ocon = xbee->conlist;
+      while (ocon && ocon->next) {
+        ocon = ocon->next;
+      }
+      ocon->next = con;
+    } else {
+      xbee->conlist = con;
+    }
   }
 
   /* unlock the mutex */
@@ -2109,6 +2132,10 @@ static int xbee_listen(xbee_hnd xbee) {
     if (!hasCon) {
       xbee_logE("Connectionless packet... discarding!");
       continue;
+    }
+    if (con->sleeping) {
+      xbee_logI("Connection woken up!");
+      con->sleeping = 0;
     }
 
     /* if the connection has a callback function then it is passed the packet
