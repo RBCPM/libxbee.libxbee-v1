@@ -37,7 +37,6 @@ exit
 #include <xbee.h>
 
 void sighandler(int sig) {
-  xbee_pkt *pkt;
   if (sig == SIGINT) {
     xbee_end();
     exit(0);
