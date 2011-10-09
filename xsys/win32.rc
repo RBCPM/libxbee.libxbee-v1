@@ -13,7 +13,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #endif //_WIN32
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,4,1,0
+ FILEVERSION 1,4,2,0
  FILEFLAGSMASK 0x00L
  FILEFLAGS 0x00L
  FILEOS 0x40004L
@@ -33,7 +33,7 @@ BEGIN
             VALUE "OriginalFilename", "libxbee.dll"
             VALUE "PrivateBuild", ""
             VALUE "ProductName", "libxbee - http://code.google.com/p/libxbee/"
-            VALUE "ProductVersion", "v1.4.1"
+            VALUE "ProductVersion", "v1.4.2"
             VALUE "SpecialBuild", ""
         END
     END
